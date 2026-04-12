@@ -1,0 +1,94 @@
+version: "3.9"
+
+# ============================================================
+# Proyectos CJDG — Docker Compose
+# Servicios: gateway (nginx), backend (fastapi), frontend (react), db (postgres)
+# Levanta todo con: docker-compose up --build
+# ============================================================
+
+services:
+
+  # ----------------------------------------------------------
+  # GATEWAY — Nginx Reverse Proxy (único punto de entrada)
+  # Puerto expuesto: 80
+  # ----------------------------------------------------------
+  gateway:
+    build: ./gateway
+    container_name: cjdg_gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - cjdg_network
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # BACKEND — Python / FastAPI
+  # Accesible internamente en: http://backend:8000
+  # ----------------------------------------------------------
+  backend:
+    build: ./backend
+    container_name: cjdg_backend
+    environment:
+      - DATABASE_URL=postgresql://cjdg_user:cjdg_password@db:5432/cjdg_db
+      - SECRET_KEY=CHANGE_THIS_IN_PRODUCTION
+      - ENVIRONMENT=development
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - cjdg_network
+    volumes:
+      - ./backend:/app
+      - ../Catalogos:/catalogs:ro
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # FRONTEND — React 18 + Vite
+  # Accesible internamente en: http://frontend:5173
+  # ----------------------------------------------------------
+  frontend:
+    build: ./frontend
+    container_name: cjdg_frontend
+    environment:
+      - VITE_API_URL=/api/v1
+    networks:
+      - cjdg_network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # DATABASE — PostgreSQL 15
+  # Accesible internamente en: db:5432
+  # ----------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: cjdg_db
+    environment:
+      - POSTGRES_USER=cjdg_user
+      - POSTGRES_PASSWORD=cjdg_password
+      - POSTGRES_DB=cjdg_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cjdg_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cjdg_user -d cjdg_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+# ----------------------------------------------------------
+# VOLUMES & NETWORKS
+# ----------------------------------------------------------
+volumes:
+  postgres_data:
+
+networks:
+  cjdg_network:
+    driver: bridge

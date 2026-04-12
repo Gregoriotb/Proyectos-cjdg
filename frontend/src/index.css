@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cjdg-darker text-cjdg-text antialiased;
+    /* Fondo radial sutil para dar profundidad ejecutiva */
+    background-image: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+  }
+}
+
+@layer components {
+  /* =========================================
+     [STYLE: GLASSMORPHISM] - Executive Dark
+     ========================================= */
+  .glass-panel {
+    @apply bg-cjdg-panel/40 backdrop-blur-md border border-white/10 shadow-glass rounded-xl;
+  }
+  
+  .glass-card {
+    @apply bg-cjdg-panel/30 backdrop-blur-sm border border-white/5 rounded-lg hover:bg-cjdg-panel/50 hover:border-cjdg-accent/30 transition-all duration-300;
+  }
+
+  /* =========================================
+     [STYLE: BUTTONS] - Corporate Tech
+     ========================================= */
+  .btn-primary {
+    @apply bg-cjdg-primary hover:bg-cjdg-primaryHover text-white font-medium py-2 px-6 rounded-md shadow-lg transition-colors border border-transparent hover:border-blue-400/50;
+  }
+  
+  .btn-outline {
+    @apply bg-transparent border border-cjdg-border text-cjdg-textMuted hover:text-white hover:border-white transition-colors py-2 px-6 rounded-md;
+  }
+  
+  .btn-glass {
+    @apply bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 text-white py-2 px-6 rounded-md transition-colors;
+  }
+
+  /* =========================================
+     [STYLE: TYPOGRAPHY] 
+     ========================================= */
+  .heading-hero {
+    @apply text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-cjdg-textMuted;
+  }
+  
+  .heading-section {
+    @apply text-2xl md:text-3xl font-bold tracking-wide text-white mb-6;
+  }
+  
+  /* Fuentes utilitarias para SKUs y códigos (Roboto Mono) */
+  .text-sku {
+    @apply font-mono text-sm text-cjdg-accent tracking-wider uppercase;
+  }
+}
+
+/* Custom Scrollbar for Catalog */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: theme('colors.cjdg.darker'); 
+}
+::-webkit-scrollbar-thumb {
+  background: theme('colors.cjdg.border'); 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.cjdg.primary'); 
+}

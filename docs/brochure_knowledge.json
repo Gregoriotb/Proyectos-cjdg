@@ -1,0 +1,60 @@
+{
+  "metadata": {
+    "source": "CJDG - Brochure v5.pdf",
+    "version": "1.0",
+    "description": "Servicios extraídos del brochure oficial de Proyectos CJDG. Ancla de Verdad del sistema."
+  },
+  "pilares": [
+    {
+      "id": "tecnologia",
+      "nombre": "Tecnología",
+      "descripcion": "Soluciones tecnológicas integrales para redes, seguridad e infraestructura digital.",
+      "servicios": [
+        { "id": "tec-001", "nombre": "Diseño e Instalación de Redes", "categoria": "Redes" },
+        { "id": "tec-002", "nombre": "Mantenimiento de Redes", "categoria": "Redes" },
+        { "id": "tec-003", "nombre": "Sistemas de Seguridad (CCTV)", "categoria": "Seguridad" },
+        { "id": "tec-004", "nombre": "Control de Acceso", "categoria": "Seguridad" }
+      ]
+    },
+    {
+      "id": "climatizacion",
+      "nombre": "Climatización",
+      "descripcion": "Instalación y mantenimiento de sistemas de climatización residenciales y comerciales.",
+      "servicios": [
+        { "id": "cli-001", "nombre": "Instalación de Aires Acondicionados", "categoria": "Aires" },
+        { "id": "cli-002", "nombre": "Mantenimiento Preventivo de Aires", "categoria": "Aires" },
+        { "id": "cli-003", "nombre": "Climatización de Precisión", "categoria": "Precisión" },
+        { "id": "cli-004", "nombre": "Sistemas de Extracción y Ventilación", "categoria": "Precisión" }
+      ]
+    },
+    {
+      "id": "energia",
+      "nombre": "Energía",
+      "descripcion": "Soluciones energéticas sostenibles: plantas eléctricas y energía solar.",
+      "servicios": [
+        { "id": "ene-001", "nombre": "Instalación de Plantas Eléctricas", "categoria": "Plantas" },
+        { "id": "ene-002", "nombre": "Mantenimiento de Plantas Eléctricas", "categoria": "Plantas" },
+        { "id": "ene-003", "nombre": "Instalación de Paneles Solares", "categoria": "Solar" },
+        { "id": "ene-004", "nombre": "Sistemas de Energía Solar Residencial", "categoria": "Solar" }
+      ]
+    },
+    {
+      "id": "ingenieria_civil",
+      "nombre": "Ingeniería Civil",
+      "descripcion": "Proyectos de construcción, remodelación y consultoría en ingeniería civil.",
+      "servicios": [
+        { "id": "civ-001", "nombre": "Proyectos de Construcción", "categoria": "Obras" },
+        { "id": "civ-002", "nombre": "Remodelaciones", "categoria": "Obras" },
+        { "id": "civ-003", "nombre": "Consultoría en Ingeniería Civil", "categoria": "Consultoría" },
+        { "id": "civ-004", "nombre": "Supervisión de Obras", "categoria": "Consultoría" }
+      ]
+    }
+  ],
+  "clientes_referencia": [
+    "Daka",
+    "Hotel Chacao",
+    "Vinccler"
+  ],
+  "slogan": "Cuatro disciplinas, Una sola solución",
+  "descripcion_empresa": "Empresa venezolana especializada en soluciones sostenibles e integrales de ingeniería."
+}
