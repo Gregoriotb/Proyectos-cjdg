@@ -32,6 +32,7 @@ logger = logging.getLogger("cjdg")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 app = FastAPI(
+    redirect_slashes=False,
     title="Proyectos CJDG API",
     description="""
     ## Ecosistema Digital — Proyectos CJDG
