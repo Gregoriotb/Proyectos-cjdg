@@ -20,30 +20,20 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[CatalogItemResponse])
-def get_catalog(pilar_id: Optional[str] = Query(None, description="Filtra por: tecnologia, climatizacion, energia, ingenieria_civil"), db: Session = Depends(get_db)):
+def get_catalog(pilar_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
     """
-    Retorna los servicios del catálogo habilitados para e-commerce.
-    contains_eager reutiliza el JOIN existente para cargar la relacion service.
+    Identico al admin /inventory pero con limite.
+    Debug: si esto funciona, el problema era el filtro/join anterior.
     """
-    from sqlalchemy.orm import contains_eager
-
-    query = db.query(CatalogItem).join(
-        Service, CatalogItem.service_id == Service.id
-    ).options(
-        contains_eager(CatalogItem.service)
-    ).filter(
-        CatalogItem.is_available == True,
-        sa.or_(
-            sa.and_(Service.marca.isnot(None), Service.marca != ''),
-            sa.and_(Service.codigo_modelo.isnot(None), Service.codigo_modelo != ''),
-        )
-    )
+    from sqlalchemy.orm import joinedload
+    query = db.query(CatalogItem).options(joinedload(CatalogItem.service))
 
     if pilar_id:
-        query = query.filter(Service.pilar_id == pilar_id)
+        query = query.join(Service, CatalogItem.service_id == Service.id).filter(
+            Service.pilar_id == pilar_id
+        )
 
-    # Limitar respuesta para evitar timeout en Neon serverless
-    return query.limit(200).all()
+    return query.limit(100).all()
 
 
 @router.get("/stock-stream")
