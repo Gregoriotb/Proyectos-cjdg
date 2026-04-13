@@ -92,6 +92,67 @@ def health_check():
     }
 
 # ----------------------------------------------------------
+# SETUP — Endpoint temporal para inicializar DB en produccion
+# Ejecutar UNA VEZ: POST /api/v1/setup?key=TU_SECRET_KEY
+# ELIMINAR despues de usar
+# ----------------------------------------------------------
+@app.post("/api/v1/setup", tags=["Sistema"])
+def setup_database(key: str):
+    """Corre migraciones y crea admin. Protegido por SECRET_KEY."""
+    import subprocess
+    from core.security import get_password_hash
+
+    if key != os.getenv("SECRET_KEY", ""):
+        return {"error": "unauthorized"}
+
+    results = []
+
+    # 1. Correr migraciones con alembic
+    try:
+        result = subprocess.run(
+            ["alembic", "upgrade", "head"],
+            capture_output=True, text=True, timeout=30
+        )
+        results.append({
+            "step": "migrations",
+            "status": "ok" if result.returncode == 0 else "error",
+            "output": result.stdout[-500:] if result.stdout else "",
+            "error": result.stderr[-500:] if result.stderr else "",
+        })
+    except Exception as e:
+        results.append({"step": "migrations", "status": "exception", "error": str(e)})
+
+    # 2. Crear usuario admin
+    try:
+        from database import SessionLocal
+        from models.user import User, UserRoleEnum
+        db = SessionLocal()
+
+        existing = db.query(User).filter(User.username == "jgregoriotbaltar").first()
+        if existing:
+            existing.role = UserRoleEnum.ADMIN
+            existing.hashed_password = get_password_hash("1745694gregorio")
+            db.commit()
+            results.append({"step": "admin", "status": "updated"})
+        else:
+            admin = User(
+                username="jgregoriotbaltar",
+                email="jgregoriotbaltar@gmail.com",
+                full_name="gregoriotb",
+                hashed_password=get_password_hash("1745694gregorio"),
+                role=UserRoleEnum.ADMIN,
+                is_active=True,
+            )
+            db.add(admin)
+            db.commit()
+            results.append({"step": "admin", "status": "created"})
+        db.close()
+    except Exception as e:
+        results.append({"step": "admin", "status": "error", "error": str(e)})
+
+    return {"results": results}
+
+# ----------------------------------------------------------
 # ARCHIVOS ESTÁTICOS — Imágenes de Productos
 # ----------------------------------------------------------
 static_path = os.path.join(os.path.dirname(__file__), "static")
