@@ -308,6 +308,25 @@ def setup_catalogs(key: str, batch: int = 0):
         "next": f"batch={batch+1}" if batch < total_batches else "Todos cargados!",
     }
 
+
+@app.get("/api/v1/setup-fix-pilares", tags=["Sistema"])
+def fix_pilares(key: str):
+    """Mapea todos los pilar_id de productos PDF a 'tecnologia'."""
+    if key != os.getenv("SECRET_KEY", ""):
+        return {"error": "unauthorized"}
+    from sqlalchemy import text
+    from database import SessionLocal
+    db = SessionLocal()
+    try:
+        result = db.execute(text("""
+            UPDATE services SET pilar_id = 'tecnologia'
+            WHERE pilar_id IN ('seguridad','redes','cableado','servidores','comunicacion','general')
+        """))
+        db.commit()
+        return {"updated": result.rowcount}
+    finally:
+        db.close()
+
 # ----------------------------------------------------------
 # ARCHIVOS ESTÁTICOS — Imágenes de Productos
 # ----------------------------------------------------------
