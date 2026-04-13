@@ -44,18 +44,21 @@ const ProductCatalogGrid = () => {
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
 
-  // SSE para stock en tiempo real
+  // SSE desactivado en produccion (cross-origin no soporta EventSource)
+  // Stock se muestra con el valor de la carga inicial
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_URL || '/api/v1';
-    const eventSource = new EventSource(`${apiUrl}/catalog/stock-stream`);
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (!data.error) setStockMap(data);
-      } catch { /* ignore */ }
-    };
-    eventSource.onerror = () => { eventSource.close(); };
-    return () => eventSource.close();
+    if (apiUrl.startsWith('/')) {
+      const eventSource = new EventSource(`${apiUrl}/catalog/stock-stream`);
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (!data.error) setStockMap(data);
+        } catch { /* ignore */ }
+      };
+      eventSource.onerror = () => { eventSource.close(); };
+      return () => eventSource.close();
+    }
   }, []);
 
   useEffect(() => { fetchCatalog(); }, [filterPilar]);

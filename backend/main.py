@@ -53,28 +53,12 @@ app = FastAPI(
 )
 
 # ----------------------------------------------------------
-# CORS — Dinámico: lee FRONTEND_URL de variable de entorno
-# En dev: localhost:5173 | En prod: dominio Vercel
+# CORS — Wildcard para produccion (usamos Bearer tokens, no cookies)
 # ----------------------------------------------------------
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-allowed_origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost",
-    "https://proyectos-cjdg.vercel.app",
-]
-# Agregar dominio(s) adicionales desde la variable de entorno
-for origin in FRONTEND_URL.split(","):
-    origin = origin.strip()
-    if origin and origin not in allowed_origins:
-        allowed_origins.append(origin)
-
-logger.info(f"CORS origins permitidos: {allowed_origins}")
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
