@@ -20,16 +20,10 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[CatalogItemResponse])
-def get_catalog(
-    pilar_id: Optional[str] = Query(None),
-    page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=200),
-    search: Optional[str] = Query(None),
-    db: Session = Depends(get_db),
-):
+def get_catalog(pilar_id: Optional[str] = Query(None, description="Filtra por: tecnologia, climatizacion, energia, ingenieria_civil"), db: Session = Depends(get_db)):
     """
     Retorna los servicios del catálogo habilitados para e-commerce.
-    Paginado y con eager loading para evitar N+1 contra Neon.
+    joinedload evita N+1 queries contra Neon.
     """
     from sqlalchemy.orm import joinedload
 
@@ -45,10 +39,8 @@ def get_catalog(
 
     if pilar_id:
         query = query.filter(Service.pilar_id == pilar_id)
-    if search:
-        query = query.filter(Service.nombre.ilike(f"%{search}%"))
 
-    return query.offset((page - 1) * size).limit(size).all()
+    return query.all()
 
 
 @router.get("/stock-stream")
