@@ -1,6 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "https://proyectos-cjdg-production.up.railway.app/api/:path*" },
-    { "source": "/static/:path*", "destination": "https://proyectos-cjdg-production.up.railway.app/static/:path*" }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "https://proyectos-cjdg-production.up.railway.app/api/$1" },
+    { "src": "/static/(.*)", "dest": "https://proyectos-cjdg-production.up.railway.app/static/$1" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
