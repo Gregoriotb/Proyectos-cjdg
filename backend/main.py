@@ -181,14 +181,17 @@ def setup_database(key: str):
 
 
 @app.get("/api/v1/setup-catalogs", tags=["Sistema"])
-def setup_catalogs(key: str):
-    """Paso 2: Ingestion de PDFs. Procesa todos los catalogos."""
+def setup_catalogs(key: str, n: int = 0):
+    """
+    Ingestion de PDFs uno a uno para evitar timeout.
+    n=0: lista los PDFs disponibles
+    n=1..13: procesa ese PDF especifico
+    """
     if key != os.getenv("SECRET_KEY", ""):
         return {"error": "unauthorized"}
 
     import re
     import pdfplumber
-    from pathlib import Path
     from database import SessionLocal
     from models.service import Service
     from models.catalog import CatalogItem
@@ -216,95 +219,101 @@ def setup_catalogs(key: str):
         text = re.sub(r'[\s_-]+', '-', text)
         return text[:80]
 
-    def find_pdfs(base):
-        pdfs = []
-        for root, dirs, files in os.walk(base):
-            for f in files:
-                if f.lower().endswith('.pdf'):
-                    pdfs.append(os.path.join(root, f))
-        return sorted(pdfs)
+    # Buscar todos los PDFs
+    all_pdfs = []
+    for root, dirs, files in os.walk(CATALOGS_BASE):
+        for f in sorted(files):
+            if f.lower().endswith('.pdf'):
+                all_pdfs.append(os.path.join(root, f))
+    all_pdfs.sort()
 
-    db = SessionLocal()
-    results = []
-    total_inserted = 0
+    # n=0: solo listar
+    if n == 0:
+        listing = []
+        for i, p in enumerate(all_pdfs, 1):
+            fname = os.path.basename(p)
+            mapped = "si" if fname in CATALOG_MAP else "no"
+            listing.append({"n": i, "file": fname, "mapped": mapped})
+        return {"total_pdfs": len(all_pdfs), "pdfs": listing,
+                "instrucciones": "Llama con n=1, n=2, ... hasta n=13 para procesar uno a uno"}
 
+    # n=1..N: procesar ese PDF
+    if n < 1 or n > len(all_pdfs):
+        return {"error": f"n debe estar entre 1 y {len(all_pdfs)}"}
+
+    pdf_path = all_pdfs[n - 1]
+    filename = os.path.basename(pdf_path)
+    mapping = CATALOG_MAP.get(filename)
+    if mapping:
+        pilar_id, categoria, marca = mapping
+    else:
+        pilar_id, categoria, marca = "general", filename.replace(".pdf", ""), "Varios"
+
+    # Extraer productos del PDF
+    products = []
     try:
-        all_pdfs = find_pdfs(CATALOGS_BASE)
-        results.append({"pdfs_found": len(all_pdfs)})
-
-        for pdf_path in all_pdfs:
-            filename = os.path.basename(pdf_path)
-            mapping = CATALOG_MAP.get(filename)
-            if mapping:
-                pilar_id, categoria, marca = mapping
-            else:
-                pilar_id, categoria, marca = "general", filename.replace(".pdf", ""), "Varios"
-
-            products = []
-            try:
-                with pdfplumber.open(pdf_path) as pdf:
-                    for page in pdf.pages:
-                        for table in (page.extract_tables() or []):
-                            if not table or len(table) < 2:
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                for table in (page.extract_tables() or []):
+                    if not table or len(table) < 2:
+                        continue
+                    headers = [str(h).strip().lower() if h else "" for h in table[0]]
+                    for row in table[1:]:
+                        if not row or all(not c or str(c).strip() == '' for c in row):
+                            continue
+                        row_data = [str(c).strip() if c else "" for c in row]
+                        nombre, codigo, precio = "", "", None
+                        for i, hdr in enumerate(headers):
+                            if i >= len(row_data) or not row_data[i]:
                                 continue
-                            headers = [str(h).strip().lower() if h else "" for h in table[0]]
-                            for row in table[1:]:
-                                if not row or all(not c or str(c).strip() == '' for c in row):
-                                    continue
-                                row_data = [str(c).strip() if c else "" for c in row]
-                                nombre = ""
-                                codigo = ""
-                                precio = None
-                                for i, hdr in enumerate(headers):
-                                    if i >= len(row_data) or not row_data[i]:
-                                        continue
-                                    val = row_data[i]
-                                    if any(k in hdr for k in ['descripci', 'nombre', 'producto', 'modelo', 'item', 'detalle']):
-                                        nombre = nombre or val
-                                    if any(k in hdr for k in ['código', 'code', 'cod', 'ref', 'p/n']):
-                                        codigo = codigo or val
-                                    if any(k in hdr for k in ['precio', 'price', '$', 'pvp', 'costo', 'valor']):
-                                        cleaned = re.sub(r'[^\d.,]', '', val)
-                                        if cleaned:
-                                            try:
-                                                precio = float(cleaned.replace(',', '.'))
-                                            except:
-                                                pass
-                                if not nombre and row_data:
-                                    nombre = row_data[0]
-                                if nombre and len(nombre) > 2:
-                                    products.append({"nombre": nombre[:250], "codigo": codigo, "precio": precio})
-            except Exception as e:
-                results.append({"pdf": filename, "error": str(e)})
-                continue
-
-            pdf_inserted = 0
-            for i, prod in enumerate(products):
-                sid = f"{slugify(pilar_id + '-' + prod['nombre'])}-{i+1}"
-                existing = db.query(Service).filter(Service.service_id == sid).first()
-                if not existing:
-                    nuevo = Service(
-                        service_id=sid, pilar_id=pilar_id, nombre=prod["nombre"],
-                        categoria=categoria, marca=marca, codigo_modelo=prod["codigo"] or None,
-                    )
-                    db.add(nuevo)
-                    db.flush()
-                    db.add(CatalogItem(
-                        service_id=nuevo.id, price=prod["precio"],
-                        stock=0, is_available=True,
-                    ))
-                    pdf_inserted += 1
-
-            db.commit()
-            total_inserted += pdf_inserted
-            results.append({"pdf": filename, "products_found": len(products), "inserted": pdf_inserted})
-
-        db.close()
+                            val = row_data[i]
+                            if any(k in hdr for k in ['descripci', 'nombre', 'producto', 'modelo', 'item', 'detalle']):
+                                nombre = nombre or val
+                            if any(k in hdr for k in ['código', 'code', 'cod', 'ref', 'p/n']):
+                                codigo = codigo or val
+                            if any(k in hdr for k in ['precio', 'price', '$', 'pvp', 'costo', 'valor']):
+                                cleaned = re.sub(r'[^\d.,]', '', val)
+                                if cleaned:
+                                    try:
+                                        precio = float(cleaned.replace(',', '.'))
+                                    except:
+                                        pass
+                        if not nombre and row_data:
+                            nombre = row_data[0]
+                        if nombre and len(nombre) > 2:
+                            products.append({"nombre": nombre[:250], "codigo": codigo, "precio": precio})
     except Exception as e:
-        import traceback
-        results.append({"error": str(e), "traceback": traceback.format_exc()[-500:]})
+        return {"pdf": filename, "error": str(e)}
 
-    return {"total_inserted": total_inserted, "details": results}
+    # Insertar en DB
+    db = SessionLocal()
+    inserted = 0
+    try:
+        for i, prod in enumerate(products):
+            sid = f"{slugify(pilar_id + '-' + prod['nombre'])}-{i+1}"
+            if not db.query(Service).filter(Service.service_id == sid).first():
+                nuevo = Service(
+                    service_id=sid, pilar_id=pilar_id, nombre=prod["nombre"],
+                    categoria=categoria, marca=marca, codigo_modelo=prod["codigo"] or None,
+                )
+                db.add(nuevo)
+                db.flush()
+                db.add(CatalogItem(
+                    service_id=nuevo.id, price=prod["precio"], stock=0, is_available=True,
+                ))
+                inserted += 1
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        return {"pdf": filename, "error": str(e)}
+    finally:
+        db.close()
+
+    return {
+        "pdf": filename, "pilar": pilar_id, "marca": marca,
+        "products_found": len(products), "inserted": inserted,
+        "next": f"Ahora llama con n={n+1}" if n < len(all_pdfs) else "Todos procesados!"
+    }
 
 # ----------------------------------------------------------
 # ARCHIVOS ESTÁTICOS — Imágenes de Productos
