@@ -19,21 +19,51 @@ from schemas.catalog import CatalogItemResponse
 router = APIRouter()
 
 
-@router.get("/", response_model=List[CatalogItemResponse])
+@router.get("/")
 def get_catalog(pilar_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
     """
-    Identico al admin /inventory pero con limite.
-    Debug: si esto funciona, el problema era el filtro/join anterior.
+    Catalogo de productos. Sin response_model para evitar timeout en serializacion.
     """
     from sqlalchemy.orm import joinedload
-    query = db.query(CatalogItem).options(joinedload(CatalogItem.service))
+    try:
+        query = db.query(CatalogItem).options(joinedload(CatalogItem.service))
 
-    if pilar_id:
-        query = query.join(Service, CatalogItem.service_id == Service.id).filter(
-            Service.pilar_id == pilar_id
-        )
+        if pilar_id:
+            query = query.join(Service, CatalogItem.service_id == Service.id).filter(
+                Service.pilar_id == pilar_id
+            )
 
-    return query.limit(100).all()
+        items = query.limit(100).all()
+
+        # Serializar manualmente para evitar Pydantic timeout
+        result = []
+        for item in items:
+            srv = item.service
+            result.append({
+                "id": item.id,
+                "service_id": item.service_id,
+                "price": float(item.price) if item.price else None,
+                "is_available": item.is_available,
+                "stock": item.stock,
+                "is_offer": item.is_offer,
+                "discount_percentage": item.discount_percentage,
+                "service": {
+                    "id": srv.id,
+                    "service_id": srv.service_id,
+                    "pilar_id": srv.pilar_id,
+                    "nombre": srv.nombre,
+                    "categoria": srv.categoria,
+                    "marca": srv.marca,
+                    "codigo_modelo": srv.codigo_modelo,
+                    "description": srv.description,
+                    "specs": srv.specs,
+                    "image_url": srv.image_url,
+                } if srv else None,
+            })
+        return result
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()[-500:]}
 
 
 @router.get("/stock-stream")
