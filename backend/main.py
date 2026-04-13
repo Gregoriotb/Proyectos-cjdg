@@ -181,138 +181,70 @@ def setup_database(key: str):
 
 
 @app.get("/api/v1/setup-catalogs", tags=["Sistema"])
-def setup_catalogs(key: str, n: int = 0):
-    """
-    Ingestion de PDFs uno a uno para evitar timeout.
-    n=0: lista los PDFs disponibles
-    n=1..13: procesa ese PDF especifico
-    """
+def setup_catalogs(key: str):
+    """Lee catalog_data.json (pre-extraido de PDFs) y lo carga en Neon."""
     if key != os.getenv("SECRET_KEY", ""):
         return {"error": "unauthorized"}
 
     import re
-    import pdfplumber
+    import json as json_lib
     from database import SessionLocal
     from models.service import Service
     from models.catalog import CatalogItem
 
-    CATALOGS_BASE = os.path.join(os.path.dirname(__file__), "catalogs")
-    CATALOG_MAP = {
-        "CAT CCTV PR CJDG.pdf":                      ("seguridad",    "Cámaras CCTV",         "Hikvision"),
-        "Cat UBIQUITI PrCJDG.pdf":                   ("redes",        "Redes Inalámbricas",    "Ubiquiti"),
-        "CATALOGO PC CLONES PrCJDG.pdf":             ("tecnologia",   "PCs y Equipos",         "Varios"),
-        "Lista Precios 4-03-26 PrCJDG.pdf":          ("tecnologia",   "Lista de Precios",      "Varios"),
-        "Lista SIEMON Pr CJDG.pdf":                  ("cableado",     "Cableado Estructurado", "Siemon"),
-        "Lista Fibra Optica PrCJDG.pdf":             ("cableado",     "Fibra Óptica",          "Varios"),
-        "Lista Acceso-Alarma PrCJDG.pdf":            ("seguridad",    "Control de Acceso",     "Varios"),
-        "Lista EZVIZ Pr CJDG.pdf":                   ("seguridad",    "Cámaras IP",            "EZVIZ"),
-        "CATALOGO DE SERVIDORES NUEVOS PR CJDG.pdf": ("servidores",   "Servidores Nuevos",     "Varios"),
-        "CATALOGO SERVIDORES RENOVADOS PR CJDG.pdf": ("servidores",   "Servidores Renovados",  "Varios"),
-        "CAT HUAWEI PrCJDG.pdf":                     ("redes",        "Equipos Huawei",        "Huawei"),
-        "Lista GRANDSTREAM PrCJDG.pdf":              ("comunicacion", "VoIP / PBX",            "Grandstream"),
-        "Lista MIKROTIK PrCJDG.pdf":                 ("redes",        "Routers y Switches",    "MikroTik"),
-    }
+    json_path = os.path.join(os.path.dirname(__file__), "catalog_data.json")
+    if not os.path.exists(json_path):
+        return {"error": "catalog_data.json no encontrado"}
 
-    def slugify(text):
-        text = text.lower().strip()
-        text = re.sub(r'[^\w\s-]', '', text)
-        text = re.sub(r'[\s_-]+', '-', text)
-        return text[:80]
+    with open(json_path, "r", encoding="utf-8") as f:
+        products = json_lib.load(f)
 
-    # Buscar todos los PDFs
-    all_pdfs = []
-    for root, dirs, files in os.walk(CATALOGS_BASE):
-        for f in sorted(files):
-            if f.lower().endswith('.pdf'):
-                all_pdfs.append(os.path.join(root, f))
-    all_pdfs.sort()
-
-    # n=0: solo listar
-    if n == 0:
-        listing = []
-        for i, p in enumerate(all_pdfs, 1):
-            fname = os.path.basename(p)
-            mapped = "si" if fname in CATALOG_MAP else "no"
-            listing.append({"n": i, "file": fname, "mapped": mapped})
-        return {"total_pdfs": len(all_pdfs), "pdfs": listing,
-                "instrucciones": "Llama con n=1, n=2, ... hasta n=13 para procesar uno a uno"}
-
-    # n=1..N: procesar ese PDF
-    if n < 1 or n > len(all_pdfs):
-        return {"error": f"n debe estar entre 1 y {len(all_pdfs)}"}
-
-    pdf_path = all_pdfs[n - 1]
-    filename = os.path.basename(pdf_path)
-    mapping = CATALOG_MAP.get(filename)
-    if mapping:
-        pilar_id, categoria, marca = mapping
-    else:
-        pilar_id, categoria, marca = "general", filename.replace(".pdf", ""), "Varios"
-
-    # Extraer productos del PDF
-    products = []
-    try:
-        with pdfplumber.open(pdf_path) as pdf:
-            for page in pdf.pages:
-                for table in (page.extract_tables() or []):
-                    if not table or len(table) < 2:
-                        continue
-                    headers = [str(h).strip().lower() if h else "" for h in table[0]]
-                    for row in table[1:]:
-                        if not row or all(not c or str(c).strip() == '' for c in row):
-                            continue
-                        row_data = [str(c).strip() if c else "" for c in row]
-                        nombre, codigo, precio = "", "", None
-                        for i, hdr in enumerate(headers):
-                            if i >= len(row_data) or not row_data[i]:
-                                continue
-                            val = row_data[i]
-                            if any(k in hdr for k in ['descripci', 'nombre', 'producto', 'modelo', 'item', 'detalle']):
-                                nombre = nombre or val
-                            if any(k in hdr for k in ['código', 'code', 'cod', 'ref', 'p/n']):
-                                codigo = codigo or val
-                            if any(k in hdr for k in ['precio', 'price', '$', 'pvp', 'costo', 'valor']):
-                                cleaned = re.sub(r'[^\d.,]', '', val)
-                                if cleaned:
-                                    try:
-                                        precio = float(cleaned.replace(',', '.'))
-                                    except:
-                                        pass
-                        if not nombre and row_data:
-                            nombre = row_data[0]
-                        if nombre and len(nombre) > 2:
-                            products.append({"nombre": nombre[:250], "codigo": codigo, "precio": precio})
-    except Exception as e:
-        return {"pdf": filename, "error": str(e)}
-
-    # Insertar en DB
     db = SessionLocal()
     inserted = 0
+    skipped = 0
+    errors = []
+
     try:
-        for i, prod in enumerate(products):
-            sid = f"{slugify(pilar_id + '-' + prod['nombre'])}-{i+1}"
-            if not db.query(Service).filter(Service.service_id == sid).first():
+        for prod in products:
+            sid = prod["service_id"]
+            if db.query(Service).filter(Service.service_id == sid).first():
+                skipped += 1
+                continue
+            try:
                 nuevo = Service(
-                    service_id=sid, pilar_id=pilar_id, nombre=prod["nombre"],
-                    categoria=categoria, marca=marca, codigo_modelo=prod["codigo"] or None,
+                    service_id=sid,
+                    pilar_id=prod["pilar_id"],
+                    nombre=prod["nombre"],
+                    categoria=prod["categoria"],
+                    marca=prod.get("marca"),
+                    codigo_modelo=prod.get("codigo_modelo"),
                 )
                 db.add(nuevo)
                 db.flush()
                 db.add(CatalogItem(
-                    service_id=nuevo.id, price=prod["precio"], stock=0, is_available=True,
+                    service_id=nuevo.id,
+                    price=prod.get("precio"),
+                    stock=0,
+                    is_available=True,
                 ))
                 inserted += 1
+                # Commit cada 100 para no acumular demasiado
+                if inserted % 100 == 0:
+                    db.commit()
+            except Exception as e:
+                db.rollback()
+                errors.append({"product": prod["nombre"][:50], "error": str(e)})
+
         db.commit()
-    except Exception as e:
-        db.rollback()
-        return {"pdf": filename, "error": str(e)}
     finally:
         db.close()
 
     return {
-        "pdf": filename, "pilar": pilar_id, "marca": marca,
-        "products_found": len(products), "inserted": inserted,
-        "next": f"Ahora llama con n={n+1}" if n < len(all_pdfs) else "Todos procesados!"
+        "total_in_json": len(products),
+        "inserted": inserted,
+        "skipped": skipped,
+        "errors": len(errors),
+        "first_errors": errors[:5] if errors else [],
     }
 
 # ----------------------------------------------------------
