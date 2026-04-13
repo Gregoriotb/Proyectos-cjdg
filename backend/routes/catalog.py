@@ -23,13 +23,15 @@ router = APIRouter()
 def get_catalog(pilar_id: Optional[str] = Query(None, description="Filtra por: tecnologia, climatizacion, energia, ingenieria_civil"), db: Session = Depends(get_db)):
     """
     Retorna los servicios del catálogo habilitados para e-commerce.
-    joinedload evita N+1 queries contra Neon.
+    contains_eager reutiliza el JOIN existente para cargar la relacion service.
     """
-    from sqlalchemy.orm import joinedload
+    from sqlalchemy.orm import contains_eager
 
-    query = db.query(CatalogItem).options(
-        joinedload(CatalogItem.service)
-    ).join(Service, CatalogItem.service_id == Service.id).filter(
+    query = db.query(CatalogItem).join(
+        Service, CatalogItem.service_id == Service.id
+    ).options(
+        contains_eager(CatalogItem.service)
+    ).filter(
         CatalogItem.is_available == True,
         sa.or_(
             sa.and_(Service.marca.isnot(None), Service.marca != ''),
