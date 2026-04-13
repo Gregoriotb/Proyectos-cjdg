@@ -18,7 +18,8 @@ from database import SessionLocal
 from models.service import Service
 from models.catalog import CatalogItem
 
-CATALOGS_BASE = "/catalogs"
+# Buscar catalogs en el mismo directorio del backend
+CATALOGS_BASE = os.path.join(_APP, "catalogs")
 
 # Mapeado de archivo PDF → pilar_id, categoria_base, marca
 CATALOG_MAP = {

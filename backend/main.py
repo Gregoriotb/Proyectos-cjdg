@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timezone
 import logging
 import os
+import sys
 
 # Importación de routers (se activarán por subcontexto)
 from routes import auth, catalog, cart, quotations, admin, admin_services, invoices, service_quotations
@@ -199,6 +200,18 @@ def setup_database(key: str):
         db.close()
     except Exception as e:
         results.append({"step": "seed", "status": "error", "error": str(e)})
+
+    # 5. Ingestión de catálogos PDF (productos reales)
+    try:
+        sys_path_backup = sys.path[:]
+        scripts_dir = os.path.join(os.path.dirname(__file__), "scripts")
+        sys.path.insert(0, scripts_dir)
+        from ingest_catalogs import ingest
+        ingest()
+        sys.path = sys_path_backup
+        results.append({"step": "pdf_ingest", "status": "ok"})
+    except Exception as e:
+        results.append({"step": "pdf_ingest", "status": "error", "error": str(e)})
 
     return {"results": results}
 
