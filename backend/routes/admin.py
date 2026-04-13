@@ -2,7 +2,7 @@
 [CONTEXT: ADMIN_CONSOLE] - Admin Router
 Panel de control para administradores: Gestión de Leads e Ecommerce.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
@@ -12,6 +12,7 @@ from models.user import User
 from models.quotation import Quotation
 from models.ecommerce_settings import EcommerceSettings
 from models.catalog import CatalogItem
+from models.service import Service
 from schemas.quotation import QuotationResponse
 from schemas.ecommerce_settings import EcommerceSettingsResponse, EcommerceSettingsUpdate
 from schemas.catalog import CatalogItemResponse, CatalogItemUpdate
@@ -65,12 +66,26 @@ def update_ecommerce_settings(settings_in: EcommerceSettingsUpdate, current_admi
     return settings
 
 @router.get("/inventory", response_model=List[CatalogItemResponse])
-def get_inventory(current_admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):
+def get_inventory(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
+    pilar_id: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+):
     """
-    Lista todos los ítems del catálogo para gestión de inventario, 
-    sin importar si están visibles o no.
+    Lista items del catalogo con paginacion y eager loading.
     """
-    return db.query(CatalogItem).all()
+    from sqlalchemy.orm import joinedload
+    query = db.query(CatalogItem).options(joinedload(CatalogItem.service))
+
+    if pilar_id:
+        query = query.join(Service).filter(Service.pilar_id == pilar_id)
+    if search:
+        query = query.join(Service).filter(Service.nombre.ilike(f"%{search}%"))
+
+    return query.offset((page - 1) * size).limit(size).all()
 
 @router.put("/inventory/{item_id}", response_model=CatalogItemResponse)
 def update_inventory_item(item_id: int, item_in: CatalogItemUpdate, current_admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):

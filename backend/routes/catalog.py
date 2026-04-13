@@ -20,14 +20,23 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[CatalogItemResponse])
-def get_catalog(pilar_id: Optional[str] = Query(None, description="Filtra por: tecnologia, climatizacion, energia, ingenieria_civil"), db: Session = Depends(get_db)):
+def get_catalog(
+    pilar_id: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
     """
     Retorna los servicios del catálogo habilitados para e-commerce.
-    Cruza los catalog_items con los services base para entender el pilar.
+    Paginado y con eager loading para evitar N+1 contra Neon.
     """
-    query = db.query(CatalogItem).join(Service, CatalogItem.service_id == Service.id).filter(
+    from sqlalchemy.orm import joinedload
+
+    query = db.query(CatalogItem).options(
+        joinedload(CatalogItem.service)
+    ).join(Service, CatalogItem.service_id == Service.id).filter(
         CatalogItem.is_available == True,
-        # Solo productos físicos reales (con marca o modelo), no servicios del brochure ni títulos ambiguos
         sa.or_(
             sa.and_(Service.marca.isnot(None), Service.marca != ''),
             sa.and_(Service.codigo_modelo.isnot(None), Service.codigo_modelo != ''),
@@ -36,8 +45,10 @@ def get_catalog(pilar_id: Optional[str] = Query(None, description="Filtra por: t
 
     if pilar_id:
         query = query.filter(Service.pilar_id == pilar_id)
+    if search:
+        query = query.filter(Service.nombre.ilike(f"%{search}%"))
 
-    return query.all()
+    return query.offset((page - 1) * size).limit(size).all()
 
 
 @router.get("/stock-stream")
