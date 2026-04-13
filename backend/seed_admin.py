@@ -12,10 +12,11 @@ def seed_admin():
     db = SessionLocal()
     
     # Credenciales maestras del usuario
+    admin_username = "jgregoriotbaltar"
     admin_email = "jgregoriotbaltar@gmail.com"
     admin_name = "gregoriotb"
     admin_password = "1745694gregorio"
-    
+
     try:
         # Verificar si ya existe
         existing_user = db.query(User).filter(User.email == admin_email).first()
@@ -24,6 +25,7 @@ def seed_admin():
             existing_user.role = UserRoleEnum.ADMIN
             existing_user.hashed_password = get_password_hash(admin_password)
             existing_user.full_name = admin_name
+            existing_user.username = admin_username
             db.commit()
             print("Usuario actualizado exitosamente a ADMIN.")
             return
@@ -31,6 +33,7 @@ def seed_admin():
         # Crear nuevo
         print(f"Creando Super Administrador: {admin_email}...")
         admin_user = User(
+            username=admin_username,
             email=admin_email,
             full_name=admin_name,
             hashed_password=get_password_hash(admin_password),

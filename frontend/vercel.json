@@ -10,13 +10,10 @@
     {
       "source": "/static/:path*",
       "destination": "https://proyectos-cjdg-production.up.railway.app/static/:path*"
-    }
-  ],
-  "routes": [
+    },
     {
-      "src": "/[^.]+",
-      "dest": "/",
-      "status": 200
+      "source": "/((?!api|static).*)",
+      "destination": "/index.html"
     }
   ]
 }
