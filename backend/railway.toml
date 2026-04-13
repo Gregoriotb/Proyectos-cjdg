@@ -1,16 +1,15 @@
 # ============================================================
 # Proyectos CJDG — Configuracion Railway
-# SC-DEPLOY-002 — Railway lee este archivo para el deploy
+# SC-DEPLOY-002 — Railway lee este archivo si root dir = backend/
 # ============================================================
 
 [build]
-# Usa el Dockerfile de produccion (no el de desarrollo)
+builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile.prod"
 
 [deploy]
-# Health check para que Railway sepa que el servicio esta vivo
 healthcheckPath = "/api/v1/health"
-healthcheckTimeout = 30
-# Reinicio automatico si el proceso muere
+healthcheckTimeout = 100
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT --workers 2 --log-level info"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
