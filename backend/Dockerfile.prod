@@ -14,8 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Contexto de build = raiz del repo, requirements esta en backend/
-COPY backend/requirements.txt .
+# Root Directory = backend/, asi que las rutas son relativas a backend/
+COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # --- Etapa 2: Runtime (imagen final sin compilador) ---
@@ -31,8 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copiar dependencias pre-compiladas del builder
 COPY --from=builder /install /usr/local
 
-# Copiar solo el backend (contexto de build = raiz del repo)
-COPY backend/ .
+# Copiar codigo fuente (contexto = backend/)
+COPY . .
 
 # Crear directorio static si no existe
 RUN mkdir -p /app/static
