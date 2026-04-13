@@ -31,7 +31,7 @@ class InvoiceStatusUpdate(BaseModel):
 
 
 # --- Cliente ---
-@router.get("/", response_model=List[InvoiceResponse])
+@router.get("", response_model=List[InvoiceResponse])
 def get_my_invoices(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

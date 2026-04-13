@@ -15,7 +15,7 @@ from dependencies import get_current_user
 
 router = APIRouter()
 
-@router.post("/", response_model=QuotationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=QuotationResponse, status_code=status.HTTP_201_CREATED)
 def create_quotation(quotation_in: QuotationCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Convierte el Carrito activo en una Cotización Formal.
@@ -52,7 +52,7 @@ def create_quotation(quotation_in: QuotationCreate, current_user: User = Depends
     db.refresh(new_quotation)
     return new_quotation
 
-@router.get("/", response_model=List[QuotationResponse])
+@router.get("", response_model=List[QuotationResponse])
 def get_user_quotations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Obtiene el historial de cotizaciones (Leads) del usuario actual.

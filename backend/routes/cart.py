@@ -13,7 +13,7 @@ from dependencies import get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=CartResponse)
+@router.get("", response_model=CartResponse)
 def get_user_cart(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Retorna el carrito actual del usuario. Si no existe, lo crea.

@@ -19,7 +19,7 @@ from schemas.catalog import CatalogItemResponse
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("")
 def get_catalog(pilar_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
     """
     Catalogo de productos. Sin response_model para evitar timeout en serializacion.
