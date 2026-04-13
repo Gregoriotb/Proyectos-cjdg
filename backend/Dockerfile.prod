@@ -1,0 +1,47 @@
+# ============================================================
+# Proyectos CJDG — Dockerfile Produccion (Railway)
+# SC-DEPLOY-002 — Multi-stage build para imagen ligera
+# ============================================================
+
+# --- Etapa 1: Builder (instala dependencias con compilador) ---
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+# Solo lo necesario para compilar psycopg2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# --- Etapa 2: Runtime (imagen final sin compilador) ---
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+
+# Solo libpq para runtime (sin gcc ni headers)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar dependencias pre-compiladas del builder
+COPY --from=builder /install /usr/local
+
+# Copiar codigo fuente
+COPY . .
+
+# Crear directorio static si no existe
+RUN mkdir -p /app/static
+
+# Usuario no-root por seguridad
+RUN useradd --create-home appuser
+USER appuser
+
+# Railway asigna PORT dinamicamente
+EXPOSE ${PORT:-8000}
+
+# Produccion: sin --reload, host 0.0.0.0, puerto desde $PORT
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2 --log-level info

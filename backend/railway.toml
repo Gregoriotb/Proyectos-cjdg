@@ -1,0 +1,16 @@
+# ============================================================
+# Proyectos CJDG — Configuracion Railway
+# SC-DEPLOY-002 — Railway lee este archivo para el deploy
+# ============================================================
+
+[build]
+# Usa el Dockerfile de produccion (no el de desarrollo)
+dockerfilePath = "Dockerfile.prod"
+
+[deploy]
+# Health check para que Railway sepa que el servicio esta vivo
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 30
+# Reinicio automatico si el proceso muere
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
