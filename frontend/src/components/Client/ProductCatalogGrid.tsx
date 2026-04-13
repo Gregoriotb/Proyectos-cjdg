@@ -30,9 +30,13 @@ const PILARES = [
   { value: 'ingenieria_civil', label: 'Ingeniería Civil' },
 ];
 
+const PAGE_SIZE = 24;
+
 const ProductCatalogGrid = () => {
   const [items, setItems] = useState<CatalogItemType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(0);
   const [filterPilar, setFilterPilar] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [stockMap, setStockMap] = useState<Record<number, number>>({});
@@ -45,7 +49,6 @@ const ProductCatalogGrid = () => {
   const [added, setAdded] = useState(false);
 
   // SSE desactivado en produccion (cross-origin no soporta EventSource)
-  // Stock se muestra con el valor de la carga inicial
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_URL || '/api/v1';
     if (apiUrl.startsWith('/')) {
@@ -61,23 +64,44 @@ const ProductCatalogGrid = () => {
     }
   }, []);
 
-  useEffect(() => { fetchCatalog(); }, [filterPilar]);
+  useEffect(() => {
+    setItems([]);
+    setTotal(0);
+    fetchCatalog(0);
+  }, [filterPilar]);
 
-  const fetchCatalog = async () => {
-    setLoading(true);
+  const fetchCatalog = async (skip: number) => {
+    if (skip === 0) setLoading(true);
+    else setLoadingMore(true);
     try {
-      const url = filterPilar === 'all' ? '/catalog' : `/catalog?pilar_id=${filterPilar}`;
-      const res = await api.get(url);
-      const data = Array.isArray(res.data) ? res.data : [];
-      console.log(`[Catalogo] Recibidos ${data.length} items`);
-      setItems(data);
+      const params = new URLSearchParams({ skip: String(skip), limit: String(PAGE_SIZE) });
+      if (filterPilar !== 'all') params.set('pilar_id', filterPilar);
+      if (searchTerm.trim()) params.set('search', searchTerm.trim());
+
+      const res = await api.get(`/catalog?${params}`);
+      const data = res.data;
+      const newItems: CatalogItemType[] = data.items || [];
+      setTotal(data.total || 0);
+
+      if (skip === 0) {
+        setItems(newItems);
+      } else {
+        setItems(prev => [...prev, ...newItems]);
+      }
     } catch (error) {
       console.error('[Catalogo] Error:', error);
-      setItems([]);
+      if (skip === 0) setItems([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const handleLoadMore = () => {
+    fetchCatalog(items.length);
+  };
+
+  const hasMore = items.length < total;
 
   const openQuantityModal = (item: CatalogItemType) => {
     setSelectedItem(item);
@@ -97,15 +121,15 @@ const ProductCatalogGrid = () => {
     }, 1500);
   };
 
-  const filtered = items.filter((item) => {
-    if (!item.service) return false;
-    const search = searchTerm.toLowerCase();
-    return (
-      (item.service.nombre || '').toLowerCase().includes(search) ||
-      (item.service.description || '').toLowerCase().includes(search) ||
-      (item.service.marca || '').toLowerCase().includes(search)
-    );
-  });
+  // Búsqueda con debounce — dispara nueva consulta al backend
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setItems([]);
+      setTotal(0);
+      fetchCatalog(0);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -145,14 +169,15 @@ const ProductCatalogGrid = () => {
             <div key={i} className="glass-panel h-64 animate-pulse bg-white/5" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : items.length === 0 ? (
         <div className="glass-panel p-12 text-center text-cjdg-textMuted">
           <Filter className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p>No se encontraron productos.</p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((item) => {
+          {items.map((item) => {
             const realStock = stockMap[item.id] ?? item.stock;
             const imageUrl = getImageUrl(item.service.image_url);
             const hasDiscount = item.is_offer && item.discount_percentage > 0;
@@ -199,17 +224,16 @@ const ProductCatalogGrid = () => {
                           <span className="text-xs text-cjdg-textMuted italic">Cotizar</span>
                         )}
                       </div>
-                      <button
-                        onClick={() => openQuantityModal(item)}
-                        disabled={realStock <= 0 || !item.price}
-                        className={`p-2 rounded-md transition-all flex items-center gap-1 text-sm ${
-                          realStock > 0 && item.price
-                            ? 'text-cjdg-primary bg-cjdg-primary/10 hover:bg-cjdg-primary hover:text-white'
-                            : 'text-cjdg-textMuted/30 cursor-not-allowed'
-                        }`}
-                      >
-                        <Plus className="w-4 h-4" /><ShoppingCart className="w-4 h-4" />
-                      </button>
+                      {realStock > 0 ? (
+                        <button
+                          onClick={() => openQuantityModal(item)}
+                          className="p-2 rounded-md transition-all flex items-center gap-1 text-sm text-cjdg-primary bg-cjdg-primary/10 hover:bg-cjdg-primary hover:text-white"
+                        >
+                          <Plus className="w-4 h-4" /><ShoppingCart className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-red-400 font-medium">Agotado</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -217,6 +241,23 @@ const ProductCatalogGrid = () => {
             );
           })}
         </div>
+
+        {/* Cargar más */}
+        <div className="flex items-center justify-center pt-6 gap-4">
+          <span className="text-sm text-cjdg-textMuted">
+            {items.length} de {total} productos
+          </span>
+          {hasMore && (
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="px-6 py-2.5 rounded-full text-sm font-medium bg-cjdg-primary/10 text-cjdg-primary hover:bg-cjdg-primary hover:text-white transition-all disabled:opacity-50"
+            >
+              {loadingMore ? 'Cargando...' : 'Cargar más'}
+            </button>
+          )}
+        </div>
+        </>
       )}
 
       {/* Modal de cantidad */}

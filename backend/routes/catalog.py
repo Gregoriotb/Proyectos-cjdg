@@ -20,22 +20,55 @@ router = APIRouter()
 
 
 @router.get("")
-def get_catalog(pilar_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+def get_catalog(
+    pilar_id: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(24, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
     """
-    Catalogo de productos. Sin response_model para evitar timeout en serializacion.
+    Catalogo de productos fisicos paginado.
+    Excluye servicios corporativos del brochure y productos sin nombre util.
     """
     from sqlalchemy.orm import joinedload
+
+    # Prefijos de servicios corporativos (brochure) — NO son productos fisicos
+    BROCHURE_PREFIXES = ("tec-", "cli-", "ene-", "civ-")
+
     try:
-        query = db.query(CatalogItem).options(joinedload(CatalogItem.service))
+        query = (
+            db.query(CatalogItem)
+            .join(Service, CatalogItem.service_id == Service.id)
+            .options(joinedload(CatalogItem.service))
+            .filter(
+                # Excluir servicios del brochure
+                ~Service.service_id.like("tec-%"),
+                ~Service.service_id.like("cli-%"),
+                ~Service.service_id.like("ene-%"),
+                ~Service.service_id.like("civ-%"),
+                # Excluir nombres vacios o nulos
+                Service.nombre.isnot(None),
+                Service.nombre != "",
+            )
+        )
 
         if pilar_id:
-            query = query.join(Service, CatalogItem.service_id == Service.id).filter(
-                Service.pilar_id == pilar_id
+            query = query.filter(Service.pilar_id == pilar_id)
+
+        if search:
+            term = f"%{search}%"
+            query = query.filter(
+                sa.or_(
+                    Service.nombre.ilike(term),
+                    Service.marca.ilike(term),
+                    Service.codigo_modelo.ilike(term),
+                )
             )
 
-        items = query.limit(100).all()
+        total = query.count()
+        items = query.order_by(CatalogItem.id).offset(skip).limit(limit).all()
 
-        # Serializar manualmente para evitar Pydantic timeout
         result = []
         for item in items:
             srv = item.service
@@ -60,7 +93,8 @@ def get_catalog(pilar_id: Optional[str] = Query(None), db: Session = Depends(get
                     "image_url": srv.image_url,
                 } if srv else None,
             })
-        return result
+
+        return {"items": result, "total": total, "skip": skip, "limit": limit}
     except Exception as e:
         import traceback
         return {"error": str(e), "trace": traceback.format_exc()[-500:]}
