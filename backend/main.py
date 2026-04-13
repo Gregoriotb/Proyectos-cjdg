@@ -96,7 +96,7 @@ def health_check():
 # Ejecutar UNA VEZ: POST /api/v1/setup?key=TU_SECRET_KEY
 # ELIMINAR despues de usar
 # ----------------------------------------------------------
-@app.post("/api/v1/setup", tags=["Sistema"])
+@app.get("/api/v1/setup", tags=["Sistema"])
 def setup_database(key: str):
     """Corre migraciones y crea admin. Protegido por SECRET_KEY."""
     import subprocess
