@@ -6,9 +6,20 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true, // Exporta la red entera para que Docker pueda atacarlo si se necesita
+    host: true,
     watch: {
-      usePolling: true // Ideal para sincronización rápida
-    }
-  }
+      usePolling: true
+    },
+    // Proxy para desarrollo local — redirige /api al backend Docker
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/static': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })
