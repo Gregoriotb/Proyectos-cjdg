@@ -61,8 +61,9 @@ allowed_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost",
+    "https://proyectos-cjdg.vercel.app",
 ]
-# Agregar dominio(s) de produccion desde la variable de entorno
+# Agregar dominio(s) adicionales desde la variable de entorno
 for origin in FRONTEND_URL.split(","):
     origin = origin.strip()
     if origin and origin not in allowed_origins:
