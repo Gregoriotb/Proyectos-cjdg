@@ -2,16 +2,33 @@
 ============================================================
 Proyectos CJDG — Backend Principal (FastAPI)
 [CONTEXT: SYSTEM_CORE] — Punto de entrada de la aplicación
+SC-DEPLOY-002 — Adaptado para producción en Railway
 ============================================================
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from datetime import datetime, timezone
+import logging
 import os
 
 # Importación de routers (se activarán por subcontexto)
 from routes import auth, catalog, cart, quotations, admin, admin_services, invoices, service_quotations
+
+# ----------------------------------------------------------
+# LOGGING — Salida en stdout para Railway
+# ----------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("cjdg")
+
+# ----------------------------------------------------------
+# ENTORNO — Detectar si estamos en producción
+# ----------------------------------------------------------
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 app = FastAPI(
     title="Proyectos CJDG API",
@@ -29,37 +46,49 @@ app = FastAPI(
     - `/api/v1/admin` → [ADMIN_CONSOLE]
     """,
     version="1.0.0",
-    docs_url="/api/v1/docs",
-    redoc_url="/api/v1/redoc",
-    openapi_url="/api/v1/openapi.json",
+    docs_url="/api/v1/docs" if ENVIRONMENT != "production" else None,
+    redoc_url="/api/v1/redoc" if ENVIRONMENT != "production" else None,
+    openapi_url="/api/v1/openapi.json" if ENVIRONMENT != "production" else None,
 )
 
 # ----------------------------------------------------------
-# CORS — Permite que el Frontend consuma la API
+# CORS — Dinámico: lee FRONTEND_URL de variable de entorno
+# En dev: localhost:5173 | En prod: dominio Vercel
 # ----------------------------------------------------------
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost",
+]
+# Agregar dominio(s) de produccion desde la variable de entorno
+for origin in FRONTEND_URL.split(","):
+    origin = origin.strip()
+    if origin and origin not in allowed_origins:
+        allowed_origins.append(origin)
+
+logger.info(f"CORS origins permitidos: {allowed_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    # allow_origins=["http://localhost:5173", "http://localhost:80"],
-    allow_origins=[
-    "http://localhost",
-    "http://127.0.0.1:5173",
-    "http://localhost:5173"
-],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ----------------------------------------------------------
-# HEALTH CHECK — Verificación de estado del servicio
+# HEALTH CHECK — Con timestamp ISO8601 para Railway
 # ----------------------------------------------------------
 @app.get("/api/v1/health", tags=["Sistema"])
 def health_check():
-    """Verifica que el backend está operativo."""
+    """Verifica que el backend esta operativo. Railway usa este endpoint."""
     return {
         "status": "ok",
         "service": "Proyectos CJDG API",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "environment": ENVIRONMENT,
     }
 
 # ----------------------------------------------------------
