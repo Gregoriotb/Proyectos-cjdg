@@ -182,22 +182,129 @@ def setup_database(key: str):
 
 @app.get("/api/v1/setup-catalogs", tags=["Sistema"])
 def setup_catalogs(key: str):
-    """Paso 2: Ingestion de PDFs (puede tardar 30-60s). Correr DESPUES de /setup."""
+    """Paso 2: Ingestion de PDFs. Procesa todos los catalogos."""
     if key != os.getenv("SECRET_KEY", ""):
         return {"error": "unauthorized"}
 
+    import re
+    import pdfplumber
+    from pathlib import Path
+    from database import SessionLocal
+    from models.service import Service
+    from models.catalog import CatalogItem
+
+    CATALOGS_BASE = os.path.join(os.path.dirname(__file__), "catalogs")
+    CATALOG_MAP = {
+        "CAT CCTV PR CJDG.pdf":                      ("seguridad",    "Cámaras CCTV",         "Hikvision"),
+        "Cat UBIQUITI PrCJDG.pdf":                   ("redes",        "Redes Inalámbricas",    "Ubiquiti"),
+        "CATALOGO PC CLONES PrCJDG.pdf":             ("tecnologia",   "PCs y Equipos",         "Varios"),
+        "Lista Precios 4-03-26 PrCJDG.pdf":          ("tecnologia",   "Lista de Precios",      "Varios"),
+        "Lista SIEMON Pr CJDG.pdf":                  ("cableado",     "Cableado Estructurado", "Siemon"),
+        "Lista Fibra Optica PrCJDG.pdf":             ("cableado",     "Fibra Óptica",          "Varios"),
+        "Lista Acceso-Alarma PrCJDG.pdf":            ("seguridad",    "Control de Acceso",     "Varios"),
+        "Lista EZVIZ Pr CJDG.pdf":                   ("seguridad",    "Cámaras IP",            "EZVIZ"),
+        "CATALOGO DE SERVIDORES NUEVOS PR CJDG.pdf": ("servidores",   "Servidores Nuevos",     "Varios"),
+        "CATALOGO SERVIDORES RENOVADOS PR CJDG.pdf": ("servidores",   "Servidores Renovados",  "Varios"),
+        "CAT HUAWEI PrCJDG.pdf":                     ("redes",        "Equipos Huawei",        "Huawei"),
+        "Lista GRANDSTREAM PrCJDG.pdf":              ("comunicacion", "VoIP / PBX",            "Grandstream"),
+        "Lista MIKROTIK PrCJDG.pdf":                 ("redes",        "Routers y Switches",    "MikroTik"),
+    }
+
+    def slugify(text):
+        text = text.lower().strip()
+        text = re.sub(r'[^\w\s-]', '', text)
+        text = re.sub(r'[\s_-]+', '-', text)
+        return text[:80]
+
+    def find_pdfs(base):
+        pdfs = []
+        for root, dirs, files in os.walk(base):
+            for f in files:
+                if f.lower().endswith('.pdf'):
+                    pdfs.append(os.path.join(root, f))
+        return sorted(pdfs)
+
+    db = SessionLocal()
+    results = []
+    total_inserted = 0
+
     try:
-        scripts_dir = os.path.join(os.path.dirname(__file__), "scripts")
-        sys.path.insert(0, scripts_dir)
-        # Importar fresh cada vez
-        import importlib
-        import ingest_catalogs
-        importlib.reload(ingest_catalogs)
-        ingest_catalogs.ingest()
-        return {"status": "ok", "message": "PDF ingestion completed"}
+        all_pdfs = find_pdfs(CATALOGS_BASE)
+        results.append({"pdfs_found": len(all_pdfs)})
+
+        for pdf_path in all_pdfs:
+            filename = os.path.basename(pdf_path)
+            mapping = CATALOG_MAP.get(filename)
+            if mapping:
+                pilar_id, categoria, marca = mapping
+            else:
+                pilar_id, categoria, marca = "general", filename.replace(".pdf", ""), "Varios"
+
+            products = []
+            try:
+                with pdfplumber.open(pdf_path) as pdf:
+                    for page in pdf.pages:
+                        for table in (page.extract_tables() or []):
+                            if not table or len(table) < 2:
+                                continue
+                            headers = [str(h).strip().lower() if h else "" for h in table[0]]
+                            for row in table[1:]:
+                                if not row or all(not c or str(c).strip() == '' for c in row):
+                                    continue
+                                row_data = [str(c).strip() if c else "" for c in row]
+                                nombre = ""
+                                codigo = ""
+                                precio = None
+                                for i, hdr in enumerate(headers):
+                                    if i >= len(row_data) or not row_data[i]:
+                                        continue
+                                    val = row_data[i]
+                                    if any(k in hdr for k in ['descripci', 'nombre', 'producto', 'modelo', 'item', 'detalle']):
+                                        nombre = nombre or val
+                                    if any(k in hdr for k in ['código', 'code', 'cod', 'ref', 'p/n']):
+                                        codigo = codigo or val
+                                    if any(k in hdr for k in ['precio', 'price', '$', 'pvp', 'costo', 'valor']):
+                                        cleaned = re.sub(r'[^\d.,]', '', val)
+                                        if cleaned:
+                                            try:
+                                                precio = float(cleaned.replace(',', '.'))
+                                            except:
+                                                pass
+                                if not nombre and row_data:
+                                    nombre = row_data[0]
+                                if nombre and len(nombre) > 2:
+                                    products.append({"nombre": nombre[:250], "codigo": codigo, "precio": precio})
+            except Exception as e:
+                results.append({"pdf": filename, "error": str(e)})
+                continue
+
+            pdf_inserted = 0
+            for i, prod in enumerate(products):
+                sid = f"{slugify(pilar_id + '-' + prod['nombre'])}-{i+1}"
+                existing = db.query(Service).filter(Service.service_id == sid).first()
+                if not existing:
+                    nuevo = Service(
+                        service_id=sid, pilar_id=pilar_id, nombre=prod["nombre"],
+                        categoria=categoria, marca=marca, codigo_modelo=prod["codigo"] or None,
+                    )
+                    db.add(nuevo)
+                    db.flush()
+                    db.add(CatalogItem(
+                        service_id=nuevo.id, price=prod["precio"],
+                        stock=0, is_available=True,
+                    ))
+                    pdf_inserted += 1
+
+            db.commit()
+            total_inserted += pdf_inserted
+            results.append({"pdf": filename, "products_found": len(products), "inserted": pdf_inserted})
+
+        db.close()
     except Exception as e:
         import traceback
-        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()[-1000:]}
+        results.append({"error": str(e), "traceback": traceback.format_exc()[-500:]})
+
+    return {"total_inserted": total_inserted, "details": results}
 
 # ----------------------------------------------------------
 # ARCHIVOS ESTÁTICOS — Imágenes de Productos
