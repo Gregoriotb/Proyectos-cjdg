@@ -42,7 +42,8 @@ def get_catalog(pilar_id: Optional[str] = Query(None, description="Filtra por: t
     if pilar_id:
         query = query.filter(Service.pilar_id == pilar_id)
 
-    return query.all()
+    # Limitar respuesta para evitar timeout en Neon serverless
+    return query.limit(200).all()
 
 
 @router.get("/stock-stream")
