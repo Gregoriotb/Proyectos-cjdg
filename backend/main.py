@@ -93,26 +93,30 @@ def health_check():
     }
 
 # ----------------------------------------------------------
-# SETUP — Endpoint temporal para inicializar DB en produccion
-# Ejecutar UNA VEZ: POST /api/v1/setup?key=TU_SECRET_KEY
+# SETUP — Endpoints temporales para inicializar DB en produccion
 # ELIMINAR despues de usar
 # ----------------------------------------------------------
 @app.get("/api/v1/setup", tags=["Sistema"])
 def setup_database(key: str):
-    """Corre migraciones y crea admin. Protegido por SECRET_KEY."""
+    """Paso 1: Migraciones + Admin + Brochure seed. Rapido."""
     import subprocess
     from core.security import get_password_hash
+    from database import SessionLocal
+    from models.user import User, UserRoleEnum
+    from models.service import Service
+    from models.catalog import CatalogItem
+    import json
 
     if key != os.getenv("SECRET_KEY", ""):
         return {"error": "unauthorized"}
 
     results = []
 
-    # 1. Correr migraciones con alembic
+    # 1. Migraciones
     try:
         result = subprocess.run(
             ["alembic", "upgrade", "head"],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, timeout=60
         )
         results.append({
             "step": "migrations",
@@ -121,14 +125,11 @@ def setup_database(key: str):
             "error": result.stderr[-500:] if result.stderr else "",
         })
     except Exception as e:
-        results.append({"step": "migrations", "status": "exception", "error": str(e)})
+        results.append({"step": "migrations", "error": str(e)})
 
-    # 2. Crear usuario admin
+    # 2. Admin
     try:
-        from database import SessionLocal
-        from models.user import User, UserRoleEnum
         db = SessionLocal()
-
         existing = db.query(User).filter(User.username == "jgregoriotbaltar").first()
         if existing:
             existing.role = UserRoleEnum.ADMIN
@@ -136,84 +137,67 @@ def setup_database(key: str):
             db.commit()
             results.append({"step": "admin", "status": "updated"})
         else:
-            admin = User(
+            db.add(User(
                 username="jgregoriotbaltar",
                 email="jgregoriotbaltar@gmail.com",
                 full_name="gregoriotb",
                 hashed_password=get_password_hash("1745694gregorio"),
-                role=UserRoleEnum.ADMIN,
-                is_active=True,
-            )
-            db.add(admin)
+                role=UserRoleEnum.ADMIN, is_active=True,
+            ))
             db.commit()
             results.append({"step": "admin", "status": "created"})
         db.close()
     except Exception as e:
-        results.append({"step": "admin", "status": "error", "error": str(e)})
+        results.append({"step": "admin", "error": str(e)})
 
-    # 3. Seed de servicios desde brochure_knowledge.json
+    # 3. Brochure seed
     try:
-        from database import SessionLocal
-        from models.service import Service
-        from models.catalog import CatalogItem
-        import json
-
         db = SessionLocal()
         brochure_path = os.path.join(os.path.dirname(__file__), "brochure_knowledge.json")
-
         with open(brochure_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-
-        servicios_added = 0
+        added = 0
         for pilar in data.get("pilares", []):
-            pilar_id = pilar.get("id")
             for srv in pilar.get("servicios", []):
-                existing = db.query(Service).filter(Service.service_id == srv["id"]).first()
-                if not existing:
-                    nuevo = Service(
-                        service_id=srv["id"],
-                        pilar_id=pilar_id,
-                        nombre=srv["nombre"],
-                        categoria=srv["categoria"],
-                    )
-                    db.add(nuevo)
-                    servicios_added += 1
+                if not db.query(Service).filter(Service.service_id == srv["id"]).first():
+                    db.add(Service(service_id=srv["id"], pilar_id=pilar["id"],
+                                   nombre=srv["nombre"], categoria=srv["categoria"]))
+                    added += 1
         db.commit()
-        results.append({"step": "services_seed", "status": "ok", "added": servicios_added})
 
-        # 4. Crear items de catalogo para cada servicio
-        catalog_added = 0
-        services = db.query(Service).all()
-        for srv in services:
-            item = db.query(CatalogItem).filter(CatalogItem.service_id == srv.id).first()
-            if not item:
-                new_item = CatalogItem(
-                    service_id=srv.id,
-                    price=0.00,
-                    stock=50,
-                    is_offer=False,
-                )
-                db.add(new_item)
-                catalog_added += 1
+        # Catalog items para cada servicio sin item
+        cat_added = 0
+        for srv in db.query(Service).all():
+            if not db.query(CatalogItem).filter(CatalogItem.service_id == srv.id).first():
+                db.add(CatalogItem(service_id=srv.id, price=0.00, stock=50, is_offer=False))
+                cat_added += 1
         db.commit()
-        results.append({"step": "catalog_seed", "status": "ok", "added": catalog_added})
         db.close()
+        results.append({"step": "brochure_seed", "services": added, "catalog_items": cat_added})
     except Exception as e:
-        results.append({"step": "seed", "status": "error", "error": str(e)})
-
-    # 5. Ingestión de catálogos PDF (productos reales)
-    try:
-        sys_path_backup = sys.path[:]
-        scripts_dir = os.path.join(os.path.dirname(__file__), "scripts")
-        sys.path.insert(0, scripts_dir)
-        from ingest_catalogs import ingest
-        ingest()
-        sys.path = sys_path_backup
-        results.append({"step": "pdf_ingest", "status": "ok"})
-    except Exception as e:
-        results.append({"step": "pdf_ingest", "status": "error", "error": str(e)})
+        results.append({"step": "brochure_seed", "error": str(e)})
 
     return {"results": results}
+
+
+@app.get("/api/v1/setup-catalogs", tags=["Sistema"])
+def setup_catalogs(key: str):
+    """Paso 2: Ingestion de PDFs (puede tardar 30-60s). Correr DESPUES de /setup."""
+    if key != os.getenv("SECRET_KEY", ""):
+        return {"error": "unauthorized"}
+
+    try:
+        scripts_dir = os.path.join(os.path.dirname(__file__), "scripts")
+        sys.path.insert(0, scripts_dir)
+        # Importar fresh cada vez
+        import importlib
+        import ingest_catalogs
+        importlib.reload(ingest_catalogs)
+        ingest_catalogs.ingest()
+        return {"status": "ok", "message": "PDF ingestion completed"}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()[-1000:]}
 
 # ----------------------------------------------------------
 # ARCHIVOS ESTÁTICOS — Imágenes de Productos
