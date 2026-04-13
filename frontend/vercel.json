@@ -1,1 +1,6 @@
-{}
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://proyectos-cjdg-production.up.railway.app/api/$1" },
+    { "source": "/static/(.*)", "destination": "https://proyectos-cjdg-production.up.railway.app/static/$1" }
+  ]
+}
