@@ -181,16 +181,18 @@ def setup_database(key: str):
 
 
 @app.get("/api/v1/setup-catalogs", tags=["Sistema"])
-def setup_catalogs(key: str):
-    """Lee catalog_data.json (pre-extraido de PDFs) y lo carga en Neon."""
+def setup_catalogs(key: str, batch: int = 0):
+    """
+    Carga catalog_data.json en Neon por lotes de 200 productos.
+    batch=0: muestra cuantos lotes hay
+    batch=1,2,3...: carga ese lote (200 productos cada uno)
+    """
     if key != os.getenv("SECRET_KEY", ""):
         return {"error": "unauthorized"}
 
-    import re
     import json as json_lib
+    from sqlalchemy import text
     from database import SessionLocal
-    from models.service import Service
-    from models.catalog import CatalogItem
 
     json_path = os.path.join(os.path.dirname(__file__), "catalog_data.json")
     if not os.path.exists(json_path):
@@ -199,52 +201,111 @@ def setup_catalogs(key: str):
     with open(json_path, "r", encoding="utf-8") as f:
         products = json_lib.load(f)
 
+    BATCH_SIZE = 200
+    total_batches = (len(products) + BATCH_SIZE - 1) // BATCH_SIZE
+
+    if batch == 0:
+        return {
+            "total_products": len(products),
+            "batch_size": BATCH_SIZE,
+            "total_batches": total_batches,
+            "instrucciones": "Llama con batch=1, batch=2, ... hasta batch=" + str(total_batches),
+        }
+
+    if batch < 1 or batch > total_batches:
+        return {"error": f"batch debe ser entre 1 y {total_batches}"}
+
+    # Tomar solo este lote
+    start = (batch - 1) * BATCH_SIZE
+    end = min(start + BATCH_SIZE, len(products))
+    batch_products = products[start:end]
+
     db = SessionLocal()
     inserted = 0
     skipped = 0
-    errors = []
 
     try:
-        for prod in products:
-            sid = prod["service_id"]
-            if db.query(Service).filter(Service.service_id == sid).first():
-                skipped += 1
-                continue
-            try:
-                nuevo = Service(
-                    service_id=sid,
-                    pilar_id=prod["pilar_id"],
-                    nombre=prod["nombre"],
-                    categoria=prod["categoria"],
-                    marca=prod.get("marca"),
-                    codigo_modelo=prod.get("codigo_modelo"),
-                )
-                db.add(nuevo)
-                db.flush()
-                db.add(CatalogItem(
-                    service_id=nuevo.id,
-                    price=prod.get("precio"),
-                    stock=0,
-                    is_available=True,
-                ))
-                inserted += 1
-                # Commit cada 100 para no acumular demasiado
-                if inserted % 100 == 0:
-                    db.commit()
-            except Exception as e:
-                db.rollback()
-                errors.append({"product": prod["nombre"][:50], "error": str(e)})
+        # 1 solo SELECT: obtener todos los service_id existentes de este lote
+        sids = [p["service_id"] for p in batch_products]
+        result = db.execute(
+            text("SELECT service_id FROM services WHERE service_id = ANY(:sids)"),
+            {"sids": sids}
+        )
+        existing_sids = {row[0] for row in result}
 
-        db.commit()
+        # Filtrar nuevos
+        new_products = [p for p in batch_products if p["service_id"] not in existing_sids]
+        skipped = len(batch_products) - len(new_products)
+
+        if new_products:
+            # Bulk INSERT services con raw SQL (1 query para todos)
+            service_values = []
+            for p in new_products:
+                service_values.append({
+                    "service_id": p["service_id"],
+                    "pilar_id": p["pilar_id"],
+                    "nombre": p["nombre"],
+                    "categoria": p["categoria"],
+                    "marca": p.get("marca"),
+                    "codigo_modelo": p.get("codigo_modelo"),
+                })
+
+            db.execute(
+                text("""
+                    INSERT INTO services (service_id, pilar_id, nombre, categoria, marca, codigo_modelo)
+                    VALUES (:service_id, :pilar_id, :nombre, :categoria, :marca, :codigo_modelo)
+                    ON CONFLICT (service_id) DO NOTHING
+                """),
+                service_values
+            )
+            db.commit()
+
+            # Obtener IDs de los services recien insertados (1 query)
+            result = db.execute(
+                text("SELECT id, service_id FROM services WHERE service_id = ANY(:sids)"),
+                {"sids": [p["service_id"] for p in new_products]}
+            )
+            id_map = {row[1]: row[0] for row in result}
+
+            # Bulk INSERT catalog items (1 query)
+            catalog_values = []
+            for p in new_products:
+                srv_id = id_map.get(p["service_id"])
+                if srv_id:
+                    catalog_values.append({
+                        "service_id": srv_id,
+                        "price": p.get("precio"),
+                        "stock": 0,
+                        "is_available": True,
+                        "is_offer": False,
+                        "discount_percentage": 0.0,
+                    })
+
+            if catalog_values:
+                db.execute(
+                    text("""
+                        INSERT INTO catalog_items (service_id, price, stock, is_available, is_offer, discount_percentage)
+                        VALUES (:service_id, :price, :stock, :is_available, :is_offer, :discount_percentage)
+                        ON CONFLICT DO NOTHING
+                    """),
+                    catalog_values
+                )
+            db.commit()
+            inserted = len(new_products)
+
+    except Exception as e:
+        db.rollback()
+        import traceback
+        return {"batch": batch, "error": str(e), "trace": traceback.format_exc()[-500:]}
     finally:
         db.close()
 
     return {
-        "total_in_json": len(products),
+        "batch": batch,
+        "range": f"{start+1}-{end}",
         "inserted": inserted,
         "skipped": skipped,
-        "errors": len(errors),
-        "first_errors": errors[:5] if errors else [],
+        "next": f"batch={batch+1}" if batch < total_batches else "Todos cargados!",
     }
 
 # ----------------------------------------------------------
