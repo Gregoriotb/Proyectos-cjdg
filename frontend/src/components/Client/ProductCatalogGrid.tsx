@@ -68,9 +68,12 @@ const ProductCatalogGrid = () => {
     try {
       const url = filterPilar === 'all' ? '/catalog' : `/catalog?pilar_id=${filterPilar}`;
       const res = await api.get(url);
-      setItems(res.data);
+      const data = Array.isArray(res.data) ? res.data : [];
+      console.log(`[Catalogo] Recibidos ${data.length} items`);
+      setItems(data);
     } catch (error) {
-      console.error('Error cargando catálogo:', error);
+      console.error('[Catalogo] Error:', error);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -94,11 +97,15 @@ const ProductCatalogGrid = () => {
     }, 1500);
   };
 
-  const filtered = items.filter((item) =>
-    item.service.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.service.description && item.service.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (item.service.marca && item.service.marca.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filtered = items.filter((item) => {
+    if (!item.service) return false;
+    const search = searchTerm.toLowerCase();
+    return (
+      (item.service.nombre || '').toLowerCase().includes(search) ||
+      (item.service.description || '').toLowerCase().includes(search) ||
+      (item.service.marca || '').toLowerCase().includes(search)
+    );
+  });
 
   return (
     <div className="space-y-6">
