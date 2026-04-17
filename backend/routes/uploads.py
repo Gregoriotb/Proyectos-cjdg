@@ -14,8 +14,11 @@ router = APIRouter()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "uploads")
 
-# Asegurar que el directorio de subidas exista al cargar el módulo
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Asegurar que el directorio de subidas exista (puede fallar en contenedores no-root, no es critico si se usa ImgBB)
+try:
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+except OSError:
+    pass  # En producción con ImgBB no se necesita este directorio
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_image(

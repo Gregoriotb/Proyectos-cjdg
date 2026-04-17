@@ -35,10 +35,11 @@ COPY --from=builder /install /usr/local
 COPY . .
 
 # Crear directorio static si no existe
-RUN mkdir -p /app/static
+RUN mkdir -p /app/static/uploads
 
 # Usuario no-root por seguridad
 RUN useradd --create-home appuser
+RUN chown -R appuser:appuser /app/static
 USER appuser
 
 # Railway asigna PORT dinamicamente
