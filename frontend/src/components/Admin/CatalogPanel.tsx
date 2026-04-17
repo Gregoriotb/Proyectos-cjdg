@@ -55,6 +55,8 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
   const [saved, setSaved] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
 
+  const currentImages = item.service?.image_urls || [];
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     setUploadingImg(true);
@@ -66,7 +68,6 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
       });
       const newUrl = res.data.url;
       
-      let currentImages = item.service?.image_urls || [];
       const updatedImages = [...currentImages, newUrl];
       
       const patchRes = await api.patch(`/admin/services/${item.service_id}`, {
@@ -79,6 +80,22 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
       alert("Error subiendo imagen");
     } finally {
       setUploadingImg(false);
+      // Reset file input
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveImage = async (indexToRemove: number) => {
+    try {
+      const updatedImages = currentImages.filter((_, i) => i !== indexToRemove);
+      const patchRes = await api.patch(`/admin/services/${item.service_id}`, {
+        image_url: updatedImages.length > 0 ? updatedImages[0] : null,
+        image_urls: updatedImages
+      });
+      onItemUpdated(item.id, { service: patchRes.data });
+    } catch (e: any) {
+      console.error('Error eliminando imagen', e);
+      alert("Error eliminando imagen");
     }
   };
 
@@ -86,7 +103,6 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
     setSaving(true);
     try {
       const res = await api.put(`/admin/inventory/${item.id}`, form);
-      // Actualizar solo este item en el estado del padre, sin recargar toda la lista
       onItemUpdated(item.id, res.data);
       setForm({
         price: res.data.price ?? 0,
@@ -108,28 +124,22 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
   const nombre = item.service?.nombre ?? `Ítem #${item.id}`;
   const marca = item.service?.marca;
   const modelo = item.service?.codigo_modelo;
-  const imgSrc = getImageUrl(item.service?.image_url ?? null);
+  const imgSrc = currentImages.length > 0 ? getImageUrl(currentImages[0]) : getImageUrl(item.service?.image_url ?? null);
+  const imageCount = currentImages.length;
 
   return (
-    <tr className={`border-b border-white/5 transition-colors ${editing ? 'bg-white/5' : 'hover:bg-white/5'}`}>
+    <>
+    <tr className={`border-b ${editing ? 'border-cjdg-primary/30 bg-white/5' : 'border-white/5 hover:bg-white/5'} transition-colors`}>
       {/* Imagen + Nombre */}
       <td className="py-3 px-4">
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex-shrink-0 flex items-center justify-center group/img">
+          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex-shrink-0 flex items-center justify-center">
             {imgSrc
               ? <img src={imgSrc} alt={nombre} className="w-full h-full object-contain" />
               : <Box className="w-5 h-5 text-cjdg-textMuted opacity-40" />
             }
-            {editing && !uploadingImg && (
-               <label className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer hover:bg-black/40 transition-colors opacity-0 group-hover/img:opacity-100">
-                  <UploadCloud className="w-4 h-4 text-white" />
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-               </label>
-            )}
-            {uploadingImg && (
-               <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-                  <Loader2 className="w-4 h-4 animate-spin text-cjdg-primary" />
-               </div>
+            {imageCount > 0 && (
+              <span className="absolute bottom-0 right-0 bg-cjdg-primary text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-tl-md">{imageCount}</span>
             )}
           </div>
           <div className="min-w-0">
@@ -257,6 +267,58 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
         )}
       </td>
     </tr>
+
+    {/* ── Panel de Galería expandible (solo en modo edición) ── */}
+    {editing && (
+      <tr className="border-b border-cjdg-primary/30 bg-white/[0.03]">
+        <td colSpan={7} className="px-4 py-4">
+          <div className="flex items-start gap-4">
+            <div className="flex items-center gap-1 text-xs text-cjdg-textMuted flex-shrink-0 pt-1">
+              <UploadCloud className="w-4 h-4" />
+              <span className="font-medium">Galería</span>
+              <span className="text-cjdg-primary ml-1">({imageCount})</span>
+            </div>
+            <div className="flex flex-wrap gap-3 items-start flex-1">
+              {/* Imágenes existentes */}
+              {currentImages.map((url, i) => (
+                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden bg-cjdg-darker border border-white/10 group/thumb">
+                  <img src={getImageUrl(url) || url} alt={`${nombre} ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(i)}
+                    className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-500 p-0.5 rounded-full text-white opacity-0 group-hover/thumb:opacity-100 transition-all"
+                    title="Eliminar imagen"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  {i === 0 && (
+                    <span className="absolute bottom-0 left-0 bg-cjdg-primary/90 text-white text-[8px] px-1.5 py-0.5 font-bold uppercase">Principal</span>
+                  )}
+                </div>
+              ))}
+
+              {/* Botón para agregar */}
+              <label className={`w-20 h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                uploadingImg
+                  ? 'border-cjdg-primary/50 bg-cjdg-primary/5'
+                  : 'border-white/20 bg-white/5 hover:bg-cjdg-primary/10 hover:border-cjdg-primary/50'
+              } text-cjdg-textMuted hover:text-white`}>
+                {uploadingImg ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-cjdg-primary" />
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5 mb-0.5" />
+                    <span className="text-[9px] font-medium">Agregar</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploadingImg} />
+              </label>
+            </div>
+          </div>
+        </td>
+      </tr>
+    )}
+    </>
   );
 };
 
