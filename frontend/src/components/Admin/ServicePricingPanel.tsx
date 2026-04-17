@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
-import { Search, DollarSign, RefreshCw, Edit2, X, Check, Plus, Trash2, ToggleLeft, ToggleRight, AlertCircle } from 'lucide-react';
+import { Search, DollarSign, RefreshCw, Edit2, X, Check, Plus, Trash2, ToggleLeft, ToggleRight, AlertCircle, UploadCloud } from 'lucide-react';
 
 interface CorporateService {
   id: number;
@@ -10,6 +10,8 @@ interface CorporateService {
   precio_base: number | null;
   precio_variable: boolean;
   activo: boolean;
+  is_special: boolean;
+  image_urls: string[] | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -44,8 +46,32 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
   const [precioBase, setPrecioBase] = useState(service?.precio_base?.toString() ?? '');
   const [precioVariable, setPrecioVariable] = useState(service?.precio_variable ?? true);
   const [activo, setActivo] = useState(service?.activo ?? true);
+  const [isSpecial, setIsSpecial] = useState(service?.is_special ?? false);
+  const [images, setImages] = useState<string[]>(service?.image_urls ?? []);
+  const [uploadingImg, setUploadingImg] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    setUploadingImg(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', e.target.files[0]);
+      const res = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setImages(prev => [...prev, res.data.url]);
+    } catch (e: any) {
+      setError(e.response?.data?.detail || 'Error subiendo la imagen');
+    } finally {
+      setUploadingImg(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +85,8 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
       precio_base: precioBase ? parseFloat(precioBase) : null,
       precio_variable: precioVariable,
       activo,
+      is_special: isSpecial,
+      image_urls: images,
     };
 
     try {
@@ -127,7 +155,7 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div>
           <label className="block text-sm text-cjdg-textMuted mb-1">Precio Base (USD)</label>
           <input
@@ -162,6 +190,38 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
             Activo
           </label>
         </div>
+        <div className="flex items-end gap-3">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-cjdg-textMuted">
+            <input
+              type="checkbox"
+              checked={isSpecial}
+              onChange={(e) => setIsSpecial(e.target.checked)}
+              className="rounded border-cjdg-border bg-purple-900/50 text-purple-400 focus:ring-purple-400"
+            />
+            {isSpecial ? <span className="text-purple-400 font-bold">¡Servicio Especial!</span> : "Destacar Especial"}
+          </label>
+        </div>
+      </div>
+
+      {/* Galería */}
+      <div className="border-t border-white/10 pt-4">
+         <label className="block text-sm text-cjdg-textMuted mb-3">Galería de Imágenes (Opcional)</label>
+         <div className="flex flex-wrap gap-4 items-start">
+           {images.map((url, i) => (
+              <div key={i} className="relative w-24 h-24 rounded-lg bg-cjdg-darker border border-cjdg-border overflow-hidden">
+                 <img src={url} alt="Gallery item" className="w-full h-full object-cover" />
+                 <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/60 p-1 rounded-full text-white hover:bg-red-500">
+                   <X className="w-3 h-3" />
+                 </button>
+              </div>
+           ))}
+           <label className="w-24 h-24 rounded-lg bg-white/5 border border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 hover:border-cjdg-primary transition-all text-cjdg-textMuted hover:text-white">
+              <UploadCloud className="w-6 h-6 mb-1" />
+              <span className="text-[10px]">Añadir Foto</span>
+              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploadingImg} />
+           </label>
+           {uploadingImg && <span className="text-xs text-cjdg-primary mt-4">Subiendo...</span>}
+         </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
@@ -327,6 +387,11 @@ const ServicePricingPanel = () => {
                         <div className="text-sm font-medium text-white">{srv.nombre}</div>
                         {srv.descripcion && (
                           <p className="text-xs text-cjdg-textMuted mt-0.5 line-clamp-1">{srv.descripcion}</p>
+                        )}
+                        {srv.is_special && (
+                          <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-purple-600/30 to-blue-600/30 text-purple-300 border border-purple-500/30">
+                            ✨ Servicio Especial
+                          </span>
                         )}
                       </td>
                       <td className="py-3 px-4">

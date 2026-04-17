@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ShoppingCart, Search, Plus, Minus, Filter, Package, Tag, X, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Search, Plus, Minus, Filter, Package, Tag, X, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api, getImageUrl } from '../../services/api';
 import { useCart } from '../../context/CartContext';
 import { useCatalog, CatalogItemType } from '../../hooks/useCatalog';
@@ -14,6 +14,92 @@ const PILARES = [
 ];
 
 const PAGE_SIZE = 24;
+
+const ProductCard = ({ item, stockMap, openQuantityModal }: { item: CatalogItemType; stockMap: Record<number, number>; openQuantityModal: (item: CatalogItemType) => void; }) => {
+  const realStock = stockMap[item.id] ?? item.stock;
+  const hasDiscount = item.is_offer && item.discount_percentage > 0;
+  const finalPrice = hasDiscount && item.price ? item.price * (1 - item.discount_percentage / 100) : item.price;
+  
+  // Array de imagenes: image_urls o la solitaria image_url
+  const rawImages = (item.service as any).image_urls?.length ? (item.service as any).image_urls : (item.service.image_url ? [item.service.image_url] : []);
+  const images = rawImages.map(img => getImageUrl(img));
+  const [imgIndex, setImgIndex] = useState(0);
+
+  const handleNext = (e: any) => { e.stopPropagation(); setImgIndex(i => (i + 1) % images.length); };
+  const handlePrev = (e: any) => { e.stopPropagation(); setImgIndex(i => (i - 1 + images.length) % images.length); };
+
+  return (
+    <div className="glass-panel flex flex-col overflow-hidden group hover:border-cjdg-primary/30 transition-all">
+      <div className="relative h-40 bg-cjdg-darker/50 flex items-center justify-center overflow-hidden group/carousel">
+        {images.length > 0 ? (
+          <img src={images[imgIndex]} alt={item.service.nombre} className="w-full h-full object-contain p-3 transition-transform" loading="lazy" />
+        ) : (
+          <Package className="w-12 h-12 text-cjdg-textMuted/30" />
+        )}
+        
+        {images.length > 1 && (
+          <>
+            <button onClick={handlePrev} className="absolute left-1 top-1/2 -translate-y-1/2 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover/carousel:opacity-100 hover:bg-cjdg-primary transition-all">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button onClick={handleNext} className="absolute right-1 top-1/2 -translate-y-1/2 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover/carousel:opacity-100 hover:bg-cjdg-primary transition-all">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <div className="absolute bottom-1 left-0 w-full flex justify-center gap-1">
+              {images.map((_, idx) => (
+                <div key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === imgIndex ? 'bg-cjdg-primary' : 'bg-white/30'}`} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {hasDiscount && (
+          <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
+            <Tag className="w-3 h-3" /> -{item.discount_percentage}%
+          </span>
+        )}
+      </div>
+      <div className="p-4 flex-grow flex flex-col">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-cjdg-textMuted mb-1">
+          {item.service.categoria}{item.service.marca && ` · ${item.service.marca}`}
+        </span>
+        <h3 className="text-sm font-medium text-white leading-snug mb-1 line-clamp-2 group-hover:text-cjdg-accent transition-colors">
+          {item.service.nombre}
+        </h3>
+        {item.service.codigo_modelo && (
+          <p className="text-xs text-cjdg-textMuted font-mono mb-2">{item.service.codigo_modelo}</p>
+        )}
+        <div className="mt-auto">
+          <div className={`text-xs mb-2 ${realStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {realStock > 0 ? `${realStock} en stock` : 'Agotado'}
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t border-white/5">
+            <div>
+              {item.price ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-white font-mono font-bold text-sm">${Number(finalPrice).toFixed(2)}</span>
+                  {hasDiscount && <span className="text-xs text-cjdg-textMuted line-through">${Number(item.price).toFixed(2)}</span>}
+                </div>
+              ) : (
+                <span className="text-xs text-cjdg-textMuted italic">Cotizar</span>
+              )}
+            </div>
+            {realStock > 0 ? (
+              <button
+                onClick={() => openQuantityModal(item)}
+                className="p-2 rounded-md transition-all flex items-center gap-1 text-sm text-cjdg-primary bg-cjdg-primary/10 hover:bg-cjdg-primary hover:text-white"
+              >
+                <Plus className="w-4 h-4" /><ShoppingCart className="w-4 h-4" />
+              </button>
+            ) : (
+              <span className="text-xs text-red-400 font-medium">Agotado</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ProductCatalogGrid = () => {
   const { addToCart } = useCart();
@@ -131,69 +217,9 @@ const ProductCatalogGrid = () => {
       ) : (
         <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {items.map((item) => {
-            const realStock = stockMap[item.id] ?? item.stock;
-            const imageUrl = getImageUrl(item.service.image_url);
-            const hasDiscount = item.is_offer && item.discount_percentage > 0;
-            const finalPrice = hasDiscount && item.price
-              ? item.price * (1 - item.discount_percentage / 100)
-              : item.price;
-
-            return (
-              <div key={item.id} className="glass-panel flex flex-col overflow-hidden group hover:border-cjdg-primary/30 transition-all">
-                <div className="relative h-40 bg-cjdg-darker/50 flex items-center justify-center overflow-hidden">
-                  {imageUrl ? (
-                    <img src={imageUrl} alt={item.service.nombre} className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform" loading="lazy" />
-                  ) : (
-                    <Package className="w-12 h-12 text-cjdg-textMuted/30" />
-                  )}
-                  {hasDiscount && (
-                    <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                      <Tag className="w-3 h-3" /> -{item.discount_percentage}%
-                    </span>
-                  )}
-                </div>
-                <div className="p-4 flex-grow flex flex-col">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-cjdg-textMuted mb-1">
-                    {item.service.categoria}{item.service.marca && ` · ${item.service.marca}`}
-                  </span>
-                  <h3 className="text-sm font-medium text-white leading-snug mb-1 line-clamp-2 group-hover:text-cjdg-accent transition-colors">
-                    {item.service.nombre}
-                  </h3>
-                  {item.service.codigo_modelo && (
-                    <p className="text-xs text-cjdg-textMuted font-mono mb-2">{item.service.codigo_modelo}</p>
-                  )}
-                  <div className="mt-auto">
-                    <div className={`text-xs mb-2 ${realStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {realStock > 0 ? `${realStock} en stock` : 'Agotado'}
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                      <div>
-                        {item.price ? (
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-white font-mono font-bold text-sm">${Number(finalPrice).toFixed(2)}</span>
-                            {hasDiscount && <span className="text-xs text-cjdg-textMuted line-through">${Number(item.price).toFixed(2)}</span>}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-cjdg-textMuted italic">Cotizar</span>
-                        )}
-                      </div>
-                      {realStock > 0 ? (
-                        <button
-                          onClick={() => openQuantityModal(item)}
-                          className="p-2 rounded-md transition-all flex items-center gap-1 text-sm text-cjdg-primary bg-cjdg-primary/10 hover:bg-cjdg-primary hover:text-white"
-                        >
-                          <Plus className="w-4 h-4" /><ShoppingCart className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <span className="text-xs text-red-400 font-medium">Agotado</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {items.map((item) => (
+            <ProductCard key={item.id} item={item} stockMap={stockMap} openQuantityModal={openQuantityModal} />
+          ))}
         </div>
 
         <PaginationControls 

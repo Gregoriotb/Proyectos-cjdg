@@ -347,3 +347,7 @@ app.include_router(invoices.router, prefix="/api/v1/invoices", tags=["Facturas"]
 
 # SC-CLIENT-01 — [CONTEXT: SERVICE_OPERATIONS] Cotizaciones de Servicios
 app.include_router(service_quotations.router, prefix="/api/v1", tags=["Cotizaciones de Servicios"])
+
+# Fase Extras — [CONTEXT: UPLOADS] Subida de Archivos
+from routes import uploads
+app.include_router(uploads.router, prefix="/api/v1", tags=["Archivos e Imágenes"])

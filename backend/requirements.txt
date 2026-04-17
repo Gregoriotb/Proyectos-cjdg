@@ -28,3 +28,4 @@ python-dotenv==1.0.1
 # Procesamiento de PDFs y archivos estáticos
 pdfplumber==0.11.4
 Pillow==10.3.0
+requests==2.32.3

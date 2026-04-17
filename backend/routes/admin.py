@@ -150,6 +150,77 @@ def update_inventory_item(item_id: int, item_in: CatalogItemUpdate, current_admi
     db.refresh(item)
     return item
 
+class InventoryItemCreate(BaseModel):
+    nombre: str
+    pilar_id: str
+    categoria: str
+    marca: Optional[str] = None
+    codigo_modelo: Optional[str] = None
+    description: Optional[str] = None
+    specs: Optional[dict] = None
+    image_url: Optional[str] = None
+    image_urls: Optional[list[str]] = None
+    price: Optional[float] = None
+    stock: int = 0
+    is_available: bool = True
+    is_offer: bool = False
+    discount_percentage: float = 0.0
+
+@router.post("/inventory", response_model=CatalogItemResponse, status_code=status.HTTP_201_CREATED)
+def create_inventory_item(
+    item_in: InventoryItemCreate,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    import secrets
+    new_srv = Service(
+        service_id=f"auto-{secrets.token_hex(4)}",
+        pilar_id=item_in.pilar_id,
+        nombre=item_in.nombre,
+        categoria=item_in.categoria,
+        marca=item_in.marca,
+        codigo_modelo=item_in.codigo_modelo,
+        description=item_in.description,
+        specs=item_in.specs,
+        image_url=item_in.image_url,
+        image_urls=item_in.image_urls
+    )
+    db.add(new_srv)
+    db.commit()
+    db.refresh(new_srv)
+    
+    new_cat = CatalogItem(
+        service_id=new_srv.id,
+        price=item_in.price,
+        stock=item_in.stock,
+        is_available=item_in.is_available,
+        is_offer=item_in.is_offer,
+        discount_percentage=item_in.discount_percentage
+    )
+    db.add(new_cat)
+    db.commit()
+    db.refresh(new_cat)
+    new_cat.service = new_srv
+    return new_cat
+
+@router.delete("/inventory/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_inventory_item(
+    item_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    item = db.query(CatalogItem).filter(CatalogItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Ítem de catálogo no encontrado")
+        
+    srv_id = item.service_id
+    db.delete(item)
+    srv = db.query(Service).filter(Service.id == srv_id).first()
+    if srv:
+        db.delete(srv)
+    db.commit()
+    return None
+
 # ─── Servicios ──────────────────────────────────────────────────────────────
 
 from models.service import Service
@@ -161,6 +232,7 @@ class ServiceUpdate(BaseModel):
     codigo_modelo: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
+    image_urls: Optional[list[str]] = None
 
 @router.get("/services", response_model=List[ServiceResponse])
 def get_all_services(

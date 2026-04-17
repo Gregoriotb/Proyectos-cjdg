@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api, getImageUrl } from '../../services/api';
 import {
   Search, ChevronLeft, ChevronRight, Box, Edit2, X, Save,
-  Tag, AlertTriangle, CheckCircle, RefreshCw
+  Tag, AlertTriangle, CheckCircle, RefreshCw, Plus, Trash2
 } from 'lucide-react';
 import PaginationControls from '../Pagination/PaginationControls';
+import InventoryForm from './InventoryForm';
 
 interface CatalogProduct {
   id: number;         // CatalogItem.id
@@ -40,7 +41,7 @@ const PILAR_LABELS: Record<string, string> = {
 const PAGE_SIZE = 30;
 
 // Fila editable del catálogo
-const CatalogRow = ({ item, onItemUpdated }: { item: CatalogProduct; onItemUpdated: (id: number, data: Partial<CatalogProduct>) => void }) => {
+const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; onItemUpdated: (id: number, data: Partial<CatalogProduct>) => void; onDelete: (id: number) => void; }) => {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     price: item.price ?? 0,
@@ -204,9 +205,14 @@ const CatalogRow = ({ item, onItemUpdated }: { item: CatalogProduct; onItemUpdat
           </div>
         ) : (
           !saved && (
-            <button onClick={() => setEditing(true)} className="p-1.5 rounded text-cjdg-textMuted hover:text-cjdg-primary hover:bg-cjdg-primary/10 transition-colors">
-              <Edit2 className="w-4 h-4" />
-            </button>
+            <div className="flex justify-end gap-1">
+              <button onClick={() => setEditing(true)} className="p-1.5 rounded text-cjdg-textMuted hover:text-cjdg-primary hover:bg-cjdg-primary/10 transition-colors">
+                <Edit2 className="w-4 h-4" />
+              </button>
+              <button onClick={() => onDelete(item.id)} className="p-1.5 rounded text-cjdg-textMuted hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           )
         )}
       </td>
@@ -221,6 +227,21 @@ const CatalogPanel = () => {
   const [pilarFilter, setPilarFilter] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [showForm, setShowForm] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("¿Estás seguro de eliminar este artículo del catálogo?")) return;
+    setDeletingId(id);
+    try {
+      await api.delete(`/admin/inventory/${id}`);
+      fetchItems();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -296,8 +317,15 @@ const CatalogPanel = () => {
           <button onClick={fetchItems} className="p-2 rounded hover:bg-white/10 text-cjdg-textMuted hover:text-white transition-colors">
             <RefreshCw className="w-4 h-4" />
           </button>
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-3 py-2 btn-primary text-sm">
+            <Plus className="w-4 h-4" /> Nuevo
+          </button>
         </div>
       </div>
+
+      {showForm && (
+        <InventoryForm onSave={() => { setShowForm(false); fetchItems(); }} onCancel={() => setShowForm(false)} />
+      )}
 
       {/* Tabla */}
       <div className="glass-panel p-0 overflow-hidden">
@@ -332,7 +360,7 @@ const CatalogPanel = () => {
                 </tr>
               ) : (
                 items.map(item => (
-                  <CatalogRow key={item.id} item={item} onItemUpdated={handleItemUpdated} />
+                  <CatalogRow key={item.id} item={item} onItemUpdated={handleItemUpdated} onDelete={handleDelete} />
                 ))
               )}
             </tbody>

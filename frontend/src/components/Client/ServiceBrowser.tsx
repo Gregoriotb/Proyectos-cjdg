@@ -9,6 +9,8 @@ interface CorporateService {
   descripcion: string | null;
   precio_base: number | null;
   activo: boolean;
+  is_special: boolean;
+  image_urls: string[] | null;
 }
 
 const PILAR_LABELS: Record<string, string> = {
@@ -94,43 +96,45 @@ const ServiceBrowser = () => {
   }, {});
 
   const visiblePilares = selectedPilar ? [selectedPilar] : pilares;
+  const specialService = services.find(s => s.is_special);
 
   return (
     <div className="space-y-6">
-      {/* AI Collaboration Banner */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-cjdg-border/30 border border-purple-500/30 p-6 sm:p-8">
-        <div className="absolute top-0 right-0 -m-8 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-semibold mb-3 border border-purple-500/30">
-              ✨ Nuevo Servicio Especial
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 tracking-tight">
-              Plan de Automatización con IA
-            </h2>
-            <p className="text-cjdg-textMuted text-sm sm:text-base leading-relaxed">
-              En colaboración exclusiva con <strong className="text-purple-300 font-medium">Artificialic.com</strong>, ofrecemos un plan integral para modernizar tu negocio. 
-              Nos encargamos de la <span className="text-white">instalación</span> de herramientas de inteligencia artificial y brindamos <span className="text-white">capacitación</span> especializada para tu equipo.
-            </p>
+      {/* Special Service Banner */}
+      {specialService && (
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-900/40 via-purple-900/40 to-cjdg-border/30 border border-purple-500/30 p-6 sm:p-8">
+          <div className="absolute top-0 right-0 -m-8 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-semibold mb-3 border border-purple-500/30">
+                ✨ Servicio Especial Destacado
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 tracking-tight">
+                {specialService.nombre}
+              </h2>
+              <p className="text-cjdg-textMuted text-sm sm:text-base leading-relaxed">
+                {specialService.descripcion || 'Servicio de alta especialidad corporativa.'}
+              </p>
+            </div>
+            
+            {specialService.image_urls && specialService.image_urls.length > 0 && (
+              <div className="hidden md:block w-32 h-32 rounded-lg overflow-hidden border border-purple-500/30 shadow-[0_0_15px_rgba(147,51,234,0.3)]">
+                <img src={specialService.image_urls[0]} alt="Special" className="w-full h-full object-cover" />
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                setQuotingService(specialService);
+                setDescription(`Me gustaría cotizar el servicio especial: ${specialService.nombre}. Mis procesos a mejorar son: `);
+              }}
+              className="whitespace-nowrap flex-shrink-0 px-6 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:shadow-[0_0_25px_rgba(147,51,234,0.6)] transition-all flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" /> Solicitar Plan
+            </button>
           </div>
-          <button
-            onClick={() => {
-              setQuotingService({
-                id: -1, // ID temporal para el backend
-                pilar: 'TECNOLOGIA',
-                nombre: 'Plan de Automatización con IA (Artificialic.com)',
-                descripcion: 'Servicio integral de instalación y capacitación corporativa de Inteligencia Artificial.',
-                precio_base: null,
-                activo: true
-              });
-              setDescription('Me gustaría cotizar el plan de automatización con Inteligencia Artificial. Mis procesos a mejorar son: ');
-            }}
-            className="whitespace-nowrap flex-shrink-0 px-6 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:shadow-[0_0_25px_rgba(147,51,234,0.6)] transition-all flex items-center gap-2"
-          >
-            <Send className="w-4 h-4" /> Solicitar Plan
-          </button>
         </div>
-      </div>
+      )}
 
       {/* Pilar filter */}
       <div className="flex gap-2 overflow-x-auto pb-2">
@@ -229,6 +233,16 @@ const ServiceBrowser = () => {
                 <p className="text-sm text-cjdg-textMuted">
                   Servicio: <strong className="text-white">{quotingService.nombre}</strong>
                 </p>
+
+                {quotingService.image_urls && quotingService.image_urls.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto py-2">
+                    {quotingService.image_urls.map((url, i) => (
+                      <div key={i} className="w-16 h-16 rounded border border-cjdg-border overflow-hidden flex-shrink-0">
+                        <img src={url} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {error && (
                   <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-3 rounded text-sm flex items-start gap-2">

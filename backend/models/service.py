@@ -20,5 +20,6 @@ class Service(Base):
     codigo_modelo = Column(String, nullable=True)  # DS-2CD2143G2-I
     description = Column(Text, nullable=True)
     specs = Column(JSONB, nullable=True)          # {"resolución": "4MP", "IR": "30m"…}
-    image_url = Column(String, nullable=True)     # /static/products/cctv/DS-2CD2143.jpg
+    image_url = Column(String, nullable=True)     # /static/products/cctv/DS-2CD2143.jpg (legado)
+    image_urls = Column(JSONB, default=list, nullable=True) # Galería de imágenes (MercadoLibre)
 

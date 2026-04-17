@@ -7,6 +7,7 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, Numeric, Enum, Da
 from sqlalchemy.sql import func
 from database import Base
 import enum
+from sqlalchemy.dialects.postgresql import JSONB
 
 
 class PilarEnum(enum.Enum):
@@ -30,5 +31,7 @@ class ServiceCatalog(Base):
     precio_base = Column(Numeric(12, 2), nullable=True)  # Null = requiere cotización manual
     precio_variable = Column(Boolean, default=True)       # Si True, admin puede cambiar en cotización
     activo = Column(Boolean, default=True)
+    is_special = Column(Boolean, default=False)
+    image_urls = Column(JSONB, default=list, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

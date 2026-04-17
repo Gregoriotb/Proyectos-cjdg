@@ -20,6 +20,7 @@ class ServiceResponse(ServiceBase):
     description: Optional[str] = None
     specs: Optional[Dict[str, Any]] = None
     image_url: Optional[str] = None
+    image_urls: Optional[list[str]] = None
     
     class Config:
         from_attributes = True

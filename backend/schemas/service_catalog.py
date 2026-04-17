@@ -23,6 +23,8 @@ class ServiceCatalogBase(BaseModel):
     precio_base: Optional[Decimal] = Field(None, ge=0, description="Null = cotización manual")
     precio_variable: bool = True
     activo: bool = True
+    is_special: bool = False
+    image_urls: Optional[list[str]] = None
 
 
 class ServiceCatalogCreate(ServiceCatalogBase):
@@ -35,6 +37,8 @@ class ServiceCatalogUpdate(BaseModel):
     precio_base: Optional[Decimal] = Field(None, ge=0)
     precio_variable: Optional[bool] = None
     activo: Optional[bool] = None
+    is_special: Optional[bool] = None
+    image_urls: Optional[list[str]] = None
 
 
 class ServiceCatalogResponse(ServiceCatalogBase):
