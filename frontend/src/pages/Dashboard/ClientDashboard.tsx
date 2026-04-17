@@ -42,9 +42,9 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-cjdg-darker flex">
+    <div className="h-screen bg-cjdg-darker flex overflow-hidden">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex lg:flex-col w-64 bg-cjdg-dark/80 border-r border-white/5 backdrop-blur-lg">
+      <aside className="hidden lg:flex lg:flex-col flex-shrink-0 w-64 bg-cjdg-dark/80 border-r border-white/5 backdrop-blur-lg z-40 overflow-y-auto">
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-white/5">
           <span className="text-lg font-bold text-white tracking-wide">Proyectos CJDG</span>

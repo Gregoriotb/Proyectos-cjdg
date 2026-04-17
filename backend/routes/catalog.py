@@ -22,8 +22,8 @@ router = APIRouter()
 @router.get("")
 def get_catalog(
     pilar_id: Optional[str] = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(24, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(24, ge=1, le=100),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
@@ -66,6 +66,9 @@ def get_catalog(
                 )
             )
 
+        skip = (page - 1) * page_size
+        limit = page_size
+
         total = query.count()
         items = query.order_by(CatalogItem.id).offset(skip).limit(limit).all()
 
@@ -94,7 +97,7 @@ def get_catalog(
                 } if srv else None,
             })
 
-        return {"items": result, "total": total, "skip": skip, "limit": limit}
+        return {"items": result, "total": total, "page": page, "page_size": page_size}
     except Exception as e:
         import traceback
         return {"error": str(e), "trace": traceback.format_exc()[-500:]}

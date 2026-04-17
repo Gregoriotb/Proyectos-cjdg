@@ -14,7 +14,7 @@ class CatalogItem(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     service_id = Column(Integer, ForeignKey("services.id"), nullable=False, unique=True)
-    price = Column(Numeric(10, 2), nullable=True) # Precio puede ser nulo si "A convenir"
+    price = Column(Numeric(10, 2), nullable=True, index=True) # Precio puede ser nulo si "A convenir"
     is_available = Column(Boolean, default=True)
     stock = Column(Integer, default=0, nullable=False)
     is_offer = Column(Boolean, default=False, nullable=False)

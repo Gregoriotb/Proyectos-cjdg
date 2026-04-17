@@ -14,8 +14,8 @@ class Service(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     service_id = Column(String, unique=True, index=True, nullable=False)  # e.g. "CAT-CCTV-001"
     pilar_id = Column(String, index=True, nullable=False)                  # "tecnologia", "cableado"
-    nombre = Column(String, nullable=False)
-    categoria = Column(String, nullable=False)
+    nombre = Column(String, nullable=False, index=True)
+    categoria = Column(String, nullable=False, index=True)
     marca = Column(String, nullable=True)        # Hikvision, Ubiquiti, MikroTik…
     codigo_modelo = Column(String, nullable=True)  # DS-2CD2143G2-I
     description = Column(Text, nullable=True)

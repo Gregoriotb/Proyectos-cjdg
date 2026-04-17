@@ -2,25 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ShoppingCart, Search, Plus, Minus, Filter, Package, Tag, X, CheckCircle2 } from 'lucide-react';
 import { api, getImageUrl } from '../../services/api';
 import { useCart } from '../../context/CartContext';
-
-interface CatalogItemType {
-  id: number;
-  price: number;
-  is_available: boolean;
-  stock: number;
-  is_offer: boolean;
-  discount_percentage: number;
-  service: {
-    id: number;
-    nombre: string;
-    description: string;
-    pilar_id: string;
-    categoria: string;
-    marca: string | null;
-    codigo_modelo: string | null;
-    image_url: string | null;
-  };
-}
+import { useCatalog, CatalogItemType } from '../../hooks/useCatalog';
+import PaginationControls from '../Pagination/PaginationControls';
 
 const PILARES = [
   { value: 'all', label: 'Todos' },
@@ -33,14 +16,21 @@ const PILARES = [
 const PAGE_SIZE = 24;
 
 const ProductCatalogGrid = () => {
-  const [items, setItems] = useState<CatalogItemType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [filterPilar, setFilterPilar] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [stockMap, setStockMap] = useState<Record<number, number>>({});
   const { addToCart } = useCart();
+  const {
+    items,
+    loading,
+    total,
+    page,
+    totalPages,
+    setPage,
+    filterPilar,
+    setFilterPilar,
+    searchTerm,
+    setSearchTerm
+  } = useCatalog(PAGE_SIZE);
+
+  const [stockMap, setStockMap] = useState<Record<number, number>>({});
 
   // Modal de cantidad
   const [selectedItem, setSelectedItem] = useState<CatalogItemType | null>(null);
@@ -64,43 +54,6 @@ const ProductCatalogGrid = () => {
     }
   }, []);
 
-  useEffect(() => {
-    setItems([]);
-    setTotal(0);
-    fetchCatalog(0);
-  }, [filterPilar]);
-
-  const fetchCatalog = async (skip: number) => {
-    if (skip === 0) setLoading(true);
-    else setLoadingMore(true);
-    try {
-      const params = new URLSearchParams({ skip: String(skip), limit: String(PAGE_SIZE) });
-      if (filterPilar !== 'all') params.set('pilar_id', filterPilar);
-      if (searchTerm.trim()) params.set('search', searchTerm.trim());
-
-      const res = await api.get(`/catalog?${params}`);
-      const data = res.data;
-      const newItems: CatalogItemType[] = data.items || [];
-      setTotal(data.total || 0);
-
-      if (skip === 0) {
-        setItems(newItems);
-      } else {
-        setItems(prev => [...prev, ...newItems]);
-      }
-    } catch (error) {
-      console.error('[Catalogo] Error:', error);
-      if (skip === 0) setItems([]);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
-  const handleLoadMore = () => {
-    fetchCatalog(items.length);
-  };
-
   const hasMore = items.length < total;
 
   const openQuantityModal = (item: CatalogItemType) => {
@@ -121,15 +74,7 @@ const ProductCatalogGrid = () => {
     }, 1500);
   };
 
-  // Búsqueda con debounce — dispara nueva consulta al backend
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setItems([]);
-      setTotal(0);
-      fetchCatalog(0);
-    }, 400);
-    return () => clearTimeout(timeout);
-  }, [searchTerm]);
+  // (El debounce de búsqueda ya no lo necesitamos duplicado aquí porque useCatalog lo hace)
 
   return (
     <div className="space-y-6">
@@ -165,8 +110,17 @@ const ProductCatalogGrid = () => {
       {/* Grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="glass-panel h-64 animate-pulse bg-white/5" />
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="glass-panel flex flex-col h-[320px] animate-pulse bg-cjdg-darker/50 border border-white/5 p-4 rounded-lg">
+              <div className="w-full h-32 bg-white/5 rounded-md mb-4 flex-shrink-0"></div>
+              <div className="w-1/4 h-2 bg-white/10 rounded mb-2"></div>
+              <div className="w-3/4 h-4 bg-white/10 rounded mb-2"></div>
+              <div className="w-1/2 h-3 bg-white/10 rounded mb-auto"></div>
+              <div className="flex justify-between items-end mt-4">
+                <div className="w-1/3 h-5 bg-white/10 rounded"></div>
+                <div className="w-8 h-8 bg-white/10 rounded"></div>
+              </div>
+            </div>
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -242,21 +196,13 @@ const ProductCatalogGrid = () => {
           })}
         </div>
 
-        {/* Cargar más */}
-        <div className="flex items-center justify-center pt-6 gap-4">
-          <span className="text-sm text-cjdg-textMuted">
-            {items.length} de {total} productos
-          </span>
-          {hasMore && (
-            <button
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="px-6 py-2.5 rounded-full text-sm font-medium bg-cjdg-primary/10 text-cjdg-primary hover:bg-cjdg-primary hover:text-white transition-all disabled:opacity-50"
-            >
-              {loadingMore ? 'Cargando...' : 'Cargar más'}
-            </button>
-          )}
-        </div>
+        <PaginationControls 
+          page={page} 
+          totalPages={totalPages} 
+          totalItems={total} 
+          pageSize={PAGE_SIZE} 
+          onPageChange={setPage} 
+        />
         </>
       )}
 
