@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api, getImageUrl } from '../../services/api';
 import {
   Search, ChevronLeft, ChevronRight, Box, Edit2, X, Save,
-  Tag, AlertTriangle, CheckCircle, RefreshCw, Plus, Trash2
+  Tag, AlertTriangle, CheckCircle, RefreshCw, Plus, Trash2, UploadCloud, Loader2
 } from 'lucide-react';
 import PaginationControls from '../Pagination/PaginationControls';
 import InventoryForm from './InventoryForm';
@@ -52,6 +52,35 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    setUploadingImg(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', e.target.files[0]);
+      const res = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const newUrl = res.data.url;
+      
+      let currentImages = (item.service as any).image_urls || [];
+      if (!Array.isArray(currentImages)) currentImages = [];
+      const updatedImages = [...currentImages, newUrl];
+      
+      const patchRes = await api.patch(`/admin/services/${item.service_id}`, {
+        image_url: updatedImages[0], 
+        image_urls: updatedImages
+      });
+      onItemUpdated(item.id, { service: patchRes.data });
+    } catch (e: any) {
+      console.error('Error subiendo', e);
+      alert("Error subiendo imagen");
+    } finally {
+      setUploadingImg(false);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -86,11 +115,22 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
       {/* Imagen + Nombre */}
       <td className="py-3 px-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex-shrink-0 flex items-center justify-center">
+          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex-shrink-0 flex items-center justify-center group/img">
             {imgSrc
               ? <img src={imgSrc} alt={nombre} className="w-full h-full object-contain" />
               : <Box className="w-5 h-5 text-cjdg-textMuted opacity-40" />
             }
+            {editing && !uploadingImg && (
+               <label className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer hover:bg-black/40 transition-colors opacity-0 group-hover/img:opacity-100">
+                  <UploadCloud className="w-4 h-4 text-white" />
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+               </label>
+            )}
+            {uploadingImg && (
+               <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 animate-spin text-cjdg-primary" />
+               </div>
+            )}
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium text-white truncate max-w-[200px]">{nombre}</div>
@@ -278,11 +318,12 @@ const CatalogPanel = () => {
       if (item.id !== id) return item;
       return {
         ...item,
-        price: data.price,
-        stock: data.stock,
-        is_offer: data.is_offer,
-        discount_percentage: data.discount_percentage,
-        is_available: data.is_available,
+        price: data.price !== undefined ? data.price : item.price,
+        stock: data.stock !== undefined ? data.stock : item.stock,
+        is_offer: data.is_offer !== undefined ? data.is_offer : item.is_offer,
+        discount_percentage: data.discount_percentage !== undefined ? data.discount_percentage : item.discount_percentage,
+        is_available: data.is_available !== undefined ? data.is_available : item.is_available,
+        service: data.service !== undefined ? data.service : item.service
       };
     }));
   };
