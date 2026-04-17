@@ -17,6 +17,7 @@ export interface CatalogItemType {
     marca: string | null;
     codigo_modelo: string | null;
     image_url: string | null;
+    image_urls: string[] | null;
   };
 }
 

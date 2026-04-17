@@ -21,7 +21,7 @@ const ProductCard = ({ item, stockMap, openQuantityModal }: { item: CatalogItemT
   const finalPrice = hasDiscount && item.price ? item.price * (1 - item.discount_percentage / 100) : item.price;
   
   // Array de imagenes: image_urls o la solitaria image_url
-  const rawImages = (item.service as any).image_urls?.length ? (item.service as any).image_urls : (item.service.image_url ? [item.service.image_url] : []);
+  const rawImages = item.service.image_urls?.length ? item.service.image_urls : (item.service.image_url ? [item.service.image_url] : []);
   const images = rawImages.map(img => getImageUrl(img));
   const [imgIndex, setImgIndex] = useState(0);
 

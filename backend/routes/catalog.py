@@ -94,6 +94,7 @@ def get_catalog(
                     "description": srv.description,
                     "specs": srv.specs,
                     "image_url": srv.image_url,
+                    "image_urls": srv.image_urls or [],
                 } if srv else None,
             })
 

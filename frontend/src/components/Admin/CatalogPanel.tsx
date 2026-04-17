@@ -25,6 +25,7 @@ interface CatalogProduct {
     description: string | null;
     specs: Record<string, string> | null;
     image_url: string | null;
+    image_urls: string[] | null;
   } | null;
 }
 
@@ -65,8 +66,7 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
       });
       const newUrl = res.data.url;
       
-      let currentImages = (item.service as any).image_urls || [];
-      if (!Array.isArray(currentImages)) currentImages = [];
+      let currentImages = item.service?.image_urls || [];
       const updatedImages = [...currentImages, newUrl];
       
       const patchRes = await api.patch(`/admin/services/${item.service_id}`, {
