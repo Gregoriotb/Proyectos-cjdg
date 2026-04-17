@@ -4,6 +4,7 @@ import {
   Search, ChevronLeft, ChevronRight, Box, Edit2, X, Save,
   Tag, AlertTriangle, CheckCircle, RefreshCw
 } from 'lucide-react';
+import PaginationControls from '../Pagination/PaginationControls';
 
 interface CatalogProduct {
   id: number;         // CatalogItem.id
@@ -218,23 +219,36 @@ const CatalogPanel = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [pilarFilter, setPilarFilter] = useState('');
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      // Usamos el endpoint de inventario que ya tiene el join con service
-      const res = await api.get('/admin/inventory');
-      setItems(res.data);
+      const params = new URLSearchParams({ 
+        page: String(page), 
+        page_size: String(PAGE_SIZE) 
+      });
+      if (search.trim()) params.set('search', search.trim());
+      if (pilarFilter) params.set('pilar_id', pilarFilter);
+
+      const res = await api.get(`/admin/inventory?${params}`);
+      setItems(res.data.items || []);
+      setTotal(res.data.total || 0);
     } catch (e) {
       console.error(e);
+      setItems([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, search, pilarFilter]);
 
+  // Debounce para búsqueda
   useEffect(() => {
-    fetchItems();
+    const timeout = setTimeout(() => {
+      fetchItems();
+    }, 400);
+    return () => clearTimeout(timeout);
   }, [fetchItems]);
 
   // Actualizar solo los campos de catálogo, sin tocar el service anidado
@@ -252,24 +266,7 @@ const CatalogPanel = () => {
     }));
   };
 
-  // Solo productos reales de catálogo PDF (tienen marca o código de modelo)
-  const filtered = items.filter(item => {
-    const isRealProduct = !!(item.service?.marca || item.service?.codigo_modelo);
-    const nombre = item.service?.nombre?.toLowerCase() ?? '';
-    const marca = item.service?.marca?.toLowerCase() ?? '';
-    const matchSearch = !search || nombre.includes(search.toLowerCase()) || marca.includes(search.toLowerCase());
-    const matchPilar = !pilarFilter || item.service?.pilar_id === pilarFilter;
-    return isRealProduct && matchSearch && matchPilar;
-  }).sort((a, b) => {
-    // Items con stock o precio modificado aparecen primero
-    const aModified = (a.stock > 0 || (a.price !== null && a.price > 0)) ? 1 : 0;
-    const bModified = (b.stock > 0 || (b.price !== null && b.price > 0)) ? 1 : 0;
-    if (bModified !== aModified) return bModified - aModified;
-    return a.id - b.id; // Luego por ID estable
-  });
-
-  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="space-y-4">
@@ -280,14 +277,14 @@ const CatalogPanel = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cjdg-textMuted" />
             <input
               value={search}
-              onChange={e => { setSearch(e.target.value); setPage(0); }}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
               className="w-full pl-9 pr-3 py-2 bg-cjdg-darker border border-cjdg-border rounded text-white text-sm focus:outline-none focus:border-cjdg-primary"
               placeholder="Buscar por nombre o marca..."
             />
           </div>
           <select
             value={pilarFilter}
-            onChange={e => { setPilarFilter(e.target.value); setPage(0); }}
+            onChange={e => { setPilarFilter(e.target.value); setPage(1); }}
             className="bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cjdg-primary"
           >
             <option value="">Todos los pilares</option>
@@ -295,7 +292,7 @@ const CatalogPanel = () => {
           </select>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-xs text-cjdg-textMuted">{filtered.length} productos</span>
+          <span className="text-xs text-cjdg-textMuted">{total} productos</span>
           <button onClick={fetchItems} className="p-2 rounded hover:bg-white/10 text-cjdg-textMuted hover:text-white transition-colors">
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -326,7 +323,7 @@ const CatalogPanel = () => {
                     </td>
                   </tr>
                 ))
-              ) : paged.length === 0 ? (
+              ) : items.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-cjdg-textMuted">
                     <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-30" />
@@ -334,7 +331,7 @@ const CatalogPanel = () => {
                   </td>
                 </tr>
               ) : (
-                paged.map(item => (
+                items.map(item => (
                   <CatalogRow key={item.id} item={item} onItemUpdated={handleItemUpdated} />
                 ))
               )}
@@ -344,25 +341,15 @@ const CatalogPanel = () => {
       </div>
 
       {/* Paginación */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4 py-2">
-          <button
-            disabled={page === 0}
-            onClick={() => setPage(p => Math.max(0, p - 1))}
-            className="p-2 rounded hover:bg-white/10 disabled:opacity-30 transition-colors text-cjdg-textMuted"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="text-sm text-cjdg-textMuted">Página {page + 1} / {totalPages}</span>
-          <button
-            disabled={page >= totalPages - 1}
-            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-            className="p-2 rounded hover:bg-white/10 disabled:opacity-30 transition-colors text-cjdg-textMuted"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      )}
+      <div className="px-4 pb-4">
+        <PaginationControls 
+          page={page} 
+          totalPages={totalPages} 
+          totalItems={total} 
+          pageSize={PAGE_SIZE} 
+          onPageChange={setPage} 
+        />
+      </div>
     </div>
   );
 };

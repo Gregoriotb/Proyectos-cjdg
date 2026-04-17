@@ -65,15 +65,73 @@ def update_ecommerce_settings(settings_in: EcommerceSettingsUpdate, current_admi
     db.refresh(settings)
     return settings
 
-@router.get("/inventory", response_model=List[CatalogItemResponse])
-def get_inventory(current_admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):
+@router.get("/inventory")
+def get_inventory(
+    pilar_id: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(30, ge=1, le=100),
+    current_admin: User = Depends(get_current_admin), 
+    db: Session = Depends(get_db)
+):
     """
-    Lista todos los ítems del catálogo para gestión de inventario,
-    sin importar si están visibles o no.
-    joinedload evita N+1 queries contra Neon.
+    Lista todos los ítems del catálogo para gestión de inventario de forma paginada filtrada.
     """
     from sqlalchemy.orm import joinedload
-    return db.query(CatalogItem).options(joinedload(CatalogItem.service)).all()
+    import sqlalchemy as sa
+    
+    query = db.query(CatalogItem).join(Service, CatalogItem.service_id == Service.id).options(joinedload(CatalogItem.service))
+    
+    # Solo productos reales (con marca o codigo de modelo) como hacia el frontend antes
+    query = query.filter(sa.or_(Service.marca.isnot(None), Service.codigo_modelo.isnot(None)))
+    
+    if pilar_id:
+        query = query.filter(Service.pilar_id == pilar_id)
+        
+    if search:
+        term = f"%{search}%"
+        query = query.filter(
+            sa.or_(
+                Service.nombre.ilike(term),
+                Service.marca.ilike(term)
+            )
+        )
+        
+    total = query.count()
+    skip = (page - 1) * page_size
+    limit = page_size
+    
+    # Ordenar por ítems modificados (stock > 0 o precio > 0) y su respectivo ID
+    items = query.order_by(
+        sa.desc(sa.or_(CatalogItem.stock > 0, CatalogItem.price > 0)),
+        CatalogItem.id
+    ).offset(skip).limit(limit).all()
+    
+    result = []
+    for item in items:
+        srv = item.service
+        result.append({
+            "id": item.id,
+            "service_id": item.service_id,
+            "price": float(item.price) if item.price else None,
+            "is_available": item.is_available,
+            "stock": item.stock,
+            "is_offer": item.is_offer,
+            "discount_percentage": item.discount_percentage,
+            "service": {
+                "id": srv.id,
+                "nombre": srv.nombre,
+                "marca": srv.marca,
+                "codigo_modelo": srv.codigo_modelo,
+                "categoria": srv.categoria,
+                "pilar_id": srv.pilar_id,
+                "description": srv.description,
+                "specs": srv.specs,
+                "image_url": srv.image_url,
+            } if srv else None,
+        })
+        
+    return {"items": result, "total": total, "page": page, "page_size": page_size}
 
 @router.put("/inventory/{item_id}", response_model=CatalogItemResponse)
 def update_inventory_item(item_id: int, item_in: CatalogItemUpdate, current_admin: User = Depends(get_current_admin), db: Session = Depends(get_db)):
