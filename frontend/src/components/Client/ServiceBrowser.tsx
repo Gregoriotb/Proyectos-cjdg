@@ -39,10 +39,11 @@ const ServiceBrowser = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPilar, setSelectedPilar] = useState('');
 
-  // Cotización modal
+  // Cotización modal — V2.1: crea hilo de chat-cotización
   const [quotingService, setQuotingService] = useState<CorporateService | null>(null);
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
+  const [budget, setBudget] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -65,21 +66,28 @@ const ServiceBrowser = () => {
   };
 
   const handleRequestQuotation = async () => {
-    if (!quotingService || !description.trim()) return;
+    if (!quotingService || description.trim().length < 10) {
+      setError('Describe tu requerimiento con al menos 10 caracteres.');
+      return;
+    }
     setSubmitting(true);
     setError('');
 
     try {
-      await api.post('/service-quotation', {
-        service_catalog_id: quotingService.id,
-        descripcion_requerimiento: description,
-        notas_adicionales: notes || null,
+      const parsedBudget = budget ? Number(budget.replace(/[^0-9.]/g, '')) : null;
+      await api.post('/chat-quotations/threads', {
+        service_id: quotingService.id,
+        service_name: quotingService.nombre,
+        requirements: description.trim(),
+        location_notes: notes.trim() || null,
+        budget_estimate: parsedBudget && parsedBudget > 0 ? parsedBudget : null,
       });
       setSubmitted(true);
       setTimeout(() => {
         setQuotingService(null);
         setDescription('');
         setNotes('');
+        setBudget('');
         setSubmitted(false);
       }, 2000);
     } catch (err: any) {
@@ -225,7 +233,9 @@ const ServiceBrowser = () => {
               <div className="text-center py-6">
                 <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-3" />
                 <h3 className="text-lg font-bold text-white">¡Solicitud Enviada!</h3>
-                <p className="text-sm text-cjdg-textMuted mt-1">Un ingeniero revisará tu requerimiento.</p>
+                <p className="text-sm text-cjdg-textMuted mt-1">
+                  Puedes seguir la conversación en la sección "Cotizaciones".
+                </p>
               </div>
             ) : (
               <>
@@ -264,13 +274,26 @@ const ServiceBrowser = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-cjdg-textMuted mb-1 block">Notas adicionales</label>
+                  <label className="text-sm text-cjdg-textMuted mb-1 block">Ubicación / notas logísticas</label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={2}
                     className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-cjdg-primary resize-none"
-                    placeholder="Ubicación, plazos, presupuesto estimado..."
+                    placeholder="Ej: Oficina principal, Av. Libertador. Requiere acceso en horas laborales."
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-cjdg-textMuted mb-1 block">Presupuesto estimado (USD)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-cjdg-primary"
+                    placeholder="Opcional. Ej: 5000"
                   />
                 </div>
 
@@ -284,7 +307,7 @@ const ServiceBrowser = () => {
                   </button>
                   <button
                     onClick={handleRequestQuotation}
-                    disabled={submitting || !description.trim()}
+                    disabled={submitting || description.trim().length < 10}
                     className="flex-1 py-2 btn-primary text-sm disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</> : 'Enviar Solicitud'}

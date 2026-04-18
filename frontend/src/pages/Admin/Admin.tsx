@@ -2,18 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, Settings, Users, Activity, ToggleLeft, ToggleRight, FileText, ShoppingBag, Grid, Wrench, Receipt } from 'lucide-react';
+import { LogOut, Settings, Users, Activity, ToggleLeft, ToggleRight, FileText, ShoppingBag, Wrench, Receipt } from 'lucide-react';
 import CatalogPanel from '../../components/Admin/CatalogPanel';
 import ServicePricingPanel from '../../components/Admin/ServicePricingPanel';
 import InvoicesPanel from '../../components/Admin/InvoicesPanel';
-
-interface Quotation {
-  id: number;
-  user_id: string;
-  fecha: string;
-  status: string;
-  notas_cliente: string;
-}
+import QuotationsPanel from '../../components/Admin/Quotation/QuotationsPanel';
 
 interface EcommerceSettings {
   is_catalog_visible: boolean;
@@ -25,7 +18,6 @@ interface EcommerceSettings {
 type TabType = 'leads' | 'catalog' | 'services' | 'invoices' | 'settings';
 
 const Admin = () => {
-  const [leads, setLeads] = useState<Quotation[]>([]);
   const [settings, setSettings] = useState<EcommerceSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>(() => {
@@ -48,11 +40,7 @@ const Admin = () => {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const [leadsRes, settingsRes] = await Promise.all([
-        api.get('/admin/leads'),
-        api.get('/admin/settings')
-      ]);
-      setLeads(leadsRes.data);
+      const settingsRes = await api.get('/admin/settings');
       setSettings(settingsRes.data);
     } catch (error) {
       console.error("Error cargando panel de administrador", error);
@@ -151,55 +139,10 @@ const Admin = () => {
       {/* Contenido Dinámico */}
       <div className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
 
-        {/* Pestaña: LEADS */}
+        {/* Pestaña: LEADS — Chat-Cotizaciones V2.1 */}
         {activeTab === 'leads' && (
           <div className="glass-panel p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-end mb-6 border-b border-white/10 pb-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <FileText className="w-5 h-5 text-cjdg-primary" /> Historial de Leads ({leads.length})
-              </h2>
-            </div>
-
-            {leads.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-cjdg-textMuted">No hay cotizaciones pendientes en este momento.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10 text-xs font-mono uppercase tracking-widest text-cjdg-textMuted">
-                      <th className="pb-3 px-4 font-medium">ID Lead</th>
-                      <th className="pb-3 px-4 font-medium">Fecha</th>
-                      <th className="pb-3 px-4 font-medium">Cliente ID</th>
-                      <th className="pb-3 px-4 font-medium">Estado</th>
-                      <th className="pb-3 px-4 font-medium text-right">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leads.map((lead) => (
-                      <tr key={lead.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="py-4 px-4 font-mono text-sm text-white">#{lead.id.toString().padStart(4, '0')}</td>
-                        <td className="py-4 px-4 text-sm text-cjdg-textMuted">
-                          {lead.fecha ? new Date(lead.fecha).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="py-4 px-4 text-xs font-mono text-cjdg-textMuted">
-                          {lead.user_id.split('-')[0]}...
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="inline-block px-2 py-1 rounded bg-yellow-500/20 text-yellow-300 text-xs border border-yellow-500/30">
-                            {lead.status.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-right">
-                          <button className="text-cjdg-accent text-sm hover:underline">Ver Notas</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <QuotationsPanel />
           </div>
         )}
 
@@ -259,11 +202,6 @@ const Admin = () => {
               <p className="text-sm text-cjdg-textMuted mb-6">Métricas crudas del sistema en tiempo real.</p>
 
               <div className="flex items-center gap-8">
-                <div>
-                  <div className="text-4xl font-mono text-cjdg-accent font-bold">{leads.length}</div>
-                  <div className="text-xs font-mono uppercase tracking-widest text-cjdg-textMuted mt-1">Leads Activos</div>
-                </div>
-                <div className="h-12 w-px bg-white/10"></div>
                 <div>
                   <div className="text-4xl font-mono text-white font-bold">4</div>
                   <div className="text-xs font-mono uppercase tracking-widest text-cjdg-textMuted mt-1">Pilares DB</div>

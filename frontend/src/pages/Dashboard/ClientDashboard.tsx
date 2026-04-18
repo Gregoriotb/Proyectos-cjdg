@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import ProductCatalogGrid from '../../components/Client/ProductCatalogGrid';
 import ServiceBrowser from '../../components/Client/ServiceBrowser';
-import QuotationsHistory from '../../components/Client/QuotationsHistory';
+import ClientQuotationsList from '../../components/Client/Quotations/ClientQuotationsList';
+import ClientChatView from '../../components/Client/Quotations/ClientChatView';
 import InvoiceList from '../../components/Client/InvoiceList';
 import CartSection from '../../components/Client/CartSection';
 import { useCart } from '../../context/CartContext';
@@ -26,6 +27,7 @@ const SECTIONS = [
 const ClientDashboard = () => {
   const [activeSection, setActiveSection] = useState<SectionType>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const { user, logout } = useAuth();
   const { cart } = useCart();
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ const ClientDashboard = () => {
   const handleSectionChange = (section: SectionType) => {
     setActiveSection(section);
     setSidebarOpen(false);
+    if (section !== 'quotations') setSelectedThreadId(null);
   };
 
   return (
@@ -164,7 +167,11 @@ const ClientDashboard = () => {
           {activeSection === 'catalog' && <ProductCatalogGrid />}
           {activeSection === 'cart' && <CartSection onGoToInvoices={() => setActiveSection('invoices')} />}
           {activeSection === 'services' && <ServiceBrowser />}
-          {activeSection === 'quotations' && <QuotationsHistory />}
+          {activeSection === 'quotations' && (
+            selectedThreadId
+              ? <ClientChatView threadId={selectedThreadId} onBack={() => setSelectedThreadId(null)} />
+              : <ClientQuotationsList onSelectThread={setSelectedThreadId} />
+          )}
           {activeSection === 'invoices' && <InvoiceList />}
           {activeSection === 'profile' && <ProfileSection />}
         </main>

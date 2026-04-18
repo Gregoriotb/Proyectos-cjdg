@@ -1,10 +1,12 @@
 """
 [CONTEXT: USER_GATEWAY] - SQLAlchemy Model - User
 SC-SECURITY-01: username como login, campos OAuth preparados.
+V2.1: Campos extendidos para chat-cotizaciones (first_name, last_name, phone, company_name, address).
 """
 import uuid
-from sqlalchemy import Column, String, Boolean, Enum
+from sqlalchemy import Column, String, Boolean, Enum, Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from database import Base
 import enum
 
@@ -29,3 +31,17 @@ class User(Base):
     # OAuth preparación (solo columnas, sin lógica aún)
     oauth_provider = Column(String(20), nullable=True, default=None)
     oauth_id = Column(String(255), nullable=True, default=None)
+
+    # V2.1 — Campos extendidos para chat-cotizaciones
+    first_name = Column(String(100), nullable=True)
+    last_name = Column(String(100), nullable=True)
+    phone = Column(String(30), nullable=True)
+    company_name = Column(String(255), nullable=True)
+    address = Column(Text, nullable=True)
+
+    quotation_threads = relationship(
+        "QuotationThread",
+        foreign_keys="QuotationThread.client_id",
+        back_populates="client",
+        cascade="all, delete-orphan",
+    )

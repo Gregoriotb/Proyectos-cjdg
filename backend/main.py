@@ -15,7 +15,7 @@ import os
 import sys
 
 # Importación de routers (se activarán por subcontexto)
-from routes import auth, catalog, cart, quotations, admin, admin_services, invoices, service_quotations
+from routes import auth, catalog, cart, quotations, admin, admin_services, invoices, service_quotations, chat_quotation
 
 # ----------------------------------------------------------
 # LOGGING — Salida en stdout para Railway
@@ -351,3 +351,6 @@ app.include_router(service_quotations.router, prefix="/api/v1", tags=["Cotizacio
 # Fase Extras — [CONTEXT: UPLOADS] Subida de Archivos
 from routes import uploads
 app.include_router(uploads.router, prefix="/api/v1", tags=["Archivos e Imágenes"])
+
+# V2.1 — [CONTEXT: CHAT_QUOTATIONS] Chat-Cotizaciones con hilos y adjuntos
+app.include_router(chat_quotation.router, prefix="/api/v1", tags=["Chat Cotizaciones"])
