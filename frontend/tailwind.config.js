@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Paleta Corporativa Ejecutiva (Executive Dark)
+        // Paleta Corporativa Ejecutiva (Executive Dark) — LEGACY, se migrará a cj-*
         cjdg: {
           dark: '#0f172a',      // Slate 900 - Fondo principal
           darker: '#020617',    // Slate 950 - Fondos profundos
@@ -19,7 +19,30 @@ export default {
           accent: '#38bdf8',    // Sky 400 - Detalles luminosos
           text: '#f8fafc',      // Slate 50 - Texto principal
           textMuted: '#94a3b8', // Slate 400 - Texto secundario
-        }
+        },
+        // V3 Tech-Gray — paleta nueva, migración progresiva (Fase 3.x)
+        cj: {
+          bg: {
+            primary:   '#F8F9FA', // Fondo principal (grisáceo claro)
+            secondary: '#E9ECEF', // Cards elevadas
+            tertiary:  '#DEE2E6', // Hover, bordes suaves
+          },
+          surface: '#FFFFFF',      // Modales, flotantes
+          text: {
+            primary:   '#212529',  // Texto principal (casi negro)
+            secondary: '#6C757D',  // Subtítulos, metadatos
+            muted:     '#ADB5BD',  // Placeholders, deshabilitados
+          },
+          accent: {
+            blue:         '#0D6EFD', // CTAs, links, activo
+            'blue-hover': '#0B5ED7', // Hover de CTAs
+            'blue-light': '#E7F1FF', // Badge bg, highlight
+          },
+          border:  '#CED4DA',      // Bordes estándar
+          success: '#198754',      // Confirmaciones
+          warning: '#FFC107',      // Alertas suaves
+          danger:  '#DC3545',      // Errores
+        },
       },
       fontFamily: {
         // Fuentes técnicas y ejecutivas
@@ -33,6 +56,11 @@ export default {
       boxShadow: {
         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
         'glow': '0 0 15px -3px rgba(56, 189, 248, 0.4)',
+        // V3 Tech-Gray — sombras sutiles, opacity ≤ 0.15
+        'cj-sm': '0 1px 2px rgba(0,0,0,0.04)',
+        'cj-md': '0 4px 6px -1px rgba(0,0,0,0.08)',
+        'cj-lg': '0 10px 15px -3px rgba(0,0,0,0.12)',
+        'cj-xl': '0 20px 25px -5px rgba(0,0,0,0.15)',
       },
       keyframes: {
         gradient: {
