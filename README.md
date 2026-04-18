@@ -11,7 +11,7 @@ Plataforma digital de **Proyectos CJDG** (Venezuela) — empresa de servicios t�
 | Capa | Tecnología | Deploy |
 |---|---|---|
 | Frontend | React 18 · Vite · TypeScript · Tailwind CSS | **Vercel** |
-| Backend | Python 3.11 · FastAPI · Uvicorn · SQLAlchemy 2 · Alembic | **Railway** (región `asia-southeast1`) |
+| Backend | Python 3.11 · FastAPI · Uvicorn · SQLAlchemy 2 · Alembic | **Railway** (región `us-west`) |
 | Base de datos | PostgreSQL (serverless) | **Neon** (branch `production`) |
 | Archivos / Adjuntos | ImgBB API (CDN externo, fallback local) | — |
 | Auth | JWT Bearer tokens + bcrypt | — |
@@ -309,7 +309,7 @@ GET /api/v1/setup-catalogs?key=SECRET_KEY&batch=2
 ## Notas Técnicas de Deploy
 
 ### Región Railway
-El servicio está en `asia-southeast1-eqsg3a` (Singapur). Para usuarios en LATAM la latencia es ~350ms/request. Mover a `us-east4` reduciría el RTT a ~80-120ms y aceleraría toda la UX.
+Actualmente en `us-west` (movido desde `asia-southeast1-eqsg3a`/Singapur para reducir latencia desde LATAM: ~350ms → ~100ms por request).
 
 ### CORS
 `allow_origins=["*"]` con `allow_credentials=False` porque la auth es via Bearer token (no cookies).
@@ -325,7 +325,26 @@ Usar `""` en vez de `"/"` en routers montados con prefix, y `redirect_slashes=Fa
 
 ## Estado al 2026-04-17
 
-- Último commit: `5bb6594` — Hero destacado para servicio especial
-- V2.1 Chat-Cotizaciones shipeado: `18d2c60`
+- Último commit: `ab8a323` — Docs actualizados (README + doc V2.1)
+- V2.1 Chat-Cotizaciones shipeado: `18d2c60` · Hero especial: `5bb6594`
 - Feature probada en producción con usuario `crudopb · CLIENTE`
-- Próximas palancas sugeridas: mover región Railway, cachear con React Query, WebSocket para chat en tiempo real
+- Región Railway movida a `us-west` → UX ~3-4x más rápida desde LATAM
+
+---
+
+## Próxima versión: V2.2 Dashboard Home (planificada)
+
+Hub de inicio para el cliente que reemplaza la actual "Panel General" vacía con:
+
+- **HeroSection** con "Acerca de CJDG" + CTAs a catálogo y cotización.
+- **SpecialServicesWidget** — 3 cards de servicios destacados (`is_special`).
+- **OffersWidget** — grid/carrusel de productos en oferta (`is_offer`).
+- **QuickAccessNav** — links rápidos a las 4 secciones principales.
+- **Sidebar**: "Panel General" → **"Inicio"** con icono `Home`.
+
+Endpoints nuevos:
+- `GET /api/v1/catalog/offers?limit=6` — productos con mayor descuento.
+- `GET /api/v1/services/special` — hasta 3 servicios destacados activos.
+
+Detalle completo en [docs/v2_2_dashboard_home.md](docs/v2_2_dashboard_home.md).
+Specs originales del usuario en `feat/*.md` (fuera del repo).
