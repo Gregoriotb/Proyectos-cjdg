@@ -7,5 +7,6 @@ from .quotation import Quotation, QuotationItem
 from .ecommerce_settings import EcommerceSettings
 from .service_catalog import ServiceCatalog
 from .invoice import Invoice, InvoiceItem
+from .chat_quotation import QuotationThread, ChatMessage
 
 # Esto permite que Alembic lea todos los modelos importando solo __init__
