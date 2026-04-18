@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +17,14 @@ interface EcommerceSettings {
 
 type TabType = 'leads' | 'catalog' | 'services' | 'invoices' | 'settings';
 
+const TABS: Array<{ key: TabType; label: string; Icon: typeof FileText }> = [
+  { key: 'leads',    label: 'Cotizaciones', Icon: FileText },
+  { key: 'catalog',  label: 'Catálogo',      Icon: ShoppingBag },
+  { key: 'services', label: 'Servicios',     Icon: Wrench },
+  { key: 'invoices', label: 'Facturación',   Icon: Receipt },
+  { key: 'settings', label: 'Ajustes',       Icon: Settings },
+];
+
 const Admin = () => {
   const [settings, setSettings] = useState<EcommerceSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,9 +41,7 @@ const Admin = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
+  useEffect(() => { fetchAdminData(); }, []);
 
   const fetchAdminData = async () => {
     setLoading(true);
@@ -43,7 +49,7 @@ const Admin = () => {
       const settingsRes = await api.get('/admin/settings');
       setSettings(settingsRes.data);
     } catch (error) {
-      console.error("Error cargando panel de administrador", error);
+      console.error('Error cargando panel de administrador', error);
     } finally {
       setLoading(false);
     }
@@ -56,41 +62,40 @@ const Admin = () => {
       const res = await api.put('/admin/settings', { [field]: updatedValue });
       setSettings(res.data);
     } catch (error) {
-      console.error("Error al guardar configuración", error);
+      console.error('Error al guardar configuración', error);
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const handleLogout = () => { logout(); navigate('/login'); };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cjdg-darker pt-24 pb-12 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cjdg-accent"></div>
+      <div className="min-h-screen bg-cj-bg-primary pt-24 pb-12 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cj-accent-blue" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-cjdg-darker flex flex-col">
-      {/* Navbar Exclusiva del Admin */}
-      <nav className="border-b border-white/5 bg-cjdg-dark/80 backdrop-blur-lg sticky top-0 z-50">
+    <div className="min-h-screen bg-cj-bg-primary flex flex-col">
+      {/* Navbar Admin */}
+      <nav className="border-b border-cj-border bg-cj-surface shadow-cj-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Activity className="w-6 h-6 text-cjdg-accent" />
-            <span className="text-lg font-bold text-white tracking-wide">Consola CJDG</span>
+            <div className="w-8 h-8 rounded-lg bg-cj-accent-blue-light flex items-center justify-center">
+              <Activity className="w-4 h-4 text-cj-accent-blue" />
+            </div>
+            <span className="text-lg font-bold text-cj-text-primary tracking-wide">Consola CJDG</span>
           </div>
 
           <div className="flex items-center gap-6">
             <div className="text-right hidden sm:block">
-              <div className="text-sm font-medium text-white">{user?.full_name}</div>
-              <div className="text-xs text-cjdg-textMuted uppercase tracking-wider">{user?.role}</div>
+              <div className="text-sm font-medium text-cj-text-primary">{user?.full_name}</div>
+              <div className="text-xs text-cj-accent-blue uppercase tracking-wider font-semibold">{user?.role}</div>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-sm font-medium border border-red-500/20"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-cj-danger hover:bg-red-100 transition-colors text-sm font-medium border border-red-200"
             >
               <LogOut className="w-4 h-4" /> Cerrar Sesión
             </button>
@@ -98,119 +103,100 @@ const Admin = () => {
         </div>
       </nav>
 
-      {/* Selector de Pestañas */}
-      <div className="border-b border-white/10 bg-cjdg-dark/30">
+      {/* Tabs */}
+      <div className="border-b border-cj-border bg-cj-surface">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-8 overflow-x-auto">
-            <button
-              onClick={() => changeTab('leads')}
-              className={`py-4 px-2 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${activeTab === 'leads' ? 'border-cjdg-primary text-cjdg-primary' : 'border-transparent text-cjdg-textMuted hover:text-white'}`}
-            >
-              <div className="flex items-center gap-2"><FileText className="w-4 h-4" /> Cotizaciones Entrantes</div>
-            </button>
-            <button
-              onClick={() => changeTab('catalog')}
-              className={`py-4 px-2 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${activeTab === 'catalog' ? 'border-cjdg-primary text-cjdg-primary' : 'border-transparent text-cjdg-textMuted hover:text-white'}`}
-            >
-              <div className="flex items-center gap-2"><ShoppingBag className="w-4 h-4" /> Catálogo</div>
-            </button>
-            <button
-              onClick={() => changeTab('services')}
-              className={`py-4 px-2 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${activeTab === 'services' ? 'border-cjdg-primary text-cjdg-primary' : 'border-transparent text-cjdg-textMuted hover:text-white'}`}
-            >
-              <div className="flex items-center gap-2"><Wrench className="w-4 h-4" /> Servicios</div>
-            </button>
-            <button
-              onClick={() => changeTab('invoices')}
-              className={`py-4 px-2 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${activeTab === 'invoices' ? 'border-cjdg-primary text-cjdg-primary' : 'border-transparent text-cjdg-textMuted hover:text-white'}`}
-            >
-              <div className="flex items-center gap-2"><Receipt className="w-4 h-4" /> Facturación</div>
-            </button>
-            <button
-              onClick={() => changeTab('settings')}
-              className={`py-4 px-2 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${activeTab === 'settings' ? 'border-cjdg-primary text-cjdg-primary' : 'border-transparent text-cjdg-textMuted hover:text-white'}`}
-            >
-              <div className="flex items-center gap-2"><Settings className="w-4 h-4" /> Ajustes Globales</div>
-            </button>
+            {TABS.map(({ key, label, Icon }) => {
+              const isActive = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => changeTab(key)}
+                  className={`py-4 px-2 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${
+                    isActive
+                      ? 'border-cj-accent-blue text-cj-accent-blue'
+                      : 'border-transparent text-cj-text-secondary hover:text-cj-text-primary'
+                  }`}
+                >
+                  <div className="flex items-center gap-2"><Icon className="w-4 h-4" /> {label}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Contenido Dinámico */}
+      {/* Contenido */}
       <div className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
-
-        {/* Pestaña: LEADS — Chat-Cotizaciones V2.1 */}
         {activeTab === 'leads' && (
           <div className="glass-panel p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <QuotationsPanel />
           </div>
         )}
 
-        {/* Pestaña: CATÁLOGO */}
         {activeTab === 'catalog' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <CatalogPanel />
           </div>
         )}
 
-        {/* Pestaña: SERVICIOS (CJDG Brochure - precios, CRUD, estado) */}
         {activeTab === 'services' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <ServicePricingPanel />
           </div>
         )}
 
-        {/* Pestaña: FACTURACIÓN */}
         {activeTab === 'invoices' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <InvoicesPanel />
           </div>
         )}
 
-        {/* Pestaña: AJUSTES GLOBALES */}
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="glass-panel p-6">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
-                <Settings className="w-5 h-5 text-cjdg-primary" /> Configuración de E-Commerce
+              <h2 className="text-xl font-bold text-cj-text-primary flex items-center gap-2 mb-6 border-b border-cj-border pb-4">
+                <Settings className="w-5 h-5 text-cj-accent-blue" /> Configuración de E-Commerce
               </h2>
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-white font-medium">Catálogo Público</h3>
-                    <p className="text-xs text-cjdg-textMuted mt-1">Permite a usuarios no registrados ver los modelos.</p>
+                    <h3 className="text-cj-text-primary font-medium">Catálogo Público</h3>
+                    <p className="text-xs text-cj-text-secondary mt-1">Permite a usuarios no registrados ver los modelos.</p>
                   </div>
-                  <button onClick={() => toggleSetting('is_catalog_visible')} className="text-cjdg-accent">
-                    {settings?.is_catalog_visible ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8 text-cjdg-textMuted" />}
+                  <button onClick={() => toggleSetting('is_catalog_visible')} className={settings?.is_catalog_visible ? 'text-cj-accent-blue' : 'text-cj-text-muted'}>
+                    {settings?.is_catalog_visible ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
                   </button>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-white font-medium">Precios Visibles</h3>
-                    <p className="text-xs text-cjdg-textMuted mt-1">Oculta precios (forzando cotizaciones personalizadas).</p>
+                    <h3 className="text-cj-text-primary font-medium">Precios Visibles</h3>
+                    <p className="text-xs text-cj-text-secondary mt-1">Oculta precios (forzando cotizaciones personalizadas).</p>
                   </div>
-                  <button onClick={() => toggleSetting('are_prices_visible')} className="text-cjdg-accent">
-                    {settings?.are_prices_visible ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8 text-cjdg-textMuted" />}
+                  <button onClick={() => toggleSetting('are_prices_visible')} className={settings?.are_prices_visible ? 'text-cj-accent-blue' : 'text-cj-text-muted'}>
+                    {settings?.are_prices_visible ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="glass-panel p-6 bg-gradient-to-br from-cjdg-darker to-blue-900/10 flex flex-col justify-center">
-              <h3 className="text-white font-bold mb-2 flex items-center gap-2"><Users className="w-5 h-5" /> Estadísticas Generales</h3>
-              <p className="text-sm text-cjdg-textMuted mb-6">Métricas crudas del sistema en tiempo real.</p>
+            <div className="glass-panel p-6 flex flex-col justify-center">
+              <h3 className="text-cj-text-primary font-bold mb-2 flex items-center gap-2">
+                <Users className="w-5 h-5 text-cj-accent-blue" /> Estadísticas Generales
+              </h3>
+              <p className="text-sm text-cj-text-secondary mb-6">Métricas crudas del sistema en tiempo real.</p>
 
               <div className="flex items-center gap-8">
                 <div>
-                  <div className="text-4xl font-mono text-white font-bold">4</div>
-                  <div className="text-xs font-mono uppercase tracking-widest text-cjdg-textMuted mt-1">Pilares DB</div>
+                  <div className="text-4xl font-mono text-cj-text-primary font-bold">4</div>
+                  <div className="text-xs font-mono uppercase tracking-widest text-cj-text-secondary mt-1">Pilares DB</div>
                 </div>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

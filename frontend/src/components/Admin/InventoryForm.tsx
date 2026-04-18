@@ -82,15 +82,15 @@ const InventoryForm = ({ onSave, onCancel }: InventoryFormProps) => {
   return (
     <div className="glass-panel p-6 space-y-4 relative">
       <div className="absolute top-4 right-4">
-        <button onClick={onCancel} className="p-1.5 rounded text-cjdg-textMuted hover:text-white hover:bg-white/10 transition-colors">
+        <button onClick={onCancel} className="p-1.5 rounded text-cj-text-secondary hover:text-cj-text-primary hover:bg-cj-bg-tertiary transition-colors">
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      <h3 className="text-xl font-bold text-white mb-6">Añadir Nuevo Producto (Catálogo)</h3>
+      <h3 className="text-xl font-bold text-cj-text-primary mb-6">Añadir Nuevo Producto (Catálogo)</h3>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-3 rounded-md flex items-start gap-2 text-sm">
+        <div className="bg-red-50 border border-red-200 text-cj-danger p-3 rounded-md flex items-start gap-2 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -99,80 +99,80 @@ const InventoryForm = ({ onSave, onCancel }: InventoryFormProps) => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-cjdg-textMuted mb-1">Nombre *</label>
-            <input required value={nombre} onChange={e=>setNombre(e.target.value)} className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:border-cjdg-primary outline-none" />
+            <label className="block text-sm text-cj-text-secondary mb-1">Nombre *</label>
+            <input required value={nombre} onChange={e=>setNombre(e.target.value)} className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue" />
           </div>
           <div>
-            <label className="block text-sm text-cjdg-textMuted mb-1">Pilar *</label>
-            <select required value={pilarId} onChange={e=>setPilarId(e.target.value)} className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:border-cjdg-primary outline-none">
+            <label className="block text-sm text-cj-text-secondary mb-1">Pilar *</label>
+            <select required value={pilarId} onChange={e=>setPilarId(e.target.value)} className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue">
               {PILARES.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm text-cjdg-textMuted mb-1">Categoría</label>
-            <input value={categoria} onChange={e=>setCategoria(e.target.value)} placeholder="Ej: Camaras IP" className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:border-cjdg-primary outline-none" />
+            <label className="block text-sm text-cj-text-secondary mb-1">Categoría</label>
+            <input value={categoria} onChange={e=>setCategoria(e.target.value)} placeholder="Ej: Camaras IP" className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue" />
           </div>
           <div>
-            <label className="block text-sm text-cjdg-textMuted mb-1">Marca</label>
-            <input value={marca} onChange={e=>setMarca(e.target.value)} placeholder="Ej: Hikvision" className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:border-cjdg-primary outline-none" />
+            <label className="block text-sm text-cj-text-secondary mb-1">Marca</label>
+            <input value={marca} onChange={e=>setMarca(e.target.value)} placeholder="Ej: Hikvision" className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue" />
           </div>
           <div>
-            <label className="block text-sm text-cjdg-textMuted mb-1">Código Modelo</label>
-            <input value={codigoModelo} onChange={e=>setCodigoModelo(e.target.value)} placeholder="Ej: DS-2CD..." className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:border-cjdg-primary outline-none" />
+            <label className="block text-sm text-cj-text-secondary mb-1">Código Modelo</label>
+            <input value={codigoModelo} onChange={e=>setCodigoModelo(e.target.value)} placeholder="Ej: DS-2CD..." className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue" />
           </div>
         </div>
 
         <div>
-           <label className="block text-sm text-cjdg-textMuted mb-1">Descripción corta</label>
-           <textarea value={descripcion} onChange={e=>setDescripcion(e.target.value)} rows={2} className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:border-cjdg-primary outline-none resize-none" />
+           <label className="block text-sm text-cj-text-secondary mb-1">Descripción corta</label>
+           <textarea value={descripcion} onChange={e=>setDescripcion(e.target.value)} rows={2} className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue resize-none" />
         </div>
 
-        <div className="border-t border-white/10 pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="border-t border-cj-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm text-cjdg-textMuted mb-1">Precio ($)</label>
-            <input type="number" step="0.01" min="0" value={price} onChange={e=>setPrice(e.target.value)} className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:border-cjdg-primary outline-none" />
+            <label className="block text-sm text-cj-text-secondary mb-1">Precio ($)</label>
+            <input type="number" step="0.01" min="0" value={price} onChange={e=>setPrice(e.target.value)} className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue" />
           </div>
           <div>
-            <label className="block text-sm text-cjdg-textMuted mb-1">Stock</label>
-            <input type="number" min="0" value={stock} onChange={e=>setStock(e.target.value)} className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:border-cjdg-primary outline-none" />
+            <label className="block text-sm text-cj-text-secondary mb-1">Stock</label>
+            <input type="number" min="0" value={stock} onChange={e=>setStock(e.target.value)} className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue" />
           </div>
           <div className="flex items-center gap-2 mt-6">
-            <input type="checkbox" checked={isOffer} onChange={e=>setIsOffer(e.target.checked)} className="rounded bg-cjdg-dark text-cjdg-primary border-cjdg-border" />
-            <span className="text-sm text-white">¿En Oferta?</span>
+            <input type="checkbox" checked={isOffer} onChange={e=>setIsOffer(e.target.checked)} className="rounded bg-cj-bg-primary text-cj-accent-blue border-cj-border" />
+            <span className="text-sm text-cj-text-primary">¿En Oferta?</span>
           </div>
           {isOffer && (
             <div>
-              <label className="block text-sm text-cjdg-textMuted mb-1">% Descuento</label>
-              <input type="number" min="0" max="100" value={discount} onChange={e=>setDiscount(e.target.value)} className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:border-cjdg-primary outline-none" />
+              <label className="block text-sm text-cj-text-secondary mb-1">% Descuento</label>
+              <input type="number" min="0" max="100" value={discount} onChange={e=>setDiscount(e.target.value)} className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue" />
             </div>
           )}
         </div>
 
         {/* Galeria */}
-        <div className="border-t border-white/10 pt-4">
-           <label className="block text-sm text-cjdg-textMuted mb-3">Galería de Imágenes</label>
-           
+        <div className="border-t border-cj-border pt-4">
+           <label className="block text-sm text-cj-text-secondary mb-3">Galería de Imágenes</label>
+
            <div className="flex flex-wrap gap-4 items-start">
              {images.map((url, i) => (
-                <div key={i} className="relative w-24 h-24 rounded-lg bg-cjdg-darker border border-cjdg-border overflow-hidden">
+                <div key={i} className="relative w-24 h-24 rounded-lg bg-cj-bg-tertiary border border-cj-border overflow-hidden">
                    <img src={url} alt="Prod" className="w-full h-full object-cover" />
-                   <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/60 p-1 rounded-full text-white hover:bg-red-500">
+                   <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/60 p-1 rounded-full text-white hover:bg-cj-danger">
                      <X className="w-3 h-3" />
                    </button>
                 </div>
              ))}
 
-             <label className="w-24 h-24 rounded-lg bg-white/5 border border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 hover:border-cjdg-primary transition-all text-cjdg-textMuted hover:text-white">
+             <label className="w-24 h-24 rounded-lg bg-cj-bg-secondary border border-dashed border-cj-border flex flex-col items-center justify-center cursor-pointer hover:bg-cj-accent-blue-light hover:border-cj-accent-blue transition-all text-cj-text-muted hover:text-cj-accent-blue">
                 <UploadCloud className="w-6 h-6 mb-1" />
                 <span className="text-[10px]">Añadir Foto</span>
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploadingImg} />
              </label>
-             {uploadingImg && <span className="text-xs text-cjdg-primary mt-4">Subiendo...</span>}
+             {uploadingImg && <span className="text-xs text-cj-accent-blue mt-4">Subiendo...</span>}
            </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
-          <button type="button" onClick={onCancel} className="px-4 py-2 border border-white/10 rounded hover:bg-white/5 transition-colors text-sm text-cjdg-textMuted">Cancelar</button>
+        <div className="flex justify-end gap-3 pt-4 border-t border-cj-border">
+          <button type="button" onClick={onCancel} className="px-4 py-2 border border-cj-border rounded hover:bg-cj-bg-tertiary transition-colors text-sm text-cj-text-secondary">Cancelar</button>
           <button type="submit" disabled={loading} className="px-4 py-2 btn-primary text-sm disabled:opacity-50">
             {loading ? 'Guardando...' : 'Crear Producto'}
           </button>

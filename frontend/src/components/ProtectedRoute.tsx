@@ -19,10 +19,10 @@ const ProtectedRoute = ({ adminOnly = false }: ProtectedRouteProps) => {
   // Skeleton mientras carga el estado inicial de AuthContext
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-cjdg-darker">
+      <div className="min-h-screen flex items-center justify-center bg-cj-bg-primary">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cjdg-primary"></div>
-          <p className="text-cjdg-textMuted text-sm font-mono">Verificando sesión...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cj-accent-blue"></div>
+          <p className="text-cj-text-secondary text-sm font-mono">Verificando sesión...</p>
         </div>
       </div>
     );

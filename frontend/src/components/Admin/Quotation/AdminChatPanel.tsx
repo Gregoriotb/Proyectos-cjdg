@@ -51,12 +51,12 @@ interface ChatMessage {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'pending',     label: 'Pendiente',   color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
-  { value: 'active',      label: 'En Proceso',  color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-  { value: 'quoted',      label: 'Cotizado',    color: 'text-green-400 bg-green-500/10 border-green-500/20' },
-  { value: 'negotiating', label: 'Negociando',  color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-  { value: 'closed',      label: 'Cerrado',     color: 'text-gray-400 bg-gray-500/10 border-gray-500/20' },
-  { value: 'cancelled',   label: 'Cancelado',   color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+  { value: 'pending',     label: 'Pendiente',   color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
+  { value: 'active',      label: 'En Proceso',  color: 'text-blue-700 bg-blue-50 border-blue-200' },
+  { value: 'quoted',      label: 'Cotizado',    color: 'text-green-700 bg-green-50 border-green-200' },
+  { value: 'negotiating', label: 'Negociando',  color: 'text-purple-700 bg-purple-50 border-purple-200' },
+  { value: 'closed',      label: 'Cerrado',     color: 'text-gray-700 bg-gray-50 border-gray-200' },
+  { value: 'cancelled',   label: 'Cancelado',   color: 'text-red-700 bg-red-50 border-red-200' },
 ];
 
 function formatRelative(date: string): string {
@@ -212,25 +212,25 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
   };
 
   const getFileIcon = (type?: string) => {
-    if (!type) return <FileIcon className="w-8 h-8 text-blue-400" />;
-    if (type.startsWith('image/')) return <ImageIcon className="w-8 h-8 text-purple-400" />;
-    if (type.includes('pdf')) return <FileText className="w-8 h-8 text-red-400" />;
-    return <FileIcon className="w-8 h-8 text-blue-400" />;
+    if (!type) return <FileIcon className="w-8 h-8 text-cj-accent-blue" />;
+    if (type.startsWith('image/')) return <ImageIcon className="w-8 h-8 text-purple-500" />;
+    if (type.includes('pdf')) return <FileText className="w-8 h-8 text-red-500" />;
+    return <FileIcon className="w-8 h-8 text-cj-accent-blue" />;
   };
 
   if (!thread) {
-    return <div className="flex items-center justify-center h-64 text-slate-500">Cargando...</div>;
+    return <div className="flex items-center justify-center h-64 text-cj-text-secondary">Cargando...</div>;
   }
   const currentStatus = STATUS_OPTIONS.find((s) => s.value === thread.status);
   const displayName = clientDisplayName(thread.client);
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+    <div className="flex h-[calc(100vh-12rem)] bg-cj-bg-primary rounded-xl border border-cj-border shadow-cj-md overflow-hidden">
       {/* Sidebar de cliente */}
-      <aside className="w-80 border-r border-slate-800 bg-slate-900 p-5 overflow-y-auto hidden xl:block">
+      <aside className="w-80 border-r border-cj-border bg-cj-bg-secondary p-5 overflow-y-auto hidden xl:block">
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-white mb-1">{thread.service_name}</h3>
-          <p className="text-xs text-slate-500 font-mono">ID: {thread.id.slice(0, 8).toUpperCase()}</p>
+          <h3 className="text-lg font-semibold text-cj-text-primary mb-1">{thread.service_name}</h3>
+          <p className="text-xs text-cj-text-muted font-mono">ID: {thread.id.slice(0, 8).toUpperCase()}</p>
         </div>
 
         <div className="mb-6 relative">
@@ -246,14 +246,14 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
             <MoreVertical className="w-4 h-4" />
           </button>
           {showStatusMenu && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-cj-surface border border-cj-border rounded-lg shadow-cj-lg z-50 py-1">
               {STATUS_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => changeStatus(opt.value)}
                   disabled={changingStatus}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-slate-300 flex items-center gap-2 disabled:opacity-50"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-cj-bg-secondary text-cj-text-primary flex items-center gap-2 disabled:opacity-50"
                 >
                   {opt.label}
                 </button>
@@ -263,56 +263,56 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center gap-3 text-slate-300">
-            <User className="w-4 h-4 text-slate-500 shrink-0" />
+          <div className="flex items-center gap-3 text-cj-text-secondary">
+            <User className="w-4 h-4 text-cj-text-muted shrink-0" />
             <div>
-              <p className="text-xs text-slate-500">Cliente</p>
-              <p className="text-sm font-medium">{displayName}</p>
+              <p className="text-xs text-cj-text-muted">Cliente</p>
+              <p className="text-sm font-medium text-cj-text-primary">{displayName}</p>
             </div>
           </div>
           {(thread.client?.company_name || thread.company_name) && (
-            <div className="flex items-center gap-3 text-slate-300">
-              <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+            <div className="flex items-center gap-3 text-cj-text-secondary">
+              <Building2 className="w-4 h-4 text-cj-text-muted shrink-0" />
               <div>
-                <p className="text-xs text-slate-500">Empresa</p>
-                <p className="text-sm">{thread.client?.company_name || thread.company_name}</p>
+                <p className="text-xs text-cj-text-muted">Empresa</p>
+                <p className="text-sm text-cj-text-primary">{thread.client?.company_name || thread.company_name}</p>
               </div>
             </div>
           )}
           {thread.client?.email && (
-            <div className="flex items-center gap-3 text-slate-300">
-              <Mail className="w-4 h-4 text-slate-500 shrink-0" />
+            <div className="flex items-center gap-3 text-cj-text-secondary">
+              <Mail className="w-4 h-4 text-cj-text-muted shrink-0" />
               <div>
-                <p className="text-xs text-slate-500">Email</p>
-                <p className="text-sm break-all">{thread.client.email}</p>
+                <p className="text-xs text-cj-text-muted">Email</p>
+                <p className="text-sm break-all text-cj-text-primary">{thread.client.email}</p>
               </div>
             </div>
           )}
           {thread.client?.phone && (
-            <div className="flex items-center gap-3 text-slate-300">
-              <Phone className="w-4 h-4 text-slate-500 shrink-0" />
+            <div className="flex items-center gap-3 text-cj-text-secondary">
+              <Phone className="w-4 h-4 text-cj-text-muted shrink-0" />
               <div>
-                <p className="text-xs text-slate-500">Teléfono</p>
-                <p className="text-sm">{thread.client.phone}</p>
+                <p className="text-xs text-cj-text-muted">Teléfono</p>
+                <p className="text-sm text-cj-text-primary">{thread.client.phone}</p>
               </div>
             </div>
           )}
           {(thread.client_address || thread.location_notes || thread.client?.address) && (
-            <div className="flex items-start gap-3 text-slate-300">
-              <MapPin className="w-4 h-4 mt-1 text-slate-500 shrink-0" />
+            <div className="flex items-start gap-3 text-cj-text-secondary">
+              <MapPin className="w-4 h-4 mt-1 text-cj-text-muted shrink-0" />
               <div>
-                <p className="text-xs text-slate-500">Ubicación</p>
-                <p className="text-sm">
+                <p className="text-xs text-cj-text-muted">Ubicación</p>
+                <p className="text-sm text-cj-text-primary">
                   {thread.location_notes || thread.client_address || thread.client?.address}
                 </p>
               </div>
             </div>
           )}
           {thread.budget_estimate != null && (
-            <div className="flex items-center gap-3 text-emerald-400">
-              <DollarSign className="w-4 h-4 text-emerald-500 shrink-0" />
+            <div className="flex items-center gap-3 text-emerald-600">
+              <DollarSign className="w-4 h-4 text-emerald-600 shrink-0" />
               <div>
-                <p className="text-xs text-emerald-600">Presupuesto Cliente</p>
+                <p className="text-xs text-emerald-700">Presupuesto Cliente</p>
                 <p className="text-lg font-bold">
                   ${Number(thread.budget_estimate).toLocaleString('es-VE')}
                 </p>
@@ -320,9 +320,9 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
             </div>
           )}
 
-          <div className="pt-4 border-t border-slate-800">
-            <p className="text-xs text-slate-500 uppercase mb-2">Requerimiento Original</p>
-            <p className="text-sm text-slate-400 bg-slate-800/50 p-3 rounded-lg leading-relaxed whitespace-pre-wrap">
+          <div className="pt-4 border-t border-cj-border">
+            <p className="text-xs text-cj-text-muted uppercase mb-2">Requerimiento Original</p>
+            <p className="text-sm text-cj-text-secondary bg-cj-bg-tertiary p-3 rounded-lg leading-relaxed whitespace-pre-wrap">
               {thread.requirements}
             </p>
           </div>
@@ -331,14 +331,14 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
 
       {/* Columna de chat */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="border-b border-slate-800 p-4 flex items-center justify-between bg-slate-900/80">
+        <div className="border-b border-cj-border p-4 flex items-center justify-between bg-cj-surface">
           <div className="flex items-center gap-3 min-w-0">
-            <button type="button" onClick={onBack} className="text-slate-400 hover:text-white shrink-0">
+            <button type="button" onClick={onBack} className="text-cj-text-secondary hover:text-cj-text-primary shrink-0">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="min-w-0">
-              <h3 className="text-white font-medium truncate">{displayName}</h3>
-              <p className="text-xs text-slate-500 truncate">
+              <h3 className="text-cj-text-primary font-medium truncate">{displayName}</h3>
+              <p className="text-xs text-cj-text-muted truncate">
                 {thread.service_name} · {thread.client?.company_name || thread.company_name || 'Sin empresa'}
               </p>
             </div>
@@ -348,7 +348,7 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-cj-bg-primary">
           {messages.map((msg, idx) => {
             const isAdmin = msg.sender_type === 'admin';
             const isSystem = msg.sender_type === 'system';
@@ -357,7 +357,7 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
             if (isSystem) {
               return (
                 <div key={msg.id} className="flex justify-center my-4">
-                  <div className="bg-slate-800/30 border border-slate-700/30 rounded-lg px-4 py-2 text-xs text-slate-500 flex items-center gap-2">
+                  <div className="bg-cj-bg-secondary border border-cj-border rounded-lg px-4 py-2 text-xs text-cj-text-secondary flex items-center gap-2">
                     <RefreshCw className="w-3 h-3" />
                     {msg.content}
                   </div>
@@ -369,12 +369,12 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
               <div key={msg.id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] sm:max-w-[75%] ${isAdmin ? 'order-2' : 'order-1'}`}>
                   {showHeader && !isAdmin && (
-                    <p className="text-xs text-slate-500 mb-1">{msg.sender_name || displayName}</p>
+                    <p className="text-xs text-cj-text-muted mb-1">{msg.sender_name || displayName}</p>
                   )}
                   <div className={`rounded-2xl px-4 py-2.5 ${
                     isAdmin
-                      ? 'bg-blue-600 text-white rounded-br-md'
-                      : 'bg-slate-800 text-slate-200 rounded-bl-md border border-slate-700'
+                      ? 'bg-cj-accent-blue text-white rounded-br-md'
+                      : 'bg-cj-bg-secondary text-cj-text-primary rounded-bl-md border border-cj-border'
                   }`}>
                     {msg.content && msg.message_type !== 'image' && msg.message_type !== 'invoice_mention' && (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
@@ -404,7 +404,11 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
                         href={msg.attachment_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 mt-2 bg-slate-900/50 p-3 rounded-lg hover:bg-slate-900/80 transition-colors"
+                        className={`flex items-center gap-3 mt-2 p-3 rounded-lg transition-colors ${
+                          isAdmin
+                            ? 'bg-white/15 hover:bg-white/25'
+                            : 'bg-cj-bg-tertiary hover:bg-cj-bg-secondary'
+                        }`}
                       >
                         {getFileIcon(msg.attachment_type)}
                         <div className="flex-1 min-w-0">
@@ -416,8 +420,8 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
                     )}
                   </div>
                   <div className={`flex items-center gap-1 mt-1 ${isAdmin ? 'justify-end' : 'justify-start'}`}>
-                    <span className="text-[10px] text-slate-600">{formatRelative(msg.created_at)}</span>
-                    {isAdmin && (msg.read_at ? <CheckCheck className="w-3 h-3 text-blue-300" /> : <Check className="w-3 h-3 text-blue-300/50" />)}
+                    <span className="text-[10px] text-cj-text-muted">{formatRelative(msg.created_at)}</span>
+                    {isAdmin && (msg.read_at ? <CheckCheck className="w-3 h-3 text-cj-accent-blue" /> : <Check className="w-3 h-3 text-cj-text-muted" />)}
                   </div>
                 </div>
               </div>
@@ -426,22 +430,22 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t border-slate-800 p-4 bg-slate-900/80">
+        <div className="border-t border-cj-border p-4 bg-cj-surface">
           {previewFile && (
-            <div className="mb-3 bg-slate-800 border border-slate-700 rounded-lg p-3 flex items-center gap-3 max-w-4xl mx-auto">
+            <div className="mb-3 bg-cj-bg-secondary border border-cj-border rounded-lg p-3 flex items-center gap-3 max-w-4xl mx-auto">
               {previewFile.type.startsWith('image/') ? (
                 <img src={previewFile.url} alt="preview" className="w-10 h-10 rounded object-cover" />
               ) : (
                 getFileIcon(previewFile.type)
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-slate-300 truncate">{previewFile.name}</p>
-                <p className="text-[10px] text-slate-500">Listo para enviar</p>
+                <p className="text-sm text-cj-text-primary truncate">{previewFile.name}</p>
+                <p className="text-[10px] text-cj-text-muted">Listo para enviar</p>
               </div>
               <button
                 type="button"
                 onClick={() => setPreviewFile(null)}
-                className="text-slate-400 hover:text-red-400"
+                className="text-cj-text-secondary hover:text-cj-danger"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -460,11 +464,11 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="p-2.5 text-slate-500 hover:text-slate-300 rounded-xl hover:bg-slate-800 disabled:opacity-50"
+              className="p-2.5 text-cj-text-muted hover:text-cj-text-primary rounded-xl hover:bg-cj-bg-secondary disabled:opacity-50"
               title="Adjuntar archivo"
             >
               {uploading ? (
-                <div className="w-5 h-5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-cj-text-muted border-t-transparent rounded-full animate-spin" />
               ) : (
                 <Paperclip className="w-5 h-5" />
               )}
@@ -474,7 +478,7 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
               type="button"
               onClick={() => setInvoicePickerOpen(true)}
               disabled={sending}
-              className="p-2.5 text-slate-500 hover:text-emerald-300 rounded-xl hover:bg-slate-800 disabled:opacity-50"
+              className="p-2.5 text-cj-text-muted hover:text-emerald-600 rounded-xl hover:bg-cj-bg-secondary disabled:opacity-50"
               title="Adjuntar facturas del cliente"
             >
               <Receipt className="w-5 h-5" />
@@ -486,7 +490,7 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
               onKeyDown={handleKeyDown}
               placeholder="Responder al cliente..."
               disabled={sending}
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none max-h-32 min-h-[44px] disabled:opacity-60"
+              className="flex-1 bg-cj-bg-primary border border-cj-border rounded-xl px-4 py-3 text-sm text-cj-text-primary placeholder-cj-text-muted focus:outline-none focus:ring-2 focus:ring-cj-accent-blue-light resize-none max-h-32 min-h-[44px] disabled:opacity-60"
               rows={1}
             />
 
@@ -494,7 +498,7 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
               type="button"
               onClick={sendMessage}
               disabled={sending || (!newMessage.trim() && !previewFile) || uploading}
-              className="p-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-xl transition-all active:scale-95"
+              className="p-3 bg-cj-accent-blue hover:bg-cj-accent-blue-hover disabled:bg-cj-bg-tertiary disabled:text-cj-text-muted text-white rounded-xl transition-all active:scale-95"
             >
               {sending
                 ? <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />

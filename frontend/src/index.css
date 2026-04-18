@@ -4,68 +4,82 @@
 
 @layer base {
   body {
-    @apply bg-cjdg-darker text-cjdg-text antialiased;
-    /* Fondo radial sutil para dar profundidad ejecutiva */
-    background-image: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+    @apply bg-cj-bg-primary text-cj-text-primary antialiased;
+    background-image: none;
+  }
+
+  /* Elevate headings legibility on light surfaces */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-cj-text-primary;
   }
 }
 
 @layer components {
   /* =========================================
-     [STYLE: GLASSMORPHISM] - Executive Dark
+     [STYLE: PANELS] — V3 Tech-Gray (surfaces blancas con sombra sutil)
      ========================================= */
   .glass-panel {
-    @apply bg-cjdg-panel/40 backdrop-blur-md border border-white/10 shadow-glass rounded-xl;
+    @apply bg-cj-surface border border-cj-border shadow-cj-md rounded-xl;
   }
-  
+
   .glass-card {
-    @apply bg-cjdg-panel/30 backdrop-blur-sm border border-white/5 rounded-lg hover:bg-cjdg-panel/50 hover:border-cjdg-accent/30 transition-all duration-300;
+    @apply bg-cj-surface border border-cj-border rounded-lg shadow-cj-sm
+           hover:shadow-cj-md hover:border-cj-accent-blue/30
+           transition-all duration-200;
   }
 
   /* =========================================
-     [STYLE: BUTTONS] - Corporate Tech
+     [STYLE: BUTTONS] — Mapeados a primitives pero disponibles como clase
      ========================================= */
   .btn-primary {
-    @apply bg-cjdg-primary hover:bg-cjdg-primaryHover text-white font-medium py-2 px-6 rounded-md shadow-lg transition-colors border border-transparent hover:border-blue-400/50;
+    @apply bg-cj-accent-blue hover:bg-cj-accent-blue-hover
+           text-white font-medium py-2 px-6 rounded-lg
+           shadow-cj-md hover:shadow-cj-lg
+           transition-all duration-200 active:scale-[0.98]
+           border border-transparent;
   }
-  
+
   .btn-outline {
-    @apply bg-transparent border border-cjdg-border text-cjdg-textMuted hover:text-white hover:border-white transition-colors py-2 px-6 rounded-md;
+    @apply bg-transparent border border-cj-border text-cj-text-secondary
+           hover:text-cj-text-primary hover:border-cj-accent-blue hover:bg-cj-bg-secondary
+           transition-colors duration-200 py-2 px-6 rounded-lg;
   }
-  
+
   .btn-glass {
-    @apply bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 text-white py-2 px-6 rounded-md transition-colors;
+    @apply bg-cj-bg-secondary hover:bg-cj-bg-tertiary border border-cj-border
+           text-cj-text-primary py-2 px-6 rounded-lg transition-colors duration-200;
   }
 
   /* =========================================
-     [STYLE: TYPOGRAPHY] 
+     [STYLE: TYPOGRAPHY]
      ========================================= */
   .heading-hero {
-    @apply text-4xl md:text-6xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-cjdg-textMuted;
+    @apply text-4xl md:text-6xl font-bold tracking-tight text-cj-text-primary;
   }
-  
+
   .heading-section {
-    @apply text-2xl md:text-3xl font-bold tracking-wide text-white mb-6;
+    @apply text-2xl md:text-3xl font-bold tracking-wide text-cj-text-primary mb-6;
   }
-  
-  /* Fuentes utilitarias para SKUs y códigos (Roboto Mono) */
+
+  /* SKUs y códigos mono — mantiene azul de acento */
   .text-sku {
-    @apply font-mono text-sm text-cjdg-accent tracking-wider uppercase;
+    @apply font-mono text-sm text-cj-accent-blue tracking-wider uppercase;
   }
 }
 
-/* Custom Scrollbar for Catalog */
+/* Custom Scrollbar — paleta Tech-Gray */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: theme('colors.cjdg.darker'); 
+  background: theme('colors.cj.bg.secondary');
 }
 ::-webkit-scrollbar-thumb {
-  background: theme('colors.cjdg.border'); 
-  border-radius: 4px;
+  background: theme('colors.cj.text.muted');
+  border-radius: 6px;
+  border: 2px solid theme('colors.cj.bg.secondary');
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: theme('colors.cjdg.primary'); 
+  background: theme('colors.cj.text.secondary');
 }

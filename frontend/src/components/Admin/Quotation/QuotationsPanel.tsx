@@ -36,12 +36,12 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  active: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  quoted: 'bg-green-500/10 text-green-400 border-green-500/20',
-  negotiating: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  closed: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
-  cancelled: 'bg-red-500/10 text-red-400 border-red-500/20',
+  pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  active: 'bg-blue-50 text-blue-700 border-blue-200',
+  quoted: 'bg-green-50 text-green-700 border-green-200',
+  negotiating: 'bg-purple-50 text-purple-700 border-purple-200',
+  closed: 'bg-gray-50 text-gray-700 border-gray-200',
+  cancelled: 'bg-red-50 text-red-700 border-red-200',
 };
 
 function clientDisplayName(c?: ClientSummary): string {
@@ -89,22 +89,22 @@ export default function QuotationsPanel() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white flex items-center gap-3">
-          <MessageSquare className="w-6 h-6 text-cjdg-primary" />
+        <h2 className="text-xl font-bold text-cj-text-primary flex items-center gap-3">
+          <MessageSquare className="w-6 h-6 text-cj-accent-blue" />
           Cotizaciones Entrantes
           {totalUnread > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse">
+            <span className="bg-cj-danger text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse">
               <Bell className="w-3 h-3" />
               {totalUnread} sin leer
             </span>
           )}
         </h2>
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-500" />
+          <Filter className="w-4 h-4 text-cj-text-muted" />
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="bg-slate-800 border border-slate-700 text-sm text-white rounded-lg px-4 py-2"
+            className="bg-cj-bg-primary border border-cj-border text-sm text-cj-text-primary rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-cj-accent-blue-light"
           >
             <option value="all">Todas</option>
             <option value="pending">Pendientes</option>
@@ -117,7 +117,7 @@ export default function QuotationsPanel() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-64 text-slate-500">
+        <div className="flex items-center justify-center h-64 text-cj-text-secondary">
           Cargando cotizaciones...
         </div>
       ) : (
@@ -127,34 +127,34 @@ export default function QuotationsPanel() {
               key={thread.id}
               type="button"
               onClick={() => setSelectedThread(thread.id)}
-              className="group text-left bg-slate-900/80 border border-slate-800 hover:border-blue-500/40 rounded-xl p-5 transition-all hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5"
+              className="group text-left bg-cj-surface border border-cj-border hover:border-cj-accent-blue rounded-xl p-5 transition-all shadow-cj-sm hover:shadow-cj-md hover:-translate-y-0.5"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-cj-accent-blue-light flex items-center justify-center text-cj-accent-blue shrink-0">
                     <User className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-white font-medium truncate group-hover:text-blue-400 transition-colors">
+                    <h3 className="text-cj-text-primary font-medium truncate group-hover:text-cj-accent-blue transition-colors">
                       {clientDisplayName(thread.client)}
                     </h3>
-                    <p className="text-sm text-slate-500 flex items-center gap-2 truncate">
+                    <p className="text-sm text-cj-text-secondary flex items-center gap-2 truncate">
                       <Building2 className="w-3 h-3 shrink-0" />
                       {thread.company_name || 'Sin empresa'} · {thread.service_name}
                     </p>
                   </div>
                   {thread.admin_unread > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shrink-0 animate-pulse">
+                    <span className="bg-cj-danger text-white text-[10px] font-bold px-2 py-1 rounded-full shrink-0 animate-pulse">
                       {thread.admin_unread} nuevo{thread.admin_unread > 1 ? 's' : ''}
                     </span>
                   )}
                 </div>
-                <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-blue-400 group-hover:translate-x-1 transition-all shrink-0" />
+                <ChevronRight className="w-5 h-5 text-cj-text-muted group-hover:text-cj-accent-blue group-hover:translate-x-1 transition-all shrink-0" />
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400 mb-3">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-cj-text-secondary mb-3">
                 {thread.budget_estimate != null && (
-                  <span className="flex items-center gap-1.5 text-emerald-400">
+                  <span className="flex items-center gap-1.5 text-emerald-600">
                     <DollarSign className="w-3.5 h-3.5" />
                     ${Number(thread.budget_estimate).toLocaleString('es-VE')}
                   </span>
@@ -177,7 +177,7 @@ export default function QuotationsPanel() {
               </div>
 
               {thread.last_message_preview && (
-                <p className="text-sm text-slate-500 line-clamp-1 bg-slate-800/30 p-2 rounded-lg">
+                <p className="text-sm text-cj-text-secondary line-clamp-1 bg-cj-bg-secondary p-2 rounded-lg">
                   "{thread.last_message_preview}…"
                 </p>
               )}
@@ -185,7 +185,7 @@ export default function QuotationsPanel() {
           ))}
 
           {threads.length === 0 && (
-            <div className="text-center py-20 text-slate-500 border border-dashed border-slate-800 rounded-xl">
+            <div className="text-center py-20 text-cj-text-muted border border-dashed border-cj-border rounded-xl bg-cj-surface">
               <AlertCircle className="w-16 h-16 mx-auto mb-4 opacity-30" />
               <p className="text-lg">No hay cotizaciones {filter !== 'all' ? 'en este estado' : ''}</p>
               <p className="text-sm mt-2">Las solicitudes de los clientes aparecerán aquí.</p>

@@ -13,10 +13,10 @@ interface Quotation {
 }
 
 const STATUS_STYLES: Record<string, { label: string; color: string }> = {
-  pending: { label: 'Pendiente', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' },
-  reviewing: { label: 'En Revisión', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-  approved: { label: 'Aprobada', color: 'bg-green-500/20 text-green-300 border-green-500/30' },
-  rejected: { label: 'Rechazada', color: 'bg-red-500/20 text-red-300 border-red-500/30' },
+  pending: { label: 'Pendiente', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  reviewing: { label: 'En Revisión', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  approved: { label: 'Aprobada', color: 'bg-green-50 text-green-700 border-green-200' },
+  rejected: { label: 'Rechazada', color: 'bg-red-50 text-red-700 border-red-200' },
 };
 
 const QuotationsHistory = () => {
@@ -42,16 +42,16 @@ const QuotationsHistory = () => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-cjdg-primary" />
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-cj-accent-blue" />
       </div>
     );
   }
 
   if (quotations.length === 0) {
     return (
-      <div className="glass-panel p-12 text-center text-cjdg-textMuted">
-        <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-        <h3 className="text-lg font-medium text-white mb-1">Sin cotizaciones</h3>
+      <div className="bg-cj-surface border border-cj-border border-dashed shadow-cj-sm rounded-lg p-12 text-center text-cj-text-muted">
+        <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
+        <h3 className="text-lg font-medium text-cj-text-primary mb-1">Sin cotizaciones</h3>
         <p className="text-sm">Aún no has solicitado ninguna cotización.</p>
       </div>
     );
@@ -59,11 +59,11 @@ const QuotationsHistory = () => {
 
   return (
     <div className="space-y-4">
-      <div className="glass-panel overflow-hidden">
+      <div className="bg-cj-surface border border-cj-border shadow-cj-md rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-white/10 text-xs font-mono uppercase tracking-widest text-cjdg-textMuted">
+              <tr className="border-b border-cj-border text-xs font-mono uppercase tracking-widest text-cj-text-secondary">
                 <th className="py-3 px-4 font-medium"># ID</th>
                 <th className="py-3 px-4 font-medium">Fecha</th>
                 <th className="py-3 px-4 font-medium">Estado</th>
@@ -75,9 +75,9 @@ const QuotationsHistory = () => {
               {quotations.map((q) => {
                 const statusInfo = STATUS_STYLES[q.status] || STATUS_STYLES.pending;
                 return (
-                  <tr key={q.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-3 px-4 font-mono text-sm text-white">#{q.id.toString().padStart(4, '0')}</td>
-                    <td className="py-3 px-4 text-sm text-cjdg-textMuted">
+                  <tr key={q.id} className="border-b border-cj-border hover:bg-cj-bg-secondary transition-colors">
+                    <td className="py-3 px-4 font-mono text-sm text-cj-text-primary">#{q.id.toString().padStart(4, '0')}</td>
+                    <td className="py-3 px-4 text-sm text-cj-text-secondary">
                       {new Date(q.created_at).toLocaleDateString('es-VE', {
                         year: 'numeric', month: 'short', day: 'numeric'
                       })}
@@ -87,10 +87,10 @@ const QuotationsHistory = () => {
                         {statusInfo.label}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-sm text-cjdg-textMuted">
+                    <td className="py-3 px-4 text-sm text-cj-text-secondary">
                       {q.items.length} item(s)
                     </td>
-                    <td className="py-3 px-4 text-xs text-cjdg-textMuted max-w-xs truncate">
+                    <td className="py-3 px-4 text-xs text-cj-text-secondary max-w-xs truncate">
                       {q.notas_cliente || '—'}
                     </td>
                   </tr>

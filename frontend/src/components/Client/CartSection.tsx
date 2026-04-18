@@ -37,16 +37,16 @@ const CartSection = ({ onGoToInvoices }: CartSectionProps) => {
   if (success) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="glass-panel max-w-md w-full p-8 text-center">
-          <CheckCircle2 className="w-14 h-14 text-green-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">¡Compra Registrada!</h2>
-          <p className="text-cjdg-textMuted mb-2">
-            Factura <strong className="text-white font-mono">#{invoiceId?.toString().padStart(4, '0')}</strong>
+        <div className="bg-cj-surface border border-cj-border shadow-cj-md rounded-lg max-w-md w-full p-8 text-center">
+          <CheckCircle2 className="w-14 h-14 text-green-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-cj-text-primary mb-2">¡Compra Registrada!</h2>
+          <p className="text-cj-text-secondary mb-2">
+            Factura <strong className="text-cj-text-primary font-mono">#{invoiceId?.toString().padStart(4, '0')}</strong>
           </p>
-          <p className="text-2xl font-mono font-bold text-cjdg-accent mb-4">
+          <p className="text-2xl font-mono font-bold text-cj-accent-blue mb-4">
             ${Number(invoiceTotal).toFixed(2)}
           </p>
-          <p className="text-cjdg-textMuted text-sm mb-6">
+          <p className="text-cj-text-secondary text-sm mb-6">
             El stock ha sido reservado. Puedes ver el estado en Facturas.
           </p>
           <button onClick={onGoToInvoices} className="btn-primary inline-flex items-center gap-2">
@@ -60,7 +60,7 @@ const CartSection = ({ onGoToInvoices }: CartSectionProps) => {
   return (
     <div className="max-w-4xl mx-auto">
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-md mb-6 flex items-start gap-3">
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -68,32 +68,32 @@ const CartSection = ({ onGoToInvoices }: CartSectionProps) => {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Items */}
-        <div className="lg:w-2/3 glass-panel p-6">
-          <h2 className="text-lg font-bold text-white border-b border-white/10 pb-3 mb-4">
+        <div className="lg:w-2/3 bg-cj-surface border border-cj-border shadow-cj-md rounded-lg p-6">
+          <h2 className="text-lg font-bold text-cj-text-primary border-b border-cj-border pb-3 mb-4">
             Productos ({cart?.items?.length || 0})
           </h2>
 
           {isEmpty ? (
             <div className="text-center py-10">
-              <ShoppingCart className="w-10 h-10 text-cjdg-textMuted/30 mx-auto mb-3" />
-              <p className="text-cjdg-textMuted">Tu carrito está vacío.</p>
-              <p className="text-xs text-cjdg-textMuted mt-1">Agrega productos desde el Catálogo.</p>
+              <ShoppingCart className="w-10 h-10 text-cj-text-muted mx-auto mb-3" />
+              <p className="text-cj-text-secondary">Tu carrito está vacío.</p>
+              <p className="text-xs text-cj-text-muted mt-1">Agrega productos desde el Catálogo.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {cart.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-cjdg-darker/50 border border-white/5">
+                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-cj-bg-secondary border border-cj-border">
                   <div className="flex-grow">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-mono text-cjdg-accent">SKU-{item.catalog_item_id.toString().padStart(4, '0')}</span>
-                      <span className="text-xs bg-cjdg-primary/20 text-cjdg-primary px-2 py-0.5 rounded font-mono">x{item.quantity}</span>
+                      <span className="text-xs font-mono text-cj-accent-blue">SKU-{item.catalog_item_id.toString().padStart(4, '0')}</span>
+                      <span className="text-xs bg-cj-accent-blue-light text-cj-accent-blue px-2 py-0.5 rounded font-mono">x{item.quantity}</span>
                     </div>
-                    <h4 className="text-sm text-white">Producto #{item.catalog_item_id}</h4>
-                    {item.observaciones && <p className="text-xs text-cjdg-textMuted mt-0.5">{item.observaciones}</p>}
+                    <h4 className="text-sm text-cj-text-primary">Producto #{item.catalog_item_id}</h4>
+                    {item.observaciones && <p className="text-xs text-cj-text-secondary mt-0.5">{item.observaciones}</p>}
                   </div>
                   <button
                     onClick={() => removeFromCart(item.id)}
-                    className="p-2 text-red-400 hover:bg-red-400/10 rounded-md transition-colors ml-3"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors ml-3"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -105,23 +105,23 @@ const CartSection = ({ onGoToInvoices }: CartSectionProps) => {
 
         {/* Checkout */}
         <div className="lg:w-1/3">
-          <div className="glass-panel p-6 sticky top-4">
-            <h2 className="text-lg font-bold text-white border-b border-white/10 pb-3 mb-4">Confirmar Compra</h2>
+          <div className="bg-cj-surface border border-cj-border shadow-cj-md rounded-lg p-6 sticky top-4">
+            <h2 className="text-lg font-bold text-cj-text-primary border-b border-cj-border pb-3 mb-4">Confirmar Compra</h2>
 
             <div className="mb-4">
-              <label className="block text-sm text-cjdg-textMuted mb-1">Notas (opcional)</label>
+              <label className="block text-sm text-cj-text-secondary mb-1">Notas (opcional)</label>
               <textarea
                 rows={3}
                 value={notas}
                 onChange={(e) => setNotas(e.target.value)}
-                className="w-full border border-cjdg-border rounded-md bg-cjdg-dark/50 text-white placeholder-cjdg-textMuted p-3 focus:outline-none focus:ring-1 focus:ring-cjdg-accent text-sm resize-none"
+                className="w-full border border-cj-border rounded-md bg-cj-surface text-cj-text-primary placeholder-cj-text-muted p-3 focus:outline-none focus:ring-1 focus:ring-cj-accent-blue text-sm resize-none"
                 placeholder="Dirección de envío, instrucciones..."
               />
             </div>
 
-            <div className="bg-cjdg-darker/50 p-3 rounded-lg border border-white/5 mb-4 text-sm">
-              <p className="text-cjdg-textMuted">Items: <span className="text-white font-mono">{cart?.items?.length || 0}</span></p>
-              <p className="text-xs text-cjdg-textMuted mt-2">
+            <div className="bg-cj-bg-secondary p-3 rounded-lg border border-cj-border mb-4 text-sm">
+              <p className="text-cj-text-secondary">Items: <span className="text-cj-text-primary font-mono">{cart?.items?.length || 0}</span></p>
+              <p className="text-xs text-cj-text-muted mt-2">
                 Al confirmar se genera factura y se reserva el stock automáticamente.
               </p>
             </div>

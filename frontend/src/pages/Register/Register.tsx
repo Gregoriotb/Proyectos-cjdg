@@ -132,20 +132,20 @@ const Register = () => {
             <div
               className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                 i < step
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-green-500 text-cj-text-primary'
                   : i === step
-                  ? 'bg-cjdg-primary text-white ring-2 ring-cjdg-primary/40'
-                  : 'bg-cjdg-dark/50 text-cjdg-textMuted border border-cjdg-border'
+                  ? 'bg-cj-accent-blue text-white ring-2 ring-cj-accent-blue/40'
+                  : 'bg-cj-bg-secondary text-cj-text-muted border border-cj-border'
               }`}
             >
               {i < step ? <Check className="w-4 h-4" /> : i + 1}
             </div>
-            <span className={`text-xs mt-1.5 ${i === step ? 'text-white' : 'text-cjdg-textMuted'}`}>
+            <span className={`text-xs mt-1.5 ${i === step ? 'text-cj-text-primary' : 'text-cj-text-secondary'}`}>
               {s.label}
             </span>
           </div>
           {i < STEPS.length - 1 && (
-            <div className={`w-12 h-0.5 mx-2 mt-[-14px] transition-all duration-300 ${i < step ? 'bg-green-500' : 'bg-cjdg-border'}`}></div>
+            <div className={`w-12 h-0.5 mx-2 mt-[-14px] transition-all duration-300 ${i < step ? 'bg-green-500' : 'bg-cj-border'}`}></div>
           )}
         </React.Fragment>
       ))}
@@ -156,42 +156,42 @@ const Register = () => {
   const UsernameFeedback = () => {
     if (username.length < 4) return null;
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      return <p className="text-red-400 text-xs mt-1">Solo letras, números y guiones bajos</p>;
+      return <p className="text-red-600 text-xs mt-1">Solo letras, números y guiones bajos</p>;
     }
     if (checkingUsername) {
-      return <p className="text-cjdg-textMuted text-xs mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Verificando...</p>;
+      return <p className="text-cj-text-secondary text-xs mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Verificando...</p>;
     }
     if (usernameAvailable === true) {
-      return <p className="text-green-400 text-xs mt-1 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Disponible</p>;
+      return <p className="text-green-600 text-xs mt-1 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Disponible</p>;
     }
     if (usernameAvailable === false) {
-      return <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><XCircle className="w-3 h-3" /> No disponible</p>;
+      return <p className="text-red-600 text-xs mt-1 flex items-center gap-1"><XCircle className="w-3 h-3" /> No disponible</p>;
     }
     return null;
   };
 
   return (
-    <div className="min-h-screen bg-cjdg-darker flex items-center justify-center p-4">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cjdg-accent/10 blur-[100px] rounded-full pointer-events-none"></div>
+    <div className="min-h-screen bg-cj-bg-primary flex items-center justify-center p-4">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cj-accent-blue/10 blur-[100px] rounded-full pointer-events-none"></div>
 
       <div className="w-full max-w-md relative z-10 glass-panel p-8">
 
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-white tracking-wide">Registro Corporativo</h1>
-          <p className="text-cjdg-textMuted mt-2 text-sm">
+          <h1 className="text-2xl font-bold text-cj-text-primary tracking-wide">Registro Corporativo</h1>
+          <p className="text-cj-text-secondary mt-2 text-sm">
             {STEPS[step].description}
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-3 rounded-md mb-5 flex items-start gap-3 text-sm">
+          <div className="bg-red-50 border border-red-200 text-cj-danger p-3 rounded-lg mb-5 flex items-start gap-3 text-sm">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {success ? (
-          <div className="bg-green-500/10 border border-green-500/50 text-green-200 p-6 rounded-md mb-6 text-center">
+          <div className="bg-green-50 border border-green-200 text-green-700 p-6 rounded-lg mb-6 text-center">
             <h3 className="text-lg font-bold mb-2">¡Cuenta Creada Exitosamente!</h3>
             <p className="text-sm opacity-80">Serás redirigido al portal de inicio de sesión en unos segundos...</p>
           </div>
@@ -205,17 +205,17 @@ const Register = () => {
                 <div className="space-y-4">
                   {/* Username */}
                   <div>
-                    <label className="block text-sm font-medium text-cjdg-textMuted mb-2">Nombre de Usuario</label>
+                    <label className="block text-sm font-medium text-cj-text-secondary mb-2">Nombre de Usuario</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User className="h-5 w-5 text-cjdg-textMuted" />
+                        <User className="h-5 w-5 text-cj-text-secondary" />
                       </div>
                       <input
                         type="text"
                         required
                         minLength={4}
                         maxLength={50}
-                        className="block w-full pl-10 pr-3 py-2 border border-cjdg-border rounded-md bg-cjdg-dark/50 text-white placeholder-cjdg-textMuted focus:outline-none focus:ring-2 focus:ring-cjdg-primary"
+                        className="block w-full pl-10 pr-3 py-2.5 border border-cj-border rounded-lg bg-cj-bg-primary text-cj-text-primary placeholder:text-cj-text-muted focus:outline-none focus:ring-2 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue transition-all"
                         placeholder="mi_usuario"
                         value={username}
                         onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
@@ -226,15 +226,15 @@ const Register = () => {
 
                   {/* Email */}
                   <div>
-                    <label className="block text-sm font-medium text-cjdg-textMuted mb-2">Correo Electrónico</label>
+                    <label className="block text-sm font-medium text-cj-text-secondary mb-2">Correo Electrónico</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-cjdg-textMuted" />
+                        <Mail className="h-5 w-5 text-cj-text-secondary" />
                       </div>
                       <input
                         type="email"
                         required
-                        className="block w-full pl-10 pr-3 py-2 border border-cjdg-border rounded-md bg-cjdg-dark/50 text-white placeholder-cjdg-textMuted focus:outline-none focus:ring-2 focus:ring-cjdg-primary"
+                        className="block w-full pl-10 pr-3 py-2.5 border border-cj-border rounded-lg bg-cj-bg-primary text-cj-text-primary placeholder:text-cj-text-muted focus:outline-none focus:ring-2 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue transition-all"
                         placeholder="contacto@empresa.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -244,45 +244,45 @@ const Register = () => {
 
                   {/* Password */}
                   <div>
-                    <label className="block text-sm font-medium text-cjdg-textMuted mb-2">Contraseña</label>
+                    <label className="block text-sm font-medium text-cj-text-secondary mb-2">Contraseña</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-cjdg-textMuted" />
+                        <Lock className="h-5 w-5 text-cj-text-secondary" />
                       </div>
                       <input
                         type="password"
                         required
                         minLength={6}
-                        className="block w-full pl-10 pr-3 py-2 border border-cjdg-border rounded-md bg-cjdg-dark/50 text-white placeholder-cjdg-textMuted focus:outline-none focus:ring-2 focus:ring-cjdg-primary"
+                        className="block w-full pl-10 pr-3 py-2.5 border border-cj-border rounded-lg bg-cj-bg-primary text-cj-text-primary placeholder:text-cj-text-muted focus:outline-none focus:ring-2 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue transition-all"
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
                     </div>
                     {password.length > 0 && password.length < 6 && (
-                      <p className="text-red-400 text-xs mt-1">Mínimo 6 caracteres</p>
+                      <p className="text-red-600 text-xs mt-1">Mínimo 6 caracteres</p>
                     )}
                   </div>
 
                   {/* Confirm Password */}
                   <div>
-                    <label className="block text-sm font-medium text-cjdg-textMuted mb-2">Confirmar Contraseña</label>
+                    <label className="block text-sm font-medium text-cj-text-secondary mb-2">Confirmar Contraseña</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-cjdg-textMuted" />
+                        <Lock className="h-5 w-5 text-cj-text-secondary" />
                       </div>
                       <input
                         type="password"
                         required
                         minLength={6}
-                        className="block w-full pl-10 pr-3 py-2 border border-cjdg-border rounded-md bg-cjdg-dark/50 text-white placeholder-cjdg-textMuted focus:outline-none focus:ring-2 focus:ring-cjdg-primary"
+                        className="block w-full pl-10 pr-3 py-2.5 border border-cj-border rounded-lg bg-cj-bg-primary text-cj-text-primary placeholder:text-cj-text-muted focus:outline-none focus:ring-2 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue transition-all"
                         placeholder="••••••••"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                       />
                     </div>
                     {confirmPassword.length > 0 && confirmPassword !== password && (
-                      <p className="text-red-400 text-xs mt-1">Las contraseñas no coinciden</p>
+                      <p className="text-red-600 text-xs mt-1">Las contraseñas no coinciden</p>
                     )}
                   </div>
 
@@ -303,15 +303,15 @@ const Register = () => {
               {step === 1 && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-cjdg-textMuted mb-2">Nombre Completo o Empresa</label>
+                    <label className="block text-sm font-medium text-cj-text-secondary mb-2">Nombre Completo o Empresa</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Building className="h-5 w-5 text-cjdg-textMuted" />
+                        <Building className="h-5 w-5 text-cj-text-secondary" />
                       </div>
                       <input
                         type="text"
                         required
-                        className="block w-full pl-10 pr-3 py-2 border border-cjdg-border rounded-md bg-cjdg-dark/50 text-white placeholder-cjdg-textMuted focus:outline-none focus:ring-2 focus:ring-cjdg-primary"
+                        className="block w-full pl-10 pr-3 py-2.5 border border-cj-border rounded-lg bg-cj-bg-primary text-cj-text-primary placeholder:text-cj-text-muted focus:outline-none focus:ring-2 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue transition-all"
                         placeholder="Ej. Juan Pérez - Constructora XYZ"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
@@ -323,7 +323,7 @@ const Register = () => {
                     <button
                       type="button"
                       onClick={handleBack}
-                      className="flex-1 flex justify-center py-2.5 px-4 border border-cjdg-border rounded-md text-cjdg-textMuted hover:text-white hover:border-white/30 transition-all group"
+                      className="flex-1 flex justify-center py-2.5 px-4 border border-cj-border rounded-md text-cj-text-secondary hover:text-cj-text-primary hover:border-cj-accent-blue transition-all group"
                     >
                       <span className="flex items-center gap-2">
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Anterior
@@ -346,13 +346,13 @@ const Register = () => {
               {/* ========== PASO 3: Términos y Condiciones ========== */}
               {step === 2 && (
                 <div className="space-y-4">
-                  <div className="bg-cjdg-dark/50 border border-cjdg-border rounded-md p-4 max-h-48 overflow-y-auto text-sm text-cjdg-textMuted leading-relaxed">
-                    <h4 className="text-white font-semibold mb-2">Términos y Condiciones de Uso</h4>
+                  <div className="bg-cj-bg-primary border border-cj-border rounded-md p-4 max-h-48 overflow-y-auto text-sm text-cj-text-secondary leading-relaxed">
+                    <h4 className="text-cj-text-primary font-semibold mb-2">Términos y Condiciones de Uso</h4>
                     <p className="mb-2">
-                      Al registrarse en la plataforma digital de <strong className="text-white">Proyectos CJDG</strong>, usted acepta los siguientes términos:
+                      Al registrarse en la plataforma digital de <strong className="text-cj-text-primary">Proyectos CJDG</strong>, usted acepta los siguientes términos:
                     </p>
                     <ol className="list-decimal list-inside space-y-1.5">
-                      <li>La plataforma está diseñada para la gestión de servicios de ingeniería integral en las áreas de <strong className="text-white">Tecnología, Climatización, Energía e Ingeniería Civil</strong>.</li>
+                      <li>La plataforma está diseñada para la gestión de servicios de ingeniería integral en las áreas de <strong className="text-cj-text-primary">Tecnología, Climatización, Energía e Ingeniería Civil</strong>.</li>
                       <li>Las cotizaciones generadas a través del sistema son propuestas preliminares sujetas a revisión por el equipo de Proyectos CJDG.</li>
                       <li>Los precios de productos del catálogo están sujetos a disponibilidad y cambios sin previo aviso.</li>
                       <li>Los servicios corporativos requieren cotización personalizada y aprobación por parte del equipo administrativo.</li>
@@ -360,7 +360,7 @@ const Register = () => {
                       <li>Proyectos CJDG se reserva el derecho de modificar estos términos. Los cambios serán notificados a través de la plataforma.</li>
                     </ol>
                     <p className="mt-3">
-                      Contacto: <strong className="text-white">ventas@proyectoscjdg.com</strong> | +58 212-2350938
+                      Contacto: <strong className="text-cj-text-primary">ventas@proyectoscjdg.com</strong> | +58 212-2350938
                     </p>
                   </div>
 
@@ -369,10 +369,10 @@ const Register = () => {
                       type="checkbox"
                       checked={acceptedTerms}
                       onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded border-cjdg-border bg-cjdg-dark/50 text-cjdg-primary focus:ring-cjdg-primary focus:ring-offset-0"
+                      className="mt-0.5 w-4 h-4 rounded border-cj-border bg-cj-surface text-cj-accent-blue focus:ring-cj-accent-blue-light focus:ring-offset-0"
                     />
-                    <span className="text-sm text-cjdg-textMuted group-hover:text-white transition-colors">
-                      He leído y acepto los <strong className="text-cjdg-accent">Términos y Condiciones</strong> de Proyectos CJDG
+                    <span className="text-sm text-cj-text-secondary group-hover:text-cj-text-primary transition-colors">
+                      He leído y acepto los <strong className="text-cj-accent-blue">Términos y Condiciones</strong> de Proyectos CJDG
                     </span>
                   </label>
 
@@ -380,7 +380,7 @@ const Register = () => {
                     <button
                       type="button"
                       onClick={handleBack}
-                      className="flex-1 flex justify-center py-2.5 px-4 border border-cjdg-border rounded-md text-cjdg-textMuted hover:text-white hover:border-white/30 transition-all group"
+                      className="flex-1 flex justify-center py-2.5 px-4 border border-cj-border rounded-md text-cj-text-secondary hover:text-cj-text-primary hover:border-cj-accent-blue transition-all group"
                     >
                       <span className="flex items-center gap-2">
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Anterior
@@ -407,17 +407,17 @@ const Register = () => {
               <div className="mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10"></div>
+                    <div className="w-full border-t border-cj-border"></div>
                   </div>
                   <div className="relative flex justify-center text-xs">
-                    <span className="px-3 bg-cjdg-dark text-cjdg-textMuted">o regístrate con</span>
+                    <span className="px-3 bg-cj-surface text-cj-text-muted">o regístrate con</span>
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => handleOAuthClick('Google')}
-                    className="flex items-center justify-center gap-2 px-4 py-2 border border-cjdg-border rounded-md bg-cjdg-dark/30 text-cjdg-textMuted hover:text-white hover:border-white/30 transition-all text-sm"
+                    className="flex items-center justify-center gap-2 px-4 py-2 border border-cj-border rounded-lg bg-cj-bg-primary text-cj-text-secondary hover:text-cj-text-primary hover:border-cj-accent-blue transition-all text-sm"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                     Google
@@ -425,7 +425,7 @@ const Register = () => {
                   <button
                     type="button"
                     onClick={() => handleOAuthClick('GitHub')}
-                    className="flex items-center justify-center gap-2 px-4 py-2 border border-cjdg-border rounded-md bg-cjdg-dark/30 text-cjdg-textMuted hover:text-white hover:border-white/30 transition-all text-sm"
+                    className="flex items-center justify-center gap-2 px-4 py-2 border border-cj-border rounded-lg bg-cj-bg-primary text-cj-text-secondary hover:text-cj-text-primary hover:border-cj-accent-blue transition-all text-sm"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
                     GitHub
@@ -436,9 +436,9 @@ const Register = () => {
           </>
         )}
 
-        <div className="mt-6 text-center text-sm text-cjdg-textMuted pt-4">
+        <div className="mt-6 text-center text-sm text-cj-text-secondary pt-4">
           ¿Ya posees acceso?{' '}
-          <Link to="/login" className="text-cjdg-primary hover:text-white transition-colors font-medium">
+          <Link to="/login" className="text-cj-accent-blue hover:text-cj-text-primary transition-colors font-medium">
             Iniciar Sesión
           </Link>
         </div>

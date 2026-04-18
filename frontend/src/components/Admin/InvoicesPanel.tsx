@@ -25,10 +25,10 @@ interface Invoice {
 const STATUSES = ['PENDING', 'PAID', 'CANCELLED', 'OVERDUE'] as const;
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendiente', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' },
-  PAID: { label: 'Pagada', color: 'bg-green-500/20 text-green-300 border-green-500/30' },
-  CANCELLED: { label: 'Cancelada', color: 'bg-red-500/20 text-red-300 border-red-500/30' },
-  OVERDUE: { label: 'Vencida', color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
+  PENDING: { label: 'Pendiente', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  PAID: { label: 'Pagada', color: 'bg-green-50 text-green-700 border-green-200' },
+  CANCELLED: { label: 'Cancelada', color: 'bg-red-50 text-red-700 border-red-200' },
+  OVERDUE: { label: 'Vencida', color: 'bg-orange-50 text-orange-700 border-orange-200' },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -86,20 +86,20 @@ const InvoicesPanel = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass-panel p-4">
-          <p className="text-xs text-cjdg-textMuted uppercase">Total Facturas</p>
-          <p className="text-2xl font-mono font-bold text-white">{stats.total}</p>
+          <p className="text-xs text-cj-text-secondary uppercase">Total Facturas</p>
+          <p className="text-2xl font-mono font-bold text-cj-text-primary">{stats.total}</p>
         </div>
         <div className="glass-panel p-4">
-          <p className="text-xs text-yellow-400 uppercase">Pendientes</p>
-          <p className="text-2xl font-mono font-bold text-yellow-300">{stats.pending}</p>
+          <p className="text-xs text-yellow-700 uppercase">Pendientes</p>
+          <p className="text-2xl font-mono font-bold text-yellow-700">{stats.pending}</p>
         </div>
         <div className="glass-panel p-4">
-          <p className="text-xs text-green-400 uppercase">Pagadas</p>
-          <p className="text-2xl font-mono font-bold text-green-300">{stats.paid}</p>
+          <p className="text-xs text-green-700 uppercase">Pagadas</p>
+          <p className="text-2xl font-mono font-bold text-green-700">{stats.paid}</p>
         </div>
         <div className="glass-panel p-4">
-          <p className="text-xs text-cjdg-accent uppercase">Ingresos</p>
-          <p className="text-2xl font-mono font-bold text-cjdg-accent">${stats.revenue.toFixed(2)}</p>
+          <p className="text-xs text-cj-accent-blue uppercase">Ingresos</p>
+          <p className="text-2xl font-mono font-bold text-cj-accent-blue">${stats.revenue.toFixed(2)}</p>
         </div>
       </div>
 
@@ -109,7 +109,7 @@ const InvoicesPanel = () => {
           <button
             onClick={() => setStatusFilter('')}
             className={`py-1.5 px-4 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-              !statusFilter ? 'bg-cjdg-primary text-white' : 'bg-white/5 text-cjdg-textMuted hover:bg-white/10'
+              !statusFilter ? 'bg-cj-accent-blue text-white' : 'bg-cj-bg-secondary text-cj-text-secondary hover:bg-cj-bg-tertiary'
             }`}
           >
             Todas ({invoices.length})
@@ -122,7 +122,7 @@ const InvoicesPanel = () => {
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`py-1.5 px-4 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                  statusFilter === s ? 'bg-cjdg-primary text-white' : 'bg-white/5 text-cjdg-textMuted hover:bg-white/10'
+                  statusFilter === s ? 'bg-cj-accent-blue text-white' : 'bg-cj-bg-secondary text-cj-text-secondary hover:bg-cj-bg-tertiary'
                 }`}
               >
                 {STATUS_CONFIG[s].label} ({count})
@@ -130,7 +130,7 @@ const InvoicesPanel = () => {
             );
           })}
         </div>
-        <button onClick={fetchInvoices} className="p-2 rounded hover:bg-white/10 text-cjdg-textMuted hover:text-white transition-colors">
+        <button onClick={fetchInvoices} className="p-2 rounded hover:bg-cj-bg-tertiary text-cj-text-secondary hover:text-cj-accent-blue transition-colors">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -138,11 +138,11 @@ const InvoicesPanel = () => {
       {/* Lista */}
       {loading ? (
         <div className="glass-panel p-8 flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cjdg-primary" />
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cj-accent-blue" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="glass-panel p-12 text-center text-cjdg-textMuted">
-          <Receipt className="w-10 h-10 mx-auto mb-3 opacity-30" />
+        <div className="glass-panel p-12 text-center text-cj-text-muted">
+          <Receipt className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p>No hay facturas.</p>
         </div>
       ) : (
@@ -156,17 +156,17 @@ const InvoicesPanel = () => {
                 {/* Header */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : inv.id)}
-                  className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+                  className="w-full p-4 flex items-center justify-between hover:bg-cj-bg-primary transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-cjdg-primary/10 flex items-center justify-center">
-                      <Receipt className="w-5 h-5 text-cjdg-primary" />
+                    <div className="w-10 h-10 rounded-lg bg-cj-accent-blue-light flex items-center justify-center">
+                      <Receipt className="w-5 h-5 text-cj-accent-blue" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium text-cj-text-primary">
                         Factura #{inv.id.toString().padStart(4, '0')}
                       </p>
-                      <p className="text-xs text-cjdg-textMuted">
+                      <p className="text-xs text-cj-text-secondary">
                         {new Date(inv.created_at).toLocaleDateString('es-VE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         {' · '}{TYPE_LABELS[inv.invoice_type] || inv.invoice_type}
                         {' · '}{inv.items.length} item(s)
@@ -178,22 +178,22 @@ const InvoicesPanel = () => {
                     <span className={`px-2.5 py-1 text-xs rounded border ${statusInfo.color}`}>
                       {statusInfo.label}
                     </span>
-                    <span className="text-white font-mono font-bold">${Number(inv.total).toFixed(2)}</span>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-cjdg-textMuted" /> : <ChevronDown className="w-4 h-4 text-cjdg-textMuted" />}
+                    <span className="text-cj-text-primary font-mono font-bold">${Number(inv.total).toFixed(2)}</span>
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-cj-text-secondary" /> : <ChevronDown className="w-4 h-4 text-cj-text-secondary" />}
                   </div>
                 </button>
 
                 {/* Detalle */}
                 {isExpanded && (
-                  <div className="border-t border-white/5 p-4 bg-cjdg-darker/30">
+                  <div className="border-t border-cj-border p-4 bg-cj-bg-primary">
                     {inv.notas && (
-                      <p className="text-xs text-cjdg-textMuted mb-3 italic border-l-2 border-cjdg-primary/30 pl-3">{inv.notas}</p>
+                      <p className="text-xs text-cj-text-secondary mb-3 italic border-l-2 border-cj-accent-blue/30 pl-3">{inv.notas}</p>
                     )}
 
                     {/* Items */}
                     <table className="w-full text-sm mb-4">
                       <thead>
-                        <tr className="text-xs text-cjdg-textMuted border-b border-white/5">
+                        <tr className="text-xs text-cj-text-secondary border-b border-cj-border">
                           <th className="text-left py-2">Producto</th>
                           <th className="text-center py-2">Cant.</th>
                           <th className="text-right py-2">P. Unit.</th>
@@ -202,25 +202,25 @@ const InvoicesPanel = () => {
                       </thead>
                       <tbody>
                         {inv.items.map((item) => (
-                          <tr key={item.id} className="border-b border-white/5">
-                            <td className="py-2 text-white">{item.descripcion}</td>
-                            <td className="py-2 text-center text-cjdg-textMuted font-mono">{item.cantidad}</td>
-                            <td className="py-2 text-right font-mono text-cjdg-textMuted">${Number(item.precio_unitario).toFixed(2)}</td>
-                            <td className="py-2 text-right font-mono text-white">${Number(item.subtotal).toFixed(2)}</td>
+                          <tr key={item.id} className="border-b border-cj-border">
+                            <td className="py-2 text-cj-text-primary">{item.descripcion}</td>
+                            <td className="py-2 text-center text-cj-text-secondary font-mono">{item.cantidad}</td>
+                            <td className="py-2 text-right font-mono text-cj-text-secondary">${Number(item.precio_unitario).toFixed(2)}</td>
+                            <td className="py-2 text-right font-mono text-cj-text-primary">${Number(item.subtotal).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr>
-                          <td colSpan={3} className="pt-3 text-right font-bold text-cjdg-textMuted text-xs uppercase">Total</td>
-                          <td className="pt-3 text-right font-mono font-bold text-cjdg-accent">${Number(inv.total).toFixed(2)}</td>
+                          <td colSpan={3} className="pt-3 text-right font-bold text-cj-text-secondary text-xs uppercase">Total</td>
+                          <td className="pt-3 text-right font-mono font-bold text-cj-accent-blue">${Number(inv.total).toFixed(2)}</td>
                         </tr>
                       </tfoot>
                     </table>
 
                     {/* Cambiar estado */}
-                    <div className="flex items-center gap-3 pt-3 border-t border-white/10">
-                      <span className="text-xs text-cjdg-textMuted">Cambiar estado:</span>
+                    <div className="flex items-center gap-3 pt-3 border-t border-cj-border">
+                      <span className="text-xs text-cj-text-secondary">Cambiar estado:</span>
                       {STATUSES.map(s => {
                         if (s === inv.status) return null;
                         const cfg = STATUS_CONFIG[s];

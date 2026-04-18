@@ -197,8 +197,8 @@ const ServiceBrowser = () => {
           onClick={() => setSelectedPilar('')}
           className={`py-1.5 px-4 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
             !selectedPilar
-              ? 'bg-cjdg-primary text-white shadow-[0_0_10px_rgba(37,99,235,0.5)]'
-              : 'bg-white/5 text-cjdg-textMuted hover:bg-white/10'
+              ? 'bg-cj-accent-blue text-white shadow-cj-md'
+              : 'bg-cj-bg-secondary text-cj-text-secondary hover:bg-cj-bg-tertiary hover:text-cj-text-primary'
           }`}
         >
           Todos
@@ -209,8 +209,8 @@ const ServiceBrowser = () => {
             onClick={() => setSelectedPilar(p)}
             className={`py-1.5 px-4 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
               selectedPilar === p
-                ? 'bg-cjdg-primary text-white shadow-[0_0_10px_rgba(37,99,235,0.5)]'
-                : 'bg-white/5 text-cjdg-textMuted hover:bg-white/10'
+                ? 'bg-cj-accent-blue text-white shadow-cj-md'
+                : 'bg-cj-bg-secondary text-cj-text-secondary hover:bg-cj-bg-tertiary hover:text-cj-text-primary'
             }`}
           >
             {PILAR_ICONS[p]} {PILAR_LABELS[p]}
@@ -220,7 +220,7 @@ const ServiceBrowser = () => {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-cjdg-primary" />
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-cj-accent-blue" />
         </div>
       ) : (
         visiblePilares.map((pilar) => {
@@ -229,36 +229,36 @@ const ServiceBrowser = () => {
 
           return (
             <div key={pilar}>
-              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-cj-text-primary mb-4 flex items-center gap-2">
                 <span className="text-xl">{PILAR_ICONS[pilar]}</span>
                 {PILAR_LABELS[pilar]}
-                <span className="text-xs text-cjdg-textMuted font-normal">({pilarServices.length} servicios)</span>
+                <span className="text-xs text-cj-text-secondary font-normal">({pilarServices.length} servicios)</span>
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                 {pilarServices.map((srv) => (
                   <div
                     key={srv.id}
-                    className={`rounded-lg border bg-gradient-to-br p-5 flex flex-col ${PILAR_COLORS[pilar]}`}
+                    className={`rounded-lg border bg-gradient-to-br p-5 flex flex-col shadow-cj-sm ${PILAR_COLORS[pilar]}`}
                   >
-                    <h3 className="text-white font-medium mb-1">{srv.nombre}</h3>
+                    <h3 className="text-cj-text-primary font-medium mb-1">{srv.nombre}</h3>
                     {srv.descripcion && (
-                      <p className="text-xs text-cjdg-textMuted mb-4 line-clamp-2">{srv.descripcion}</p>
+                      <p className="text-xs text-cj-text-secondary mb-4 line-clamp-2">{srv.descripcion}</p>
                     )}
 
-                    <div className="mt-auto flex items-center justify-between pt-3 border-t border-white/10">
+                    <div className="mt-auto flex items-center justify-between pt-3 border-t border-cj-border">
                       <div>
                         {srv.precio_base ? (
-                          <span className="text-sm text-green-400 font-mono">
+                          <span className="text-sm text-green-700 font-mono">
                             Desde ${Number(srv.precio_base).toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-xs text-cjdg-textMuted italic">Requiere cotización</span>
+                          <span className="text-xs text-cj-text-muted italic">Requiere cotización</span>
                         )}
                       </div>
                       <button
                         onClick={() => setQuotingService(srv)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-cjdg-primary/20 text-cjdg-primary hover:bg-cjdg-primary hover:text-white rounded text-sm transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-cj-accent-blue-light text-cj-accent-blue hover:bg-cj-accent-blue hover:text-white rounded text-sm transition-all"
                       >
                         <Send className="w-3 h-3" /> Cotizar
                       </button>
@@ -274,27 +274,27 @@ const ServiceBrowser = () => {
       {/* Quotation Modal */}
       {quotingService && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70" onClick={() => !submitting && setQuotingService(null)} />
-          <div className="relative w-full max-w-md glass-panel p-6 space-y-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => !submitting && setQuotingService(null)} />
+          <div className="relative w-full max-w-md bg-cj-surface border border-cj-border shadow-cj-lg rounded-lg p-6 space-y-4">
             {submitted ? (
               <div className="text-center py-6">
-                <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white">¡Solicitud Enviada!</h3>
-                <p className="text-sm text-cjdg-textMuted mt-1">
+                <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-cj-text-primary">¡Solicitud Enviada!</h3>
+                <p className="text-sm text-cj-text-secondary mt-1">
                   Puedes seguir la conversación en la sección "Cotizaciones".
                 </p>
               </div>
             ) : (
               <>
-                <h3 className="text-lg font-bold text-white">Solicitar Cotización</h3>
-                <p className="text-sm text-cjdg-textMuted">
-                  Servicio: <strong className="text-white">{quotingService.nombre}</strong>
+                <h3 className="text-lg font-bold text-cj-text-primary">Solicitar Cotización</h3>
+                <p className="text-sm text-cj-text-secondary">
+                  Servicio: <strong className="text-cj-text-primary">{quotingService.nombre}</strong>
                 </p>
 
                 {quotingService.image_urls && quotingService.image_urls.length > 0 && (
                   <div className="flex gap-2 overflow-x-auto py-2">
                     {quotingService.image_urls.map((url, i) => (
-                      <div key={i} className="w-16 h-16 rounded border border-cjdg-border overflow-hidden flex-shrink-0">
+                      <div key={i} className="w-16 h-16 rounded border border-cj-border overflow-hidden flex-shrink-0">
                         <img src={url} className="w-full h-full object-cover" />
                       </div>
                     ))}
@@ -302,44 +302,44 @@ const ServiceBrowser = () => {
                 )}
 
                 {error && (
-                  <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-3 rounded text-sm flex items-start gap-2">
+                  <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded text-sm flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>{error}</span>
                   </div>
                 )}
 
                 <div>
-                  <label className="text-sm text-cjdg-textMuted mb-1 block">Describe tu requerimiento *</label>
+                  <label className="text-sm text-cj-text-secondary mb-1 block">Describe tu requerimiento *</label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}
                     required
-                    className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-cjdg-primary resize-none"
+                    className="w-full bg-cj-surface border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:border-cj-accent-blue resize-none"
                     placeholder="Ej: Necesitamos instalar CCTV en 3 sedes, con 12 cámaras cada una..."
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm text-cjdg-textMuted mb-1 block">Ubicación / notas logísticas</label>
+                  <label className="text-sm text-cj-text-secondary mb-1 block">Ubicación / notas logísticas</label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={2}
-                    className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-cjdg-primary resize-none"
+                    className="w-full bg-cj-surface border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:border-cj-accent-blue resize-none"
                     placeholder="Ej: Oficina principal, Av. Libertador. Requiere acceso en horas laborales."
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm text-cjdg-textMuted mb-1 block">Presupuesto estimado (USD)</label>
+                  <label className="text-sm text-cj-text-secondary mb-1 block">Presupuesto estimado (USD)</label>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={budget}
                     onChange={(e) => setBudget(e.target.value)}
-                    className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-cjdg-primary"
+                    className="w-full bg-cj-surface border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:border-cj-accent-blue"
                     placeholder="Opcional. Ej: 5000"
                   />
                 </div>
@@ -348,7 +348,7 @@ const ServiceBrowser = () => {
                   <button
                     onClick={() => setQuotingService(null)}
                     disabled={submitting}
-                    className="flex-1 py-2 border border-cjdg-border rounded text-cjdg-textMuted hover:text-white transition-all text-sm"
+                    className="flex-1 py-2 border border-cj-border rounded text-cj-text-secondary hover:text-cj-text-primary hover:bg-cj-bg-secondary transition-all text-sm"
                   >
                     Cancelar
                   </button>

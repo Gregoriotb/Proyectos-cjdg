@@ -15,10 +15,10 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; Icon: any }> = {
-  PENDING:   { label: 'Pendiente', color: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30', Icon: Clock },
-  PAID:      { label: 'Pagada',    color: 'bg-green-500/15 text-green-300 border-green-500/30',   Icon: CheckCircle },
-  CANCELLED: { label: 'Cancelada', color: 'bg-red-500/15 text-red-300 border-red-500/30',         Icon: XCircle },
-  OVERDUE:   { label: 'Vencida',   color: 'bg-orange-500/15 text-orange-300 border-orange-500/30', Icon: AlertTriangle },
+  PENDING:   { label: 'Pendiente', color: 'bg-yellow-50 text-yellow-700 border-yellow-200',   Icon: Clock },
+  PAID:      { label: 'Pagada',    color: 'bg-green-50 text-green-700 border-green-200',      Icon: CheckCircle },
+  CANCELLED: { label: 'Cancelada', color: 'bg-red-50 text-red-700 border-red-200',            Icon: XCircle },
+  OVERDUE:   { label: 'Vencida',   color: 'bg-orange-50 text-orange-700 border-orange-200',   Icon: AlertTriangle },
 };
 
 interface Props {
@@ -31,9 +31,25 @@ export default function InvoiceMentionBubble({ invoices, fromAdmin = false }: Pr
   if (!invoices || invoices.length === 0) return null;
   const total = invoices.reduce((acc, i) => acc + Number(i.total || 0), 0);
 
+  // `fromAdmin` se usa en dos contextos opuestos:
+  //  - En ClientChatView: fromAdmin=true cuando el admin envia (burbuja gris recibida);
+  //    fromAdmin=false cuando el cliente envia (burbuja azul propia).
+  //  - En AdminChatPanel: fromAdmin=true cuando el admin envia (burbuja azul propia);
+  //    fromAdmin=false cuando el cliente envia (burbuja gris recibida).
+  // Mantenemos el borde distintivo (verde esmeralda para mencion del cliente,
+  // azul para mencion del admin) y usamos tarjetas internas semi-translucidas
+  // que son legibles tanto sobre fondo azul como sobre fondo gris.
+  const outerClasses = fromAdmin
+    ? 'border-blue-300/50 bg-blue-500/10'
+    : 'border-emerald-400/40 bg-emerald-500/10';
+
+  const headerTextClass = fromAdmin ? 'text-white/90' : 'text-cj-text-primary';
+  const footerLabelClass = fromAdmin ? 'text-white/80' : 'text-cj-text-secondary';
+  const totalLabelClass = 'text-emerald-600';
+
   return (
-    <div className={`rounded-xl border ${fromAdmin ? 'border-blue-300/40 bg-blue-500/10' : 'border-emerald-400/30 bg-emerald-500/10'} p-3 space-y-2`}>
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider opacity-90">
+    <div className={`rounded-xl border ${outerClasses} p-3 space-y-2`}>
+      <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${headerTextClass}`}>
         <Receipt className="w-4 h-4" />
         {invoices.length} factura{invoices.length > 1 ? 's' : ''} referenciada{invoices.length > 1 ? 's' : ''}
       </div>
@@ -43,13 +59,13 @@ export default function InvoiceMentionBubble({ invoices, fromAdmin = false }: Pr
           const cfg = STATUS_CONFIG[inv.status] || STATUS_CONFIG.PENDING;
           const Icon = cfg.Icon;
           return (
-            <div key={inv.id} className="bg-slate-900/40 rounded-lg p-2.5 flex items-center gap-3">
+            <div key={inv.id} className="bg-white/70 backdrop-blur-sm rounded-lg p-2.5 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-white">
+                  <span className="text-xs font-mono font-bold text-cj-text-primary">
                     #{String(inv.id).padStart(4, '0')}
                   </span>
-                  <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
+                  <span className="text-[10px] uppercase tracking-wider text-cj-text-secondary font-semibold">
                     {TYPE_LABEL[inv.invoice_type] || inv.invoice_type}
                   </span>
                   <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border ${cfg.color} flex items-center gap-1`}>
@@ -57,11 +73,11 @@ export default function InvoiceMentionBubble({ invoices, fromAdmin = false }: Pr
                     {cfg.label}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
+                <div className="text-[11px] text-cj-text-secondary mt-0.5">
                   {new Date(inv.created_at).toLocaleDateString('es-VE', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </div>
               </div>
-              <div className="text-sm font-bold text-emerald-300 shrink-0">
+              <div className="text-sm font-bold text-emerald-600 shrink-0">
                 ${Number(inv.total).toLocaleString('es-VE')}
               </div>
             </div>
@@ -70,9 +86,9 @@ export default function InvoiceMentionBubble({ invoices, fromAdmin = false }: Pr
       </div>
 
       {invoices.length > 1 && (
-        <div className="flex items-center justify-between pt-1.5 border-t border-white/10 text-xs">
-          <span className="text-slate-400">Total mencionado</span>
-          <span className="font-bold text-emerald-300">${total.toLocaleString('es-VE')}</span>
+        <div className="flex items-center justify-between pt-1.5 border-t border-white/20 text-xs">
+          <span className={footerLabelClass}>Total mencionado</span>
+          <span className={`font-bold ${totalLabelClass}`}>${total.toLocaleString('es-VE')}</span>
         </div>
       )}
     </div>

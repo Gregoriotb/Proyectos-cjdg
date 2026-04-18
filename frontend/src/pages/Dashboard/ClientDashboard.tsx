@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -45,13 +45,20 @@ const ClientDashboard = () => {
     if (section !== 'quotations') setSelectedThreadId(null);
   };
 
+  const sidebarItemClass = (isActive: boolean) =>
+    `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+      isActive
+        ? 'bg-cj-accent-blue-light text-cj-accent-blue font-medium'
+        : 'text-cj-text-secondary hover:text-cj-text-primary hover:bg-cj-bg-primary'
+    }`;
+
   return (
-    <div className="h-screen bg-cjdg-darker flex overflow-hidden">
+    <div className="h-screen bg-cj-bg-primary flex overflow-hidden">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex lg:flex-col flex-shrink-0 w-64 bg-cjdg-dark/80 border-r border-white/5 backdrop-blur-lg z-40 overflow-y-auto">
+      <aside className="hidden lg:flex lg:flex-col flex-shrink-0 w-64 bg-cj-surface border-r border-cj-border z-40 overflow-y-auto">
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-white/5">
-          <span className="text-lg font-bold text-white tracking-wide">Proyectos CJDG</span>
+        <div className="h-16 flex items-center px-6 border-b border-cj-border">
+          <span className="text-lg font-bold text-cj-text-primary tracking-wide">Proyectos CJDG</span>
         </div>
 
         {/* Navigation */}
@@ -63,16 +70,12 @@ const ClientDashboard = () => {
               <button
                 key={s.key}
                 onClick={() => handleSectionChange(s.key)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                  isActive
-                    ? 'bg-cjdg-primary/10 text-cjdg-primary border border-cjdg-primary/20'
-                    : 'text-cjdg-textMuted hover:text-white hover:bg-white/5'
-                }`}
+                className={sidebarItemClass(isActive)}
               >
                 <Icon className="w-4 h-4" />
                 {s.label}
                 {s.key === 'cart' && cartCount > 0 && (
-                  <span className="ml-auto bg-cjdg-primary text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  <span className="ml-auto bg-cj-accent-blue text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
                     {cartCount}
                   </span>
                 )}
@@ -82,19 +85,19 @@ const ClientDashboard = () => {
         </nav>
 
         {/* User Info + Logout */}
-        <div className="border-t border-white/5 p-4">
+        <div className="border-t border-cj-border p-4">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-cjdg-primary/20 flex items-center justify-center">
-              <User className="w-4 h-4 text-cjdg-primary" />
+            <div className="w-9 h-9 rounded-full bg-cj-accent-blue-light flex items-center justify-center">
+              <User className="w-4 h-4 text-cj-accent-blue" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white truncate">{user?.full_name}</p>
-              <p className="text-xs text-cjdg-textMuted">@{user?.username}</p>
+              <p className="text-sm font-medium text-cj-text-primary truncate">{user?.full_name}</p>
+              <p className="text-xs text-cj-text-muted">@{user?.username}</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-cj-danger hover:bg-red-50 transition-colors"
           >
             <LogOut className="w-4 h-4" /> Cerrar Sesión
           </button>
@@ -104,11 +107,11 @@ const ClientDashboard = () => {
       {/* Sidebar - Mobile Overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
-          <aside className="relative w-72 bg-cjdg-dark border-r border-white/5 flex flex-col">
-            <div className="h-16 flex items-center justify-between px-6 border-b border-white/5">
-              <span className="text-lg font-bold text-white">Proyectos CJDG</span>
-              <button onClick={() => setSidebarOpen(false)} className="text-cjdg-textMuted">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
+          <aside className="relative w-72 bg-cj-surface border-r border-cj-border flex flex-col shadow-cj-xl">
+            <div className="h-16 flex items-center justify-between px-6 border-b border-cj-border">
+              <span className="text-lg font-bold text-cj-text-primary">Proyectos CJDG</span>
+              <button onClick={() => setSidebarOpen(false)} className="text-cj-text-secondary hover:text-cj-text-primary">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -119,21 +122,17 @@ const ClientDashboard = () => {
                   <button
                     key={s.key}
                     onClick={() => handleSectionChange(s.key)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                      activeSection === s.key
-                        ? 'bg-cjdg-primary/10 text-cjdg-primary'
-                        : 'text-cjdg-textMuted hover:text-white hover:bg-white/5'
-                    }`}
+                    className={sidebarItemClass(activeSection === s.key)}
                   >
                     <Icon className="w-4 h-4" /> {s.label}
                   </button>
                 );
               })}
             </nav>
-            <div className="border-t border-white/5 p-4">
+            <div className="border-t border-cj-border p-4">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-cj-danger hover:bg-red-50 transition-colors"
               >
                 <LogOut className="w-4 h-4" /> Cerrar Sesión
               </button>
@@ -145,25 +144,25 @@ const ClientDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <header className="h-16 border-b border-white/5 bg-cjdg-dark/50 backdrop-blur-lg flex items-center justify-between px-6 lg:px-8 sticky top-0 z-30">
+        <header className="h-16 border-b border-cj-border bg-cj-surface flex items-center justify-between px-6 lg:px-8 sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-cjdg-textMuted hover:text-white"
+              className="lg:hidden text-cj-text-secondary hover:text-cj-text-primary"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-lg font-semibold text-white">
+            <h1 className="text-lg font-semibold text-cj-text-primary">
               {SECTIONS.find((s) => s.key === activeSection)?.label}
             </h1>
           </div>
-          <div className="text-sm text-cjdg-textMuted hidden sm:block">
-            {user?.full_name} · <span className="uppercase text-xs">{user?.role}</span>
+          <div className="text-sm text-cj-text-secondary hidden sm:block">
+            {user?.full_name} · <span className="uppercase text-xs text-cj-accent-blue font-semibold">{user?.role}</span>
           </div>
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-6 lg:p-8 overflow-y-auto bg-cj-bg-primary">
           {activeSection === 'overview' && <ClientHome onNavigate={(s) => handleSectionChange(s as SectionType)} />}
           {activeSection === 'catalog' && <ProductCatalogGrid />}
           {activeSection === 'cart' && <CartSection onGoToInvoices={() => setActiveSection('invoices')} />}
@@ -187,19 +186,19 @@ const ProfileSection = () => {
   const { user } = useAuth();
   return (
     <div className="glass-panel p-8 max-w-lg">
-      <h2 className="text-xl font-bold text-white mb-6">Mi Perfil</h2>
+      <h2 className="text-xl font-bold text-cj-text-primary mb-6">Mi Perfil</h2>
       <div className="space-y-4">
         <div>
-          <label className="text-xs text-cjdg-textMuted uppercase tracking-wider">Nombre</label>
-          <p className="text-white">{user?.full_name}</p>
+          <label className="text-xs text-cj-text-secondary uppercase tracking-wider">Nombre</label>
+          <p className="text-cj-text-primary">{user?.full_name}</p>
         </div>
         <div>
-          <label className="text-xs text-cjdg-textMuted uppercase tracking-wider">Usuario</label>
-          <p className="text-white">@{user?.username}</p>
+          <label className="text-xs text-cj-text-secondary uppercase tracking-wider">Usuario</label>
+          <p className="text-cj-text-primary">@{user?.username}</p>
         </div>
         <div>
-          <label className="text-xs text-cjdg-textMuted uppercase tracking-wider">Rol</label>
-          <p className="text-white uppercase">{user?.role}</p>
+          <label className="text-xs text-cj-text-secondary uppercase tracking-wider">Rol</label>
+          <p className="text-cj-text-primary uppercase">{user?.role}</p>
         </div>
       </div>
     </div>

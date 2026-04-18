@@ -129,32 +129,32 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
 
   return (
     <>
-    <tr className={`border-b ${editing ? 'border-cjdg-primary/30 bg-white/5' : 'border-white/5 hover:bg-white/5'} transition-colors`}>
+    <tr className={`border-b ${editing ? 'border-cj-accent-blue/30 bg-cj-bg-primary' : 'border-cj-border hover:bg-cj-bg-primary'} transition-colors`}>
       {/* Imagen + Nombre */}
       <td className="py-3 px-4">
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex-shrink-0 flex items-center justify-center">
+          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-cj-bg-tertiary border border-cj-border flex-shrink-0 flex items-center justify-center">
             {imgSrc
               ? <img src={imgSrc} alt={nombre} className="w-full h-full object-contain" />
-              : <Box className="w-5 h-5 text-cjdg-textMuted opacity-40" />
+              : <Box className="w-5 h-5 text-cj-text-muted opacity-60" />
             }
             {imageCount > 0 && (
-              <span className="absolute bottom-0 right-0 bg-cjdg-primary text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-tl-md">{imageCount}</span>
+              <span className="absolute bottom-0 right-0 bg-cj-accent-blue text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-tl-md">{imageCount}</span>
             )}
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium text-white truncate max-w-[200px]">{nombre}</div>
+            <div className="text-sm font-medium text-cj-text-primary truncate max-w-[200px]">{nombre}</div>
             <div className="flex gap-1 mt-0.5">
-              {marca && <span className="text-xs text-cjdg-primary">{marca}</span>}
-              {modelo && <span className="text-xs text-cjdg-textMuted font-mono">· {modelo}</span>}
+              {marca && <span className="text-xs text-cj-accent-blue">{marca}</span>}
+              {modelo && <span className="text-xs text-cj-text-secondary font-mono">· {modelo}</span>}
             </div>
           </div>
         </div>
       </td>
 
       {/* Categoría */}
-      <td className="py-3 px-4 text-xs text-cjdg-textMuted hidden md:table-cell">
-        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10">
+      <td className="py-3 px-4 text-xs text-cj-text-secondary hidden md:table-cell">
+        <span className="px-2 py-0.5 rounded bg-cj-bg-secondary border border-cj-border">
           {PILAR_LABELS[item.service?.pilar_id ?? ''] ?? item.service?.categoria ?? '—'}
         </span>
       </td>
@@ -166,10 +166,10 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
             type="number"
             value={form.price}
             onChange={e => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
-            className="w-24 bg-cjdg-darker border border-cjdg-border rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-cjdg-primary"
+            className="w-24 bg-cj-bg-primary border border-cj-border rounded px-2 py-1 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
           />
         ) : (
-          <span className={`text-sm ${form.price > 0 ? 'text-white' : 'text-cjdg-textMuted'}`}>
+          <span className={`text-sm ${form.price > 0 ? 'text-cj-text-primary' : 'text-cj-text-muted'}`}>
             {form.price > 0 ? `$${Number(form.price).toFixed(2)}` : '—'}
           </span>
         )}
@@ -182,10 +182,10 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
             type="number"
             value={form.stock}
             onChange={e => setForm({ ...form, stock: parseInt(e.target.value) || 0 })}
-            className="w-20 bg-cjdg-darker border border-cjdg-border rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-cjdg-primary"
+            className="w-20 bg-cj-bg-primary border border-cj-border rounded px-2 py-1 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
           />
         ) : (
-          <span className={`text-sm font-mono ${form.stock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <span className={`text-sm font-mono ${form.stock > 0 ? 'text-green-700' : 'text-cj-danger'}`}>
             {form.stock}
           </span>
         )}
@@ -200,27 +200,27 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
                 type="checkbox"
                 checked={form.is_offer}
                 onChange={e => setForm({ ...form, is_offer: e.target.checked })}
-                className="rounded border-cjdg-border bg-cjdg-darker text-cjdg-primary"
+                className="rounded border-cj-border bg-cj-bg-primary text-cj-accent-blue"
               />
-              <span className="text-xs text-cjdg-textMuted">Activo</span>
+              <span className="text-xs text-cj-text-secondary">Activo</span>
             </label>
             {form.is_offer && (
               <input
                 type="number"
                 value={form.discount_percentage}
                 onChange={e => setForm({ ...form, discount_percentage: parseFloat(e.target.value) || 0 })}
-                className="w-16 bg-cjdg-darker border border-cjdg-border rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-cjdg-accent"
+                className="w-16 bg-cj-bg-primary border border-cj-border rounded px-2 py-1 text-cj-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
                 placeholder="%"
               />
             )}
           </div>
         ) : (
           form.is_offer ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cjdg-accent/20 text-cjdg-accent text-xs border border-cjdg-accent/30">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cj-accent-blue-light text-cj-accent-blue text-xs border border-blue-200">
               <Tag className="w-3 h-3" /> {form.discount_percentage}%
             </span>
           ) : (
-            <span className="text-cjdg-textMuted text-xs">—</span>
+            <span className="text-cj-text-muted text-xs">—</span>
           )
         )}
       </td>
@@ -230,12 +230,12 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
         {editing ? (
           <button
             onClick={() => setForm({ ...form, is_available: !form.is_available })}
-            className={`text-xs px-2 py-1 rounded border transition-colors ${form.is_available ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}
+            className={`text-xs px-2 py-1 rounded border transition-colors ${form.is_available ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-cj-danger border-red-200'}`}
           >
             {form.is_available ? 'Visible' : 'Oculto'}
           </button>
         ) : (
-          <span className={`text-xs ${form.is_available ? 'text-green-400' : 'text-red-400'}`}>
+          <span className={`text-xs ${form.is_available ? 'text-green-700' : 'text-cj-danger'}`}>
             {form.is_available ? '● Visible' : '○ Oculto'}
           </span>
         )}
@@ -243,23 +243,23 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
 
       {/* Acciones */}
       <td className="py-3 px-4 text-right">
-        {saved && <CheckCircle className="w-4 h-4 text-green-400 inline" />}
+        {saved && <CheckCircle className="w-4 h-4 text-green-700 inline" />}
         {!saved && editing ? (
           <div className="flex justify-end gap-1">
-            <button onClick={() => setEditing(false)} className="p-1.5 rounded text-cjdg-textMuted hover:text-white hover:bg-white/10 transition-colors">
+            <button onClick={() => setEditing(false)} className="p-1.5 rounded text-cj-text-secondary hover:text-cj-text-primary hover:bg-cj-bg-tertiary transition-colors">
               <X className="w-4 h-4" />
             </button>
-            <button onClick={save} disabled={saving} className="p-1.5 rounded text-green-400 hover:text-green-300 hover:bg-green-500/10 transition-colors disabled:opacity-50">
+            <button onClick={save} disabled={saving} className="p-1.5 rounded text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors disabled:opacity-50">
               <Save className="w-4 h-4" />
             </button>
           </div>
         ) : (
           !saved && (
             <div className="flex justify-end gap-1">
-              <button onClick={() => setEditing(true)} className="p-1.5 rounded text-cjdg-textMuted hover:text-cjdg-primary hover:bg-cjdg-primary/10 transition-colors">
+              <button onClick={() => setEditing(true)} className="p-1.5 rounded text-cj-text-secondary hover:text-cj-accent-blue hover:bg-cj-accent-blue-light transition-colors">
                 <Edit2 className="w-4 h-4" />
               </button>
-              <button onClick={() => onDelete(item.id)} className="p-1.5 rounded text-cjdg-textMuted hover:text-red-400 hover:bg-red-500/10 transition-colors">
+              <button onClick={() => onDelete(item.id)} className="p-1.5 rounded text-cj-text-secondary hover:text-cj-danger hover:bg-red-50 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
@@ -270,29 +270,29 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
 
     {/* ── Panel de Galería expandible (solo en modo edición) ── */}
     {editing && (
-      <tr className="border-b border-cjdg-primary/30 bg-white/[0.03]">
+      <tr className="border-b border-cj-accent-blue/30 bg-cj-bg-primary">
         <td colSpan={7} className="px-4 py-4">
           <div className="flex items-start gap-4">
-            <div className="flex items-center gap-1 text-xs text-cjdg-textMuted flex-shrink-0 pt-1">
+            <div className="flex items-center gap-1 text-xs text-cj-text-secondary flex-shrink-0 pt-1">
               <UploadCloud className="w-4 h-4" />
               <span className="font-medium">Galería</span>
-              <span className="text-cjdg-primary ml-1">({imageCount})</span>
+              <span className="text-cj-accent-blue ml-1">({imageCount})</span>
             </div>
             <div className="flex flex-wrap gap-3 items-start flex-1">
               {/* Imágenes existentes */}
               {currentImages.map((url, i) => (
-                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden bg-cjdg-darker border border-white/10 group/thumb">
+                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden bg-cj-bg-tertiary border border-cj-border group/thumb">
                   <img src={getImageUrl(url) || url} alt={`${nombre} ${i + 1}`} className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => handleRemoveImage(i)}
-                    className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-500 p-0.5 rounded-full text-white opacity-0 group-hover/thumb:opacity-100 transition-all"
+                    className="absolute top-1 right-1 bg-cj-danger/80 hover:bg-cj-danger p-0.5 rounded-full text-white opacity-0 group-hover/thumb:opacity-100 transition-all"
                     title="Eliminar imagen"
                   >
                     <X className="w-3 h-3" />
                   </button>
                   {i === 0 && (
-                    <span className="absolute bottom-0 left-0 bg-cjdg-primary/90 text-white text-[8px] px-1.5 py-0.5 font-bold uppercase">Principal</span>
+                    <span className="absolute bottom-0 left-0 bg-cj-accent-blue/90 text-white text-[8px] px-1.5 py-0.5 font-bold uppercase">Principal</span>
                   )}
                 </div>
               ))}
@@ -300,11 +300,11 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
               {/* Botón para agregar */}
               <label className={`w-20 h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
                 uploadingImg
-                  ? 'border-cjdg-primary/50 bg-cjdg-primary/5'
-                  : 'border-white/20 bg-white/5 hover:bg-cjdg-primary/10 hover:border-cjdg-primary/50'
-              } text-cjdg-textMuted hover:text-white`}>
+                  ? 'border-cj-accent-blue/50 bg-cj-accent-blue-light'
+                  : 'border-cj-border bg-cj-bg-secondary hover:bg-cj-accent-blue-light hover:border-cj-accent-blue/50'
+              } text-cj-text-secondary hover:text-cj-accent-blue`}>
                 {uploadingImg ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-cjdg-primary" />
+                  <Loader2 className="w-5 h-5 animate-spin text-cj-accent-blue" />
                 ) : (
                   <>
                     <Plus className="w-5 h-5 mb-0.5" />
@@ -398,26 +398,26 @@ const CatalogPanel = () => {
       <div className="glass-panel p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 flex-1 w-full">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cjdg-textMuted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cj-text-muted" />
             <input
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
-              className="w-full pl-9 pr-3 py-2 bg-cjdg-darker border border-cjdg-border rounded text-white text-sm focus:outline-none focus:border-cjdg-primary"
+              className="w-full pl-9 pr-3 py-2 bg-cj-bg-primary border border-cj-border rounded text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
               placeholder="Buscar por nombre o marca..."
             />
           </div>
           <select
             value={pilarFilter}
             onChange={e => { setPilarFilter(e.target.value); setPage(1); }}
-            className="bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cjdg-primary"
+            className="bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-sm text-cj-text-primary focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
           >
             <option value="">Todos los pilares</option>
             {Object.entries(PILAR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-xs text-cjdg-textMuted">{total} productos</span>
-          <button onClick={fetchItems} className="p-2 rounded hover:bg-white/10 text-cjdg-textMuted hover:text-white transition-colors">
+          <span className="text-xs text-cj-text-secondary">{total} productos</span>
+          <button onClick={fetchItems} className="p-2 rounded hover:bg-cj-bg-tertiary text-cj-text-secondary hover:text-cj-accent-blue transition-colors">
             <RefreshCw className="w-4 h-4" />
           </button>
           <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 px-3 py-2 btn-primary text-sm">
@@ -435,7 +435,7 @@ const CatalogPanel = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-white/10 text-xs font-mono uppercase tracking-widest text-cjdg-textMuted">
+              <tr className="bg-cj-bg-secondary border-b border-cj-border text-xs font-mono uppercase tracking-widest text-cj-text-secondary">
                 <th className="py-3 px-4 font-medium">Producto</th>
                 <th className="py-3 px-4 font-medium hidden md:table-cell">Pilar</th>
                 <th className="py-3 px-4 font-medium">Precio ($)</th>
@@ -448,16 +448,16 @@ const CatalogPanel = () => {
             <tbody>
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i} className="border-b border-white/5">
+                  <tr key={i} className="border-b border-cj-border">
                     <td colSpan={7} className="py-4 px-4">
-                      <div className="h-4 bg-white/5 rounded animate-pulse w-3/4" />
+                      <div className="h-4 bg-cj-bg-tertiary rounded animate-pulse w-3/4" />
                     </td>
                   </tr>
                 ))
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-cjdg-textMuted">
-                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <td colSpan={7} className="py-12 text-center text-cj-text-muted">
+                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p>Sin resultados para esa búsqueda.</p>
                   </td>
                 </tr>

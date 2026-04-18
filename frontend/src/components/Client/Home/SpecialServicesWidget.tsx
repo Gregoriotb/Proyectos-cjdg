@@ -44,13 +44,13 @@ export default function SpecialServicesWidget({ onGoToServices }: Props) {
   return (
     <section className="glass-panel p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
-          <Crown className="w-4 h-4 text-amber-400" />
+        <h2 className="text-base font-bold text-cj-text-primary flex items-center gap-2">
+          <Crown className="w-4 h-4 text-amber-500" />
           Servicios Destacados
         </h2>
         <button
           onClick={onGoToServices}
-          className="text-xs text-cjdg-accent hover:text-white transition-colors flex items-center gap-1"
+          className="text-xs text-cj-accent-blue hover:text-cj-accent-blue-hover transition-colors flex items-center gap-1"
         >
           Ver todos <ArrowRight className="w-3 h-3" />
         </button>
@@ -59,20 +59,20 @@ export default function SpecialServicesWidget({ onGoToServices }: Props) {
       {services === null && !error && (
         <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse aspect-square rounded-lg bg-white/5 border border-white/10" />
+            <div key={i} className="animate-pulse aspect-square rounded-lg bg-cj-bg-secondary border border-cj-border" />
           ))}
         </div>
       )}
 
       {error && (
-        <div className="text-center py-6 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+        <div className="text-center py-6 text-cj-text-muted border border-dashed border-cj-border rounded-lg">
           <AlertCircle className="w-6 h-6 mx-auto mb-1 opacity-50" />
           <p className="text-xs">Error al cargar</p>
         </div>
       )}
 
       {services !== null && services.length === 0 && (
-        <div className="text-center py-6 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+        <div className="text-center py-6 text-cj-text-muted border border-dashed border-cj-border rounded-lg">
           <Sparkles className="w-6 h-6 mx-auto mb-1 opacity-50" />
           <p className="text-xs">Sin destacados por ahora</p>
         </div>
@@ -86,7 +86,7 @@ export default function SpecialServicesWidget({ onGoToServices }: Props) {
               type="button"
               onClick={onGoToServices}
               title={`${s.nombre}${s.descripcion ? ' — ' + s.descripcion : ''}`}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 hover:border-amber-400/60 bg-gradient-to-br from-slate-800 to-slate-900 transition-all hover:-translate-y-0.5"
+              className="group relative aspect-square overflow-hidden rounded-lg border border-cj-border hover:border-cj-accent-blue/60 bg-gradient-to-br from-slate-800 to-slate-900 shadow-cj-sm hover:shadow-cj-md transition-all hover:-translate-y-0.5"
             >
               {s.image_urls && s.image_urls.length > 0 ? (
                 <img
@@ -124,7 +124,7 @@ export default function SpecialServicesWidget({ onGoToServices }: Props) {
               {/* Mini-grid de preview 2x2 estilo carpeta iOS */}
               <div className="absolute inset-2 grid grid-cols-2 gap-0.5">
                 {overflow.slice(0, 4).map((o, i) => (
-                  <div key={o.id + '-' + i} className="rounded-sm overflow-hidden bg-slate-700">
+                  <div key={o.id + '-' + i} className="rounded-sm overflow-hidden bg-cj-bg-tertiary">
                     {o.image_urls && o.image_urls.length > 0 ? (
                       <img src={o.image_urls[0]} alt="" className="w-full h-full object-cover opacity-70" />
                     ) : (

@@ -55,7 +55,7 @@ export default function HeroSection({ onNavigate }: Props) {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => onNavigate('catalog')}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] transition-all active:scale-95"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cj-accent-blue hover:bg-cj-accent-blue-hover text-white text-sm font-medium shadow-cj-md hover:shadow-cj-lg transition-all active:scale-95"
             >
               <ShoppingBag className="w-4 h-4" />
               Ver Catálogo
@@ -72,40 +72,39 @@ export default function HeroSection({ onNavigate }: Props) {
       </div>
 
       {/* Soporte card — 1 columna */}
-      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-slate-900 to-emerald-900/40 p-6 sm:p-7">
-        <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-2xl border border-cj-border bg-cj-surface shadow-cj-md p-6 sm:p-7">
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-xs uppercase tracking-wider text-emerald-300 font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cj-accent-blue-light border border-cj-border text-xs uppercase tracking-wider text-cj-accent-blue font-semibold mb-4">
             Soporte 24/7
           </div>
-          <h3 className="text-white font-bold text-lg mb-4">¿Necesitas ayuda?</h3>
+          <h3 className="text-cj-text-primary font-bold text-lg mb-4">¿Necesitas ayuda?</h3>
           <div className="space-y-3">
             <a
               href="mailto:ventas@proyectoscjdg.com"
-              className="flex items-start gap-3 text-slate-200 hover:text-emerald-300 transition-colors group"
+              className="flex items-start gap-3 text-cj-text-secondary hover:text-cj-accent-blue transition-colors group"
             >
-              <Mail className="w-4 h-4 mt-0.5 text-emerald-400 shrink-0" />
+              <Mail className="w-4 h-4 mt-0.5 text-cj-accent-blue shrink-0" />
               <div className="text-sm break-all">ventas@proyectoscjdg.com</div>
             </a>
             <a
               href="tel:+582122350938"
-              className="flex items-center gap-3 text-slate-200 hover:text-emerald-300 transition-colors"
+              className="flex items-center gap-3 text-cj-text-secondary hover:text-cj-accent-blue transition-colors"
             >
-              <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+              <Phone className="w-4 h-4 text-cj-accent-blue shrink-0" />
               <div className="text-sm">+58 212-2350938</div>
             </a>
             <a
               href="tel:+584142849979"
-              className="flex items-center gap-3 text-slate-200 hover:text-emerald-300 transition-colors"
+              className="flex items-center gap-3 text-cj-text-secondary hover:text-cj-accent-blue transition-colors"
             >
-              <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+              <Phone className="w-4 h-4 text-cj-accent-blue shrink-0" />
               <div className="text-sm">+58 414-2849979</div>
             </a>
           </div>
-          <div className="mt-5 pt-5 border-t border-white/10">
+          <div className="mt-5 pt-5 border-t border-cj-border">
             <button
               onClick={() => onNavigate('quotations')}
-              className="text-xs text-emerald-300 hover:text-emerald-200 font-medium"
+              className="text-xs text-cj-accent-blue hover:text-cj-accent-blue-hover font-medium"
             >
               Ver mis cotizaciones activas →
             </button>

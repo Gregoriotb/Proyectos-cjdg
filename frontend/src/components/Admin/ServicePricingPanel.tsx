@@ -26,10 +26,10 @@ const PILAR_LABELS: Record<string, string> = {
 };
 
 const PILAR_COLORS: Record<string, string> = {
-  TECNOLOGIA: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  CLIMATIZACION: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-  ENERGIA: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  CIVIL: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+  TECNOLOGIA: 'bg-blue-50 text-blue-700 border-blue-200',
+  CLIMATIZACION: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+  ENERGIA: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  CIVIL: 'bg-orange-50 text-orange-700 border-orange-200',
 };
 
 // --- Formulario de edición/creación ---
@@ -105,12 +105,12 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="glass-panel p-6 space-y-4">
-      <h3 className="text-lg font-bold text-white">
+      <h3 className="text-lg font-bold text-cj-text-primary">
         {service ? 'Editar Servicio Corporativo' : 'Nuevo Servicio Corporativo'}
       </h3>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-3 rounded-md flex items-start gap-2 text-sm">
+        <div className="bg-red-50 border border-red-200 text-cj-danger p-3 rounded-md flex items-start gap-2 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -118,24 +118,24 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-cjdg-textMuted mb-1">Nombre del Servicio</label>
+          <label className="block text-sm text-cj-text-secondary mb-1">Nombre del Servicio</label>
           <input
             type="text"
             required
             minLength={3}
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
-            className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-cjdg-primary"
+            className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
             placeholder="Ej: Instalación de CCTV"
           />
         </div>
         <div>
-          <label className="block text-sm text-cjdg-textMuted mb-1">Pilar</label>
+          <label className="block text-sm text-cj-text-secondary mb-1">Pilar</label>
           <select
             value={pilar}
             onChange={(e) => setPilar(e.target.value)}
             disabled={!!service}
-            className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-cjdg-primary disabled:opacity-50"
+            className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue disabled:opacity-50"
           >
             {PILARES.map((p) => (
               <option key={p} value={p}>{PILAR_LABELS[p]}</option>
@@ -145,82 +145,82 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
       </div>
 
       <div>
-        <label className="block text-sm text-cjdg-textMuted mb-1">Descripción</label>
+        <label className="block text-sm text-cj-text-secondary mb-1">Descripción</label>
         <textarea
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           rows={2}
-          className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-cjdg-primary resize-none"
+          className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue resize-none"
           placeholder="Descripción del servicio..."
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm text-cjdg-textMuted mb-1">Precio Base (USD)</label>
+          <label className="block text-sm text-cj-text-secondary mb-1">Precio Base (USD)</label>
           <input
             type="number"
             step="0.01"
             min="0"
             value={precioBase}
             onChange={(e) => setPrecioBase(e.target.value)}
-            className="w-full bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-cjdg-primary"
+            className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
             placeholder="Dejar vacío = cotización manual"
           />
         </div>
         <div className="flex items-end gap-3">
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-cjdg-textMuted">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-cj-text-secondary">
             <input
               type="checkbox"
               checked={precioVariable}
               onChange={(e) => setPrecioVariable(e.target.checked)}
-              className="rounded border-cjdg-border bg-cjdg-dark/50 text-cjdg-primary focus:ring-cjdg-primary"
+              className="rounded border-cj-border bg-cj-bg-primary text-cj-accent-blue focus:ring-cj-accent-blue-light"
             />
             Precio ajustable
           </label>
         </div>
         <div className="flex items-end gap-3">
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-cjdg-textMuted">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-cj-text-secondary">
             <input
               type="checkbox"
               checked={activo}
               onChange={(e) => setActivo(e.target.checked)}
-              className="rounded border-cjdg-border bg-cjdg-dark/50 text-cjdg-primary focus:ring-cjdg-primary"
+              className="rounded border-cj-border bg-cj-bg-primary text-cj-accent-blue focus:ring-cj-accent-blue-light"
             />
             Activo
           </label>
         </div>
         <div className="flex items-end gap-3">
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-cjdg-textMuted">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-cj-text-secondary">
             <input
               type="checkbox"
               checked={isSpecial}
               onChange={(e) => setIsSpecial(e.target.checked)}
-              className="rounded border-cjdg-border bg-purple-900/50 text-purple-400 focus:ring-purple-400"
+              className="rounded border-cj-border bg-cj-bg-primary text-purple-600 focus:ring-purple-300"
             />
-            {isSpecial ? <span className="text-purple-400 font-bold">¡Servicio Especial!</span> : "Destacar Especial"}
+            {isSpecial ? <span className="text-purple-700 font-bold">¡Servicio Especial!</span> : "Destacar Especial"}
           </label>
         </div>
       </div>
 
       {/* Galería */}
-      <div className="border-t border-white/10 pt-4">
-         <label className="block text-sm text-cjdg-textMuted mb-3">Galería de Imágenes (Opcional)</label>
+      <div className="border-t border-cj-border pt-4">
+         <label className="block text-sm text-cj-text-secondary mb-3">Galería de Imágenes (Opcional)</label>
          <div className="flex flex-wrap gap-4 items-start">
            {images.map((url, i) => (
-              <div key={i} className="relative w-24 h-24 rounded-lg bg-cjdg-darker border border-cjdg-border overflow-hidden">
+              <div key={i} className="relative w-24 h-24 rounded-lg bg-cj-bg-tertiary border border-cj-border overflow-hidden">
                  <img src={url} alt="Gallery item" className="w-full h-full object-cover" />
-                 <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/60 p-1 rounded-full text-white hover:bg-red-500">
+                 <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/60 p-1 rounded-full text-white hover:bg-cj-danger">
                    <X className="w-3 h-3" />
                  </button>
               </div>
            ))}
-           <label className="w-24 h-24 rounded-lg bg-white/5 border border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-white/10 hover:border-cjdg-primary transition-all text-cjdg-textMuted hover:text-white">
+           <label className="w-24 h-24 rounded-lg bg-cj-bg-secondary border border-dashed border-cj-border flex flex-col items-center justify-center cursor-pointer hover:bg-cj-accent-blue-light hover:border-cj-accent-blue transition-all text-cj-text-muted hover:text-cj-accent-blue">
               <UploadCloud className="w-6 h-6 mb-1" />
               <span className="text-[10px]">Añadir Foto</span>
               <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploadingImg} />
            </label>
-           {uploadingImg && <span className="text-xs text-cjdg-primary mt-4">Subiendo...</span>}
+           {uploadingImg && <span className="text-xs text-cj-accent-blue mt-4">Subiendo...</span>}
          </div>
       </div>
 
@@ -228,7 +228,7 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-cjdg-border rounded text-cjdg-textMuted hover:text-white hover:border-white/30 transition-all text-sm"
+          className="px-4 py-2 border border-cj-border rounded text-cj-text-secondary hover:text-cj-text-primary hover:bg-cj-bg-tertiary transition-all text-sm"
         >
           Cancelar
         </button>
@@ -316,18 +316,18 @@ const ServicePricingPanel = () => {
       <div className="glass-panel p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
         <div className="flex gap-2 flex-1 w-full">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cjdg-textMuted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cj-text-muted" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-cjdg-darker border border-cjdg-border rounded text-white text-sm focus:outline-none focus:border-cjdg-primary"
+              className="w-full pl-9 pr-3 py-2 bg-cj-bg-primary border border-cj-border rounded text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
               placeholder="Buscar servicio corporativo..."
             />
           </div>
           <select
             value={pilarFilter}
             onChange={(e) => setPilarFilter(e.target.value)}
-            className="bg-cjdg-darker border border-cjdg-border rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-cjdg-primary"
+            className="bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-sm text-cj-text-primary focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
           >
             <option value="">Todos los pilares</option>
             {PILARES.map((p) => (
@@ -336,10 +336,10 @@ const ServicePricingPanel = () => {
           </select>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs text-cjdg-textMuted">{filtered.length} servicios</span>
+          <span className="text-xs text-cj-text-secondary">{filtered.length} servicios</span>
           <button
             onClick={fetchServices}
-            className="p-2 rounded hover:bg-white/10 text-cjdg-textMuted hover:text-white transition-colors"
+            className="p-2 rounded hover:bg-cj-bg-tertiary text-cj-text-secondary hover:text-cj-accent-blue transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -355,11 +355,11 @@ const ServicePricingPanel = () => {
       {/* Tabla de servicios */}
       {loading ? (
         <div className="glass-panel p-8 flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cjdg-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cj-accent-blue"></div>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="glass-panel p-12 text-center text-cjdg-textMuted">
-          <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-30" />
+        <div className="glass-panel p-12 text-center text-cj-text-muted">
+          <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p>No se encontraron servicios corporativos.</p>
         </div>
       ) : (
@@ -367,7 +367,7 @@ const ServicePricingPanel = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 text-xs font-mono uppercase tracking-widest text-cjdg-textMuted">
+                <tr className="bg-cj-bg-secondary border-b border-cj-border text-xs font-mono uppercase tracking-widest text-cj-text-secondary">
                   <th className="py-3 px-4 font-medium">Servicio</th>
                   <th className="py-3 px-4 font-medium">Pilar</th>
                   <th className="py-3 px-4 font-medium text-right">Precio Base</th>
@@ -378,18 +378,18 @@ const ServicePricingPanel = () => {
               </thead>
               <tbody>
                 {filtered.map((srv) => {
-                  const colorClass = PILAR_COLORS[srv.pilar] ?? 'bg-white/10 text-cjdg-textMuted border-white/10';
+                  const colorClass = PILAR_COLORS[srv.pilar] ?? 'bg-cj-bg-secondary text-cj-text-secondary border-cj-border';
                   const hasPrecio = srv.precio_base !== null;
 
                   return (
-                    <tr key={srv.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <tr key={srv.id} className="border-b border-cj-border hover:bg-cj-bg-primary transition-colors">
                       <td className="py-3 px-4">
-                        <div className="text-sm font-medium text-white">{srv.nombre}</div>
+                        <div className="text-sm font-medium text-cj-text-primary">{srv.nombre}</div>
                         {srv.descripcion && (
-                          <p className="text-xs text-cjdg-textMuted mt-0.5 line-clamp-1">{srv.descripcion}</p>
+                          <p className="text-xs text-cj-text-secondary mt-0.5 line-clamp-1">{srv.descripcion}</p>
                         )}
                         {srv.is_special && (
-                          <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-purple-600/30 to-blue-600/30 text-purple-300 border border-purple-500/30">
+                          <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
                             ✨ Servicio Especial
                           </span>
                         )}
@@ -401,16 +401,16 @@ const ServicePricingPanel = () => {
                       </td>
                       <td className="py-3 px-4 text-right">
                         {hasPrecio ? (
-                          <span className="text-sm font-mono text-green-400">${Number(srv.precio_base).toFixed(2)}</span>
+                          <span className="text-sm font-mono text-green-700">${Number(srv.precio_base).toFixed(2)}</span>
                         ) : (
-                          <span className="text-xs text-cjdg-textMuted italic">Cotización manual</span>
+                          <span className="text-xs text-cj-text-muted italic">Cotización manual</span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className={`inline-block px-2 py-0.5 text-xs rounded border ${
                           hasPrecio
-                            ? 'bg-green-500/10 text-green-300 border-green-500/20'
-                            : 'bg-purple-500/10 text-purple-300 border-purple-500/20'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : 'bg-purple-50 text-purple-700 border-purple-200'
                         }`}>
                           {hasPrecio ? 'Automática' : 'Manual'}
                         </span>
@@ -418,8 +418,8 @@ const ServicePricingPanel = () => {
                       <td className="py-3 px-4 text-center">
                         <span className={`inline-block px-2 py-0.5 text-xs rounded border ${
                           srv.activo
-                            ? 'bg-green-500/10 text-green-300 border-green-500/20'
-                            : 'bg-red-500/10 text-red-300 border-red-500/20'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : 'bg-red-50 text-red-700 border-red-200'
                         }`}>
                           {srv.activo ? 'Activo' : 'Inactivo'}
                         </span>
@@ -428,7 +428,7 @@ const ServicePricingPanel = () => {
                         <div className="flex justify-end gap-1">
                           <button
                             onClick={() => handleEdit(srv)}
-                            className="p-1.5 rounded text-cjdg-textMuted hover:text-cjdg-primary hover:bg-cjdg-primary/10 transition-colors"
+                            className="p-1.5 rounded text-cj-text-secondary hover:text-cj-accent-blue hover:bg-cj-accent-blue-light transition-colors"
                             title="Editar"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -436,7 +436,7 @@ const ServicePricingPanel = () => {
                           <button
                             onClick={() => handleDelete(srv.id)}
                             disabled={deletingId === srv.id}
-                            className="p-1.5 rounded text-cjdg-textMuted hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                            className="p-1.5 rounded text-cj-text-secondary hover:text-cj-danger hover:bg-red-50 transition-colors disabled:opacity-50"
                             title="Eliminar"
                           >
                             <Trash2 className="w-4 h-4" />

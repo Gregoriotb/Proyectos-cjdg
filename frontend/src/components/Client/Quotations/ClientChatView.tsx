@@ -37,12 +37,12 @@ interface ThreadInfo {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50',
-  active: 'bg-blue-500/20 text-blue-300 border-blue-500/50',
-  quoted: 'bg-green-500/20 text-green-300 border-green-500/50',
-  negotiating: 'bg-purple-500/20 text-purple-300 border-purple-500/50',
-  closed: 'bg-gray-500/20 text-gray-300 border-gray-500/50',
-  cancelled: 'bg-red-500/20 text-red-300 border-red-500/50',
+  pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  active: 'bg-blue-50 text-blue-700 border-blue-200',
+  quoted: 'bg-green-50 text-green-700 border-green-200',
+  negotiating: 'bg-purple-50 text-purple-700 border-purple-200',
+  closed: 'bg-gray-50 text-gray-700 border-gray-200',
+  cancelled: 'bg-red-50 text-red-700 border-red-200',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -182,20 +182,20 @@ export default function ClientChatView({ threadId, onBack }: Props) {
   };
 
   const getFileIcon = (type?: string) => {
-    if (!type) return <FileIcon className="w-8 h-8 text-blue-400" />;
-    if (type.startsWith('image/')) return <ImageIcon className="w-8 h-8 text-purple-400" />;
-    if (type.includes('pdf')) return <FileText className="w-8 h-8 text-red-400" />;
-    return <FileIcon className="w-8 h-8 text-blue-400" />;
+    if (!type) return <FileIcon className="w-8 h-8 text-cj-accent-blue" />;
+    if (type.startsWith('image/')) return <ImageIcon className="w-8 h-8 text-purple-500" />;
+    if (type.includes('pdf')) return <FileText className="w-8 h-8 text-red-500" />;
+    return <FileIcon className="w-8 h-8 text-cj-accent-blue" />;
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-slate-400">Cargando conversación...</div>;
+    return <div className="flex items-center justify-center h-64 text-cj-text-secondary">Cargando conversación...</div>;
   }
   if (!thread) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-red-400 gap-3">
+      <div className="flex flex-col items-center justify-center h-64 text-cj-danger gap-3">
         <p>Hilo no encontrado.</p>
-        <button onClick={onBack} className="text-sm text-blue-400 hover:underline">
+        <button onClick={onBack} className="text-sm text-cj-accent-blue hover:underline">
           Volver al listado
         </button>
       </div>
@@ -203,17 +203,17 @@ export default function ClientChatView({ threadId, onBack }: Props) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+    <div className="flex h-[calc(100vh-10rem)] bg-cj-bg-primary rounded-xl border border-cj-border shadow-cj-md overflow-hidden">
       {/* Sidebar con contexto */}
-      <aside className="w-80 border-r border-slate-800 bg-slate-900/50 p-6 hidden lg:flex flex-col">
+      <aside className="w-80 border-r border-cj-border bg-cj-bg-secondary p-6 hidden lg:flex flex-col">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 text-sm"
+          className="flex items-center gap-2 text-cj-text-secondary hover:text-cj-text-primary mb-6 text-sm"
         >
           <ArrowLeft className="w-4 h-4" /> Volver a cotizaciones
         </button>
 
-        <h2 className="text-lg font-semibold text-white mb-2">{thread.service_name}</h2>
+        <h2 className="text-lg font-semibold text-cj-text-primary mb-2">{thread.service_name}</h2>
         <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border mb-6 w-fit ${STATUS_COLORS[thread.status]}`}>
           <AlertCircle className="w-3 h-3" />
           {STATUS_LABELS[thread.status] || thread.status}
@@ -221,39 +221,39 @@ export default function ClientChatView({ threadId, onBack }: Props) {
 
         <div className="space-y-4 flex-1 overflow-y-auto">
           {thread.company_name && (
-            <div className="flex items-start gap-3 text-slate-300">
-              <Building2 className="w-4 h-4 mt-1 text-slate-500 shrink-0" />
+            <div className="flex items-start gap-3 text-cj-text-secondary">
+              <Building2 className="w-4 h-4 mt-1 text-cj-text-muted shrink-0" />
               <div>
-                <p className="text-xs text-slate-500 uppercase">Empresa</p>
-                <p className="text-sm">{thread.company_name}</p>
+                <p className="text-xs text-cj-text-muted uppercase">Empresa</p>
+                <p className="text-sm text-cj-text-primary">{thread.company_name}</p>
               </div>
             </div>
           )}
           {(thread.client_address || thread.location_notes) && (
-            <div className="flex items-start gap-3 text-slate-300">
-              <MapPin className="w-4 h-4 mt-1 text-slate-500 shrink-0" />
+            <div className="flex items-start gap-3 text-cj-text-secondary">
+              <MapPin className="w-4 h-4 mt-1 text-cj-text-muted shrink-0" />
               <div>
-                <p className="text-xs text-slate-500 uppercase">Ubicación</p>
-                <p className="text-sm">{thread.location_notes || thread.client_address}</p>
+                <p className="text-xs text-cj-text-muted uppercase">Ubicación</p>
+                <p className="text-sm text-cj-text-primary">{thread.location_notes || thread.client_address}</p>
               </div>
             </div>
           )}
           {thread.budget_estimate != null && (
-            <div className="flex items-start gap-3 text-slate-300">
-              <DollarSign className="w-4 h-4 mt-1 text-slate-500 shrink-0" />
+            <div className="flex items-start gap-3 text-cj-text-secondary">
+              <DollarSign className="w-4 h-4 mt-1 text-cj-text-muted shrink-0" />
               <div>
-                <p className="text-xs text-slate-500 uppercase">Presupuesto Estimado</p>
-                <p className="text-sm font-medium text-emerald-400">
+                <p className="text-xs text-cj-text-muted uppercase">Presupuesto Estimado</p>
+                <p className="text-sm font-medium text-emerald-600">
                   ${Number(thread.budget_estimate).toLocaleString('es-VE')}
                 </p>
               </div>
             </div>
           )}
-          <div className="flex items-start gap-3 text-slate-300">
-            <Clock className="w-4 h-4 mt-1 text-slate-500 shrink-0" />
+          <div className="flex items-start gap-3 text-cj-text-secondary">
+            <Clock className="w-4 h-4 mt-1 text-cj-text-muted shrink-0" />
             <div>
-              <p className="text-xs text-slate-500 uppercase">Solicitud Original</p>
-              <p className="text-sm text-slate-400 bg-slate-800/30 p-2 rounded-lg mt-1 whitespace-pre-wrap">
+              <p className="text-xs text-cj-text-muted uppercase">Solicitud Original</p>
+              <p className="text-sm text-cj-text-secondary bg-cj-bg-tertiary p-2 rounded-lg mt-1 whitespace-pre-wrap">
                 {thread.requirements}
               </p>
             </div>
@@ -264,14 +264,14 @@ export default function ClientChatView({ threadId, onBack }: Props) {
       {/* Columna de chat */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header móvil */}
-        <div className="border-b border-slate-800 p-4 flex items-center justify-between bg-slate-900/80 lg:hidden">
+        <div className="border-b border-cj-border p-4 flex items-center justify-between bg-cj-surface lg:hidden">
           <div className="flex items-center gap-3">
-            <button onClick={onBack} className="text-slate-400 hover:text-white">
+            <button onClick={onBack} className="text-cj-text-secondary hover:text-cj-text-primary">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h3 className="text-white font-medium text-sm">{thread.service_name}</h3>
-              <p className="text-xs text-slate-500">Conversación activa</p>
+              <h3 className="text-cj-text-primary font-medium text-sm">{thread.service_name}</h3>
+              <p className="text-xs text-cj-text-muted">Conversación activa</p>
             </div>
           </div>
           <div className={`px-2.5 py-1 rounded-full text-xs border ${STATUS_COLORS[thread.status]}`}>
@@ -280,15 +280,15 @@ export default function ClientChatView({ threadId, onBack }: Props) {
         </div>
 
         {/* Header desktop */}
-        <div className="hidden lg:flex border-b border-slate-800 p-4 items-center justify-between bg-slate-900/80">
+        <div className="hidden lg:flex border-b border-cj-border p-4 items-center justify-between bg-cj-surface">
           <div>
-            <h3 className="text-white font-medium">{thread.service_name}</h3>
-            <p className="text-xs text-slate-500">#{thread.id.slice(0, 8).toUpperCase()}</p>
+            <h3 className="text-cj-text-primary font-medium">{thread.service_name}</h3>
+            <p className="text-xs text-cj-text-muted">#{thread.id.slice(0, 8).toUpperCase()}</p>
           </div>
         </div>
 
         {/* Mensajes */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-cj-bg-primary">
           {messages.map((msg, idx) => {
             const isClient = msg.sender_type === 'client';
             const isSystem = msg.sender_type === 'system';
@@ -297,7 +297,7 @@ export default function ClientChatView({ threadId, onBack }: Props) {
             if (isSystem) {
               return (
                 <div key={msg.id} className="flex justify-center my-4">
-                  <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-4 py-2 text-xs text-slate-400 flex items-center gap-2">
+                  <div className="bg-cj-bg-secondary border border-cj-border rounded-lg px-4 py-2 text-xs text-cj-text-secondary flex items-center gap-2">
                     <AlertCircle className="w-3 h-3" />
                     {msg.content}
                   </div>
@@ -309,12 +309,12 @@ export default function ClientChatView({ threadId, onBack }: Props) {
               <div key={msg.id} className={`flex ${isClient ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] sm:max-w-[70%] ${isClient ? 'order-2' : 'order-1'}`}>
                   {showAvatar && !isClient && (
-                    <p className="text-xs text-slate-500 mb-1 ml-1">{msg.sender_name || 'Admin CJDG'}</p>
+                    <p className="text-xs text-cj-text-muted mb-1 ml-1">{msg.sender_name || 'Admin CJDG'}</p>
                   )}
                   <div className={`rounded-2xl px-4 py-2.5 ${
                     isClient
-                      ? 'bg-blue-600 text-white rounded-br-md'
-                      : 'bg-slate-800 text-slate-200 rounded-bl-md border border-slate-700'
+                      ? 'bg-cj-accent-blue text-white rounded-br-md'
+                      : 'bg-cj-bg-secondary text-cj-text-primary rounded-bl-md border border-cj-border'
                   }`}>
                     {msg.content && msg.message_type !== 'image' && msg.message_type !== 'invoice_mention' && (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
@@ -346,7 +346,11 @@ export default function ClientChatView({ threadId, onBack }: Props) {
                         href={msg.attachment_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 mt-2 bg-slate-900/50 p-3 rounded-lg hover:bg-slate-900/80 transition-colors"
+                        className={`flex items-center gap-3 mt-2 p-3 rounded-lg transition-colors ${
+                          isClient
+                            ? 'bg-white/15 hover:bg-white/25'
+                            : 'bg-cj-bg-tertiary hover:bg-cj-bg-secondary'
+                        }`}
                       >
                         {getFileIcon(msg.attachment_type)}
                         <div className="flex-1 min-w-0">
@@ -358,8 +362,8 @@ export default function ClientChatView({ threadId, onBack }: Props) {
                     )}
                   </div>
                   <div className={`flex items-center gap-1 mt-1 ${isClient ? 'justify-end' : 'justify-start'}`}>
-                    <span className="text-[10px] text-slate-600">{formatRelative(msg.created_at)}</span>
-                    {isClient && (msg.read_at ? <CheckCheck className="w-3 h-3 text-blue-400" /> : <Check className="w-3 h-3 text-slate-600" />)}
+                    <span className="text-[10px] text-cj-text-muted">{formatRelative(msg.created_at)}</span>
+                    {isClient && (msg.read_at ? <CheckCheck className="w-3 h-3 text-cj-accent-blue" /> : <Check className="w-3 h-3 text-cj-text-muted" />)}
                   </div>
                 </div>
               </div>
@@ -369,22 +373,22 @@ export default function ClientChatView({ threadId, onBack }: Props) {
         </div>
 
         {/* Composer */}
-        <div className="border-t border-slate-800 p-4 bg-slate-900/80">
+        <div className="border-t border-cj-border p-4 bg-cj-surface">
           {previewFile && (
-            <div className="mb-3 bg-slate-800 border border-slate-700 rounded-lg p-3 flex items-center gap-3 max-w-4xl mx-auto">
+            <div className="mb-3 bg-cj-bg-secondary border border-cj-border rounded-lg p-3 flex items-center gap-3 max-w-4xl mx-auto">
               {previewFile.type.startsWith('image/') ? (
                 <img src={previewFile.url} alt="preview" className="w-10 h-10 rounded object-cover" />
               ) : (
                 getFileIcon(previewFile.type)
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-slate-300 truncate">{previewFile.name}</p>
-                <p className="text-[10px] text-slate-500">Listo para enviar</p>
+                <p className="text-sm text-cj-text-primary truncate">{previewFile.name}</p>
+                <p className="text-[10px] text-cj-text-muted">Listo para enviar</p>
               </div>
               <button
                 type="button"
                 onClick={() => setPreviewFile(null)}
-                className="text-slate-400 hover:text-red-400 transition-colors"
+                className="text-cj-text-secondary hover:text-cj-danger transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -403,11 +407,11 @@ export default function ClientChatView({ threadId, onBack }: Props) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="p-2.5 text-slate-500 hover:text-slate-300 transition-colors rounded-xl hover:bg-slate-800 disabled:opacity-50"
+              className="p-2.5 text-cj-text-muted hover:text-cj-text-primary transition-colors rounded-xl hover:bg-cj-bg-secondary disabled:opacity-50"
               title="Adjuntar archivo"
             >
               {uploading ? (
-                <div className="w-5 h-5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-cj-text-muted border-t-transparent rounded-full animate-spin" />
               ) : (
                 <Paperclip className="w-5 h-5" />
               )}
@@ -417,7 +421,7 @@ export default function ClientChatView({ threadId, onBack }: Props) {
               type="button"
               onClick={() => setInvoicePickerOpen(true)}
               disabled={sending}
-              className="p-2.5 text-slate-500 hover:text-emerald-300 transition-colors rounded-xl hover:bg-slate-800 disabled:opacity-50"
+              className="p-2.5 text-cj-text-muted hover:text-emerald-600 transition-colors rounded-xl hover:bg-cj-bg-secondary disabled:opacity-50"
               title="Adjuntar facturas"
             >
               <Receipt className="w-5 h-5" />
@@ -429,7 +433,7 @@ export default function ClientChatView({ threadId, onBack }: Props) {
               onKeyDown={handleKeyPress}
               placeholder="Escribe tu mensaje..."
               disabled={sending}
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none max-h-32 min-h-[44px] disabled:opacity-60"
+              className="flex-1 bg-cj-bg-primary border border-cj-border rounded-xl px-4 py-3 text-sm text-cj-text-primary placeholder-cj-text-muted focus:outline-none focus:ring-2 focus:ring-cj-accent-blue-light resize-none max-h-32 min-h-[44px] disabled:opacity-60"
               rows={1}
             />
 
@@ -437,7 +441,7 @@ export default function ClientChatView({ threadId, onBack }: Props) {
               type="button"
               onClick={handleSend}
               disabled={sending || (!newMessage.trim() && !previewFile) || uploading}
-              className="p-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-xl transition-all active:scale-95"
+              className="p-3 bg-cj-accent-blue hover:bg-cj-accent-blue-hover disabled:bg-cj-bg-tertiary disabled:text-cj-text-muted text-white rounded-xl transition-all active:scale-95"
             >
               {sending
                 ? <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />

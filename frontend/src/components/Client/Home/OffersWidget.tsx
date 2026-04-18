@@ -39,13 +39,13 @@ export default function OffersWidget({ onGoToCatalog }: Props) {
   return (
     <section className="glass-panel p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
-          <Flame className="w-4 h-4 text-orange-400" />
+        <h2 className="text-base font-bold text-cj-text-primary flex items-center gap-2">
+          <Flame className="w-4 h-4 text-orange-500" />
           Ofertas Especiales
         </h2>
         <button
           onClick={onGoToCatalog}
-          className="text-xs text-cjdg-accent hover:text-white transition-colors flex items-center gap-1"
+          className="text-xs text-cj-accent-blue hover:text-cj-accent-blue-hover transition-colors flex items-center gap-1"
         >
           Catálogo <ArrowRight className="w-3 h-3" />
         </button>
@@ -54,20 +54,20 @@ export default function OffersWidget({ onGoToCatalog }: Props) {
       {offers === null && !error && (
         <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse aspect-square rounded-lg bg-white/5 border border-white/10" />
+            <div key={i} className="animate-pulse aspect-square rounded-lg bg-cj-bg-secondary border border-cj-border" />
           ))}
         </div>
       )}
 
       {error && (
-        <div className="text-center py-6 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+        <div className="text-center py-6 text-cj-text-muted border border-dashed border-cj-border rounded-lg">
           <AlertCircle className="w-6 h-6 mx-auto mb-1 opacity-50" />
           <p className="text-xs">Error al cargar</p>
         </div>
       )}
 
       {offers !== null && offers.length === 0 && (
-        <div className="text-center py-6 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+        <div className="text-center py-6 text-cj-text-muted border border-dashed border-cj-border rounded-lg">
           <Package className="w-6 h-6 mx-auto mb-1 opacity-50" />
           <p className="text-xs">No hay ofertas activas</p>
         </div>
@@ -81,7 +81,7 @@ export default function OffersWidget({ onGoToCatalog }: Props) {
               type="button"
               onClick={onGoToCatalog}
               title={`${o.product_name}${o.brand ? ' — ' + o.brand : ''}`}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 hover:border-orange-400/60 bg-gradient-to-br from-slate-800 to-slate-900 transition-all hover:-translate-y-0.5"
+              className="group relative aspect-square overflow-hidden rounded-lg border border-cj-border hover:border-cj-accent-blue/60 bg-gradient-to-br from-slate-800 to-slate-900 shadow-cj-sm hover:shadow-cj-md transition-all hover:-translate-y-0.5"
             >
               {o.image_urls && o.image_urls.length > 0 ? (
                 <img
@@ -124,7 +124,7 @@ export default function OffersWidget({ onGoToCatalog }: Props) {
             >
               <div className="absolute inset-2 grid grid-cols-2 gap-0.5">
                 {overflow.slice(0, 4).map((o, i) => (
-                  <div key={o.catalog_id + '-' + i} className="rounded-sm overflow-hidden bg-slate-700">
+                  <div key={o.catalog_id + '-' + i} className="rounded-sm overflow-hidden bg-cj-bg-tertiary">
                     {o.image_urls && o.image_urls.length > 0 ? (
                       <img src={o.image_urls[0]} alt="" className="w-full h-full object-cover opacity-70" />
                     ) : (
