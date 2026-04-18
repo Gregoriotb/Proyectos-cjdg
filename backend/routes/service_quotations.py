@@ -33,10 +33,9 @@ class ServiceQuotationPricing(BaseModel):
 
 @router.get("/corporate-services-public")
 def list_active_corporate_services(
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Lista servicios corporativos activos (para clientes autenticados)."""
+    """Lista servicios corporativos activos. PÚBLICO (sin auth) como dice el nombre."""
     services = db.query(ServiceCatalog).filter(ServiceCatalog.activo == True).order_by(ServiceCatalog.pilar, ServiceCatalog.nombre).all()
     return [
         {
@@ -46,6 +45,8 @@ def list_active_corporate_services(
             "descripcion": s.descripcion,
             "precio_base": float(s.precio_base) if s.precio_base else None,
             "activo": s.activo,
+            "is_special": bool(getattr(s, "is_special", False)),
+            "image_urls": getattr(s, "image_urls", None) or [],
         }
         for s in services
     ]
