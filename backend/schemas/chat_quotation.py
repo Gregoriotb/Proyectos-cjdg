@@ -29,7 +29,7 @@ class QuotationThreadCreate(BaseModel):
     service_name: str = Field(..., min_length=2, max_length=255)
     requirements: str = Field(..., min_length=10)
     location_notes: Optional[str] = Field(None, max_length=500)
-    budget_estimate: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    budget_estimate: Optional[Decimal] = Field(None, ge=0)
 
 
 class QuotationThreadResponse(BaseModel):
