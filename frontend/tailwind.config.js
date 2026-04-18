@@ -33,7 +33,16 @@ export default {
       boxShadow: {
         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
         'glow': '0 0 15px -3px rgba(56, 189, 248, 0.4)',
-      }
+      },
+      keyframes: {
+        gradient: {
+          '0%, 100%': { 'background-position': '0% 50%' },
+          '50%':      { 'background-position': '100% 50%' },
+        },
+      },
+      animation: {
+        gradient: 'gradient 8s ease infinite',
+      },
     },
   },
   plugins: [],
