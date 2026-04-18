@@ -19,16 +19,11 @@ const PILAR_LABEL: Record<string, string> = {
   CIVIL: 'Ingeniería Civil',
 };
 
-const PILAR_ACCENT: Record<string, string> = {
-  TECNOLOGIA: 'from-blue-500/20 to-blue-600/5',
-  CLIMATIZACION: 'from-cyan-500/20 to-cyan-600/5',
-  ENERGIA: 'from-yellow-500/20 to-yellow-600/5',
-  CIVIL: 'from-orange-500/20 to-orange-600/5',
-};
-
 interface Props {
   onGoToServices: () => void;
 }
+
+const VISIBLE = 3;
 
 export default function SpecialServicesWidget({ onGoToServices }: Props) {
   const [services, setServices] = useState<SpecialService[] | null>(null);
@@ -43,11 +38,14 @@ export default function SpecialServicesWidget({ onGoToServices }: Props) {
     return () => { alive = false; };
   }, []);
 
+  const visible = services ? services.slice(0, VISIBLE) : [];
+  const overflow = services ? services.slice(VISIBLE) : [];
+
   return (
-    <section className="glass-panel p-6">
+    <section className="glass-panel p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Crown className="w-5 h-5 text-amber-400" />
+        <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <Crown className="w-4 h-4 text-amber-400" />
           Servicios Destacados
         </h2>
         <button
@@ -59,69 +57,90 @@ export default function SpecialServicesWidget({ onGoToServices }: Props) {
       </div>
 
       {services === null && !error && (
-        <div className="grid gap-3 md:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="animate-pulse h-40 rounded-xl bg-white/5 border border-white/10" />
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="animate-pulse aspect-square rounded-lg bg-white/5 border border-white/10" />
           ))}
         </div>
       )}
 
       {error && (
-        <div className="text-center py-8 text-slate-500 border border-dashed border-slate-700 rounded-xl">
-          <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No se pudieron cargar los servicios destacados</p>
+        <div className="text-center py-6 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+          <AlertCircle className="w-6 h-6 mx-auto mb-1 opacity-50" />
+          <p className="text-xs">Error al cargar</p>
         </div>
       )}
 
       {services !== null && services.length === 0 && (
-        <div className="text-center py-8 text-slate-500 border border-dashed border-slate-700 rounded-xl">
-          <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Aún no hay servicios destacados</p>
-          <button onClick={onGoToServices} className="text-xs text-cjdg-accent hover:text-white mt-2">
-            Ver el catálogo completo →
-          </button>
+        <div className="text-center py-6 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+          <Sparkles className="w-6 h-6 mx-auto mb-1 opacity-50" />
+          <p className="text-xs">Sin destacados por ahora</p>
         </div>
       )}
 
       {services !== null && services.length > 0 && (
-        <div className="grid gap-3 md:grid-cols-3">
-          {services.map((s) => {
-            const gradient = PILAR_ACCENT[s.pilar] || 'from-blue-500/20 to-blue-600/5';
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={onGoToServices}
-                className={`group relative overflow-hidden text-left rounded-xl border border-white/10 hover:border-amber-400/50 bg-gradient-to-br ${gradient} p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-amber-500/10`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
-                    {PILAR_LABEL[s.pilar] || s.pilar}
-                  </span>
-                  <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
+          {visible.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={onGoToServices}
+              title={`${s.nombre}${s.descripcion ? ' — ' + s.descripcion : ''}`}
+              className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 hover:border-amber-400/60 bg-gradient-to-br from-slate-800 to-slate-900 transition-all hover:-translate-y-0.5"
+            >
+              {s.image_urls && s.image_urls.length > 0 ? (
+                <img
+                  src={s.image_urls[0]}
+                  alt={s.nombre}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-amber-400/70">
+                  <Crown className="w-8 h-8" />
                 </div>
-
-                {s.image_urls && s.image_urls.length > 0 && (
-                  <div className="aspect-video rounded-lg overflow-hidden mb-3 border border-white/10">
-                    <img src={s.image_urls[0]} alt={s.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  </div>
-                )}
-
-                <h3 className="text-sm font-bold text-white mb-1 line-clamp-1 group-hover:text-amber-200 transition-colors">
-                  {s.nombre}
-                </h3>
-                <p className="text-xs text-slate-300/80 line-clamp-2 leading-snug">
-                  {s.descripcion || 'Servicio especializado corporativo.'}
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+              <div className="absolute top-1.5 right-1.5">
+                <Crown className="w-3.5 h-3.5 text-amber-400 drop-shadow-lg" />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 p-2">
+                <p className="text-[10px] uppercase tracking-wider text-amber-200/80 font-semibold truncate">
+                  {PILAR_LABEL[s.pilar] || s.pilar}
                 </p>
+                <p className="text-xs font-bold text-white line-clamp-2 leading-tight">
+                  {s.nombre}
+                </p>
+              </div>
+            </button>
+          ))}
 
-                {s.precio_base != null && (
-                  <div className="mt-3 text-xs text-emerald-400 font-semibold">
-                    Desde ${Number(s.precio_base).toLocaleString('es-VE')}
+          {/* Tile "carpeta" de overflow */}
+          {overflow.length > 0 && (
+            <button
+              type="button"
+              onClick={onGoToServices}
+              className="group relative aspect-square overflow-hidden rounded-lg border border-amber-400/40 bg-gradient-to-br from-amber-500/20 to-amber-900/30 transition-all hover:-translate-y-0.5 hover:border-amber-400"
+            >
+              {/* Mini-grid de preview 2x2 estilo carpeta iOS */}
+              <div className="absolute inset-2 grid grid-cols-2 gap-0.5">
+                {overflow.slice(0, 4).map((o, i) => (
+                  <div key={o.id + '-' + i} className="rounded-sm overflow-hidden bg-slate-700">
+                    {o.image_urls && o.image_urls.length > 0 ? (
+                      <img src={o.image_urls[0]} alt="" className="w-full h-full object-cover opacity-70" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Crown className="w-3 h-3 text-amber-400/60" />
+                      </div>
+                    )}
                   </div>
-                )}
-              </button>
-            );
-          })}
+                ))}
+              </div>
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center text-white">
+                <span className="text-2xl font-black">+{overflow.length}</span>
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-200">más</span>
+              </div>
+            </button>
+          )}
         </div>
       )}
     </section>

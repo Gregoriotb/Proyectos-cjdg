@@ -13,8 +13,10 @@ export default function ClientHome({ onNavigate }: Props) {
   return (
     <div className="space-y-6">
       <HeroSection onNavigate={onNavigate} />
-      <SpecialServicesWidget onGoToServices={() => onNavigate('services')} />
-      <OffersWidget onGoToCatalog={() => onNavigate('catalog')} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SpecialServicesWidget onGoToServices={() => onNavigate('services')} />
+        <OffersWidget onGoToCatalog={() => onNavigate('catalog')} />
+      </div>
       <QuickAccessNav onNavigate={onNavigate} />
     </div>
   );
