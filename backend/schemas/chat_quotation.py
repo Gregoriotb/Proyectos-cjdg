@@ -1,5 +1,5 @@
 """
-Schemas: Chat-Cotizaciones V2.1
+Schemas: Chat-Cotizaciones V2.1 + V2.3 (invoice mentions)
 Ruta: backend/schemas/chat_quotation.py
 """
 from pydantic import BaseModel, Field
@@ -7,6 +7,19 @@ from datetime import datetime
 from typing import Optional, List, Any
 from decimal import Decimal
 from uuid import UUID
+
+
+# V2.3 — Resumen de factura para embed en mensajes invoice_mention
+class InvoiceBrief(BaseModel):
+    id: int
+    invoice_type: str
+    status: str
+    total: Decimal
+    notas: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class ClientInfo(BaseModel):
@@ -54,11 +67,14 @@ class QuotationThreadResponse(BaseModel):
 
 
 class ChatMessageCreate(BaseModel):
-    content: str = Field(..., min_length=1, max_length=4000)
+    # content puede ir vacío si invoice_ids no está vacío (mensaje-solo-facturas)
+    content: str = Field("", max_length=4000)
     message_type: str = "text"
     attachment_url: Optional[str] = None
     attachment_name: Optional[str] = None
     attachment_type: Optional[str] = None
+    # V2.3 — adjuntar una o varias facturas del cliente
+    invoice_ids: Optional[List[int]] = None
 
 
 class ChatMessageResponse(BaseModel):
@@ -75,6 +91,8 @@ class ChatMessageResponse(BaseModel):
     message_metadata: Optional[Any] = None
     read_at: Optional[datetime] = None
     created_at: datetime
+    # V2.3 — poblado solo cuando message_type == "invoice_mention"
+    invoices: Optional[List[InvoiceBrief]] = None
 
     class Config:
         from_attributes = True

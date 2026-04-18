@@ -13,11 +13,12 @@ from database import get_db
 from dependencies import get_current_user, get_current_admin
 from models.chat_quotation import QuotationThread, ChatMessage
 from models.user import User
+from models.invoice import Invoice
 from schemas.chat_quotation import (
     QuotationThreadCreate, QuotationThreadResponse,
     ChatMessageCreate, ChatMessageResponse,
     ThreadWithMessages, ThreadListItem, StatusUpdateRequest,
-    ClientInfo,
+    ClientInfo, InvoiceBrief,
 )
 from routes.uploads import upload_file_to_imgbb
 
@@ -60,7 +61,35 @@ def _client_info(user: Optional[User]) -> Optional[ClientInfo]:
     )
 
 
+def _invoice_brief_list(db: Session, invoice_ids: List[int]) -> List[InvoiceBrief]:
+    if not invoice_ids:
+        return []
+    rows = db.query(Invoice).filter(Invoice.id.in_(invoice_ids)).all()
+    # Mantener orden original de invoice_ids
+    by_id = {inv.id: inv for inv in rows}
+    out: List[InvoiceBrief] = []
+    for iid in invoice_ids:
+        inv = by_id.get(iid)
+        if inv is None:
+            continue
+        out.append(InvoiceBrief(
+            id=inv.id,
+            invoice_type=inv.invoice_type.value if hasattr(inv.invoice_type, "value") else str(inv.invoice_type),
+            status=inv.status.value if hasattr(inv.status, "value") else str(inv.status),
+            total=inv.total,
+            notas=getattr(inv, "notas", None),
+            created_at=inv.created_at,
+        ))
+    return out
+
+
 def _serialize_message(db: Session, msg: ChatMessage) -> ChatMessageResponse:
+    invoices_payload = None
+    if msg.message_type == "invoice_mention":
+        ids = (msg.message_metadata or {}).get("invoice_ids") or []
+        if isinstance(ids, list):
+            invoices_payload = _invoice_brief_list(db, [int(i) for i in ids if isinstance(i, int) or (isinstance(i, str) and i.isdigit())])
+
     return ChatMessageResponse(
         id=msg.id,
         thread_id=msg.thread_id,
@@ -75,7 +104,47 @@ def _serialize_message(db: Session, msg: ChatMessage) -> ChatMessageResponse:
         message_metadata=msg.message_metadata or {},
         read_at=msg.read_at,
         created_at=msg.created_at,
+        invoices=invoices_payload,
     )
+
+
+def _validate_and_attach_invoices(
+    db: Session,
+    data: ChatMessageCreate,
+    owner_user_id,
+) -> tuple[str, str, dict]:
+    """
+    Valida invoice_ids contra owner_user_id. Retorna (content, message_type, metadata).
+    Cliente: owner = current_user.id
+    Admin: owner = thread.client_id (solo facturas del cliente del hilo)
+    """
+    content = data.content or ""
+    message_type = data.message_type or "text"
+    metadata: dict = {}
+
+    if data.invoice_ids:
+        # Validar que todas pertenezcan al owner indicado
+        invs = db.query(Invoice).filter(
+            Invoice.id.in_(data.invoice_ids),
+            Invoice.user_id == owner_user_id,
+        ).all()
+        valid_ids = [inv.id for inv in invs]
+        missing = set(data.invoice_ids) - set(valid_ids)
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Facturas no válidas o no pertenecen al cliente: {sorted(missing)}",
+            )
+        message_type = "invoice_mention"
+        metadata = {"invoice_ids": valid_ids}
+        if not content.strip():
+            content = f"Facturas referenciadas: #{', #'.join(str(i) for i in valid_ids)}"
+    else:
+        # Sin invoice_ids y sin contenido ni adjunto → rechazar
+        if not content.strip() and not data.attachment_url:
+            raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío")
+
+    return content, message_type, metadata
 
 
 def _serialize_thread(thread: QuotationThread, *, include_client: bool) -> dict:
@@ -232,15 +301,20 @@ async def client_send_message(
     if thread.status in ("closed", "cancelled"):
         raise HTTPException(status_code=400, detail="No puedes enviar mensajes en un hilo cerrado")
 
+    content, message_type, metadata = _validate_and_attach_invoices(
+        db, data, owner_user_id=current_user.id
+    )
+
     msg = ChatMessage(
         thread_id=thread_id,
         sender_type="client",
         sender_id=current_user.id,
-        content=data.content,
-        message_type=data.message_type,
+        content=content,
+        message_type=message_type,
         attachment_url=data.attachment_url,
         attachment_name=data.attachment_name,
         attachment_type=data.attachment_type,
+        message_metadata=metadata or None,
     )
     db.add(msg)
     thread.last_message_at = datetime.utcnow()
@@ -345,15 +419,21 @@ async def admin_send_message(
     if not thread:
         raise HTTPException(status_code=404, detail="Hilo no encontrado")
 
+    # Admin solo puede referenciar facturas del cliente dueño del hilo
+    content, message_type, metadata = _validate_and_attach_invoices(
+        db, data, owner_user_id=thread.client_id
+    )
+
     msg = ChatMessage(
         thread_id=thread_id,
         sender_type="admin",
         sender_id=current_admin.id,
-        content=data.content,
-        message_type=data.message_type,
+        content=content,
+        message_type=message_type,
         attachment_url=data.attachment_url,
         attachment_name=data.attachment_name,
         attachment_type=data.attachment_type,
+        message_metadata=metadata or None,
     )
     db.add(msg)
     thread.last_message_at = datetime.utcnow()

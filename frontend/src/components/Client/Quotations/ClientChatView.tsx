@@ -4,7 +4,10 @@ import {
   Send, Paperclip, MapPin, Building2, DollarSign,
   Clock, Check, CheckCheck, ArrowLeft, AlertCircle,
   FileText, Image as ImageIcon, X, Download, File as FileIcon,
+  Receipt,
 } from 'lucide-react';
+import InvoiceSelectorModal from './InvoiceSelectorModal';
+import InvoiceMentionBubble, { InvoiceBriefData } from './InvoiceMentionBubble';
 
 interface ChatMessage {
   id: string;
@@ -17,6 +20,7 @@ interface ChatMessage {
   attachment_type?: string;
   read_at?: string;
   created_at: string;
+  invoices?: InvoiceBriefData[];
 }
 
 interface ThreadInfo {
@@ -72,6 +76,7 @@ export default function ClientChatView({ threadId, onBack }: Props) {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [invoicePickerOpen, setInvoicePickerOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -123,6 +128,25 @@ export default function ClientChatView({ threadId, onBack }: Props) {
       setNewMessage(contentToSend);
       setPreviewFile(fileToSend);
       alert('Error al enviar el mensaje. Intenta de nuevo.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const sendInvoiceMention = async (invoiceIds: number[]) => {
+    setInvoicePickerOpen(false);
+    if (sending || invoiceIds.length === 0) return;
+    setSending(true);
+    try {
+      const res = await api.post(`/chat-quotations/threads/${threadId}/messages`, {
+        content: newMessage.trim() || '',
+        invoice_ids: invoiceIds,
+      });
+      setMessages((prev) => [...prev, res.data]);
+      setNewMessage('');
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.response?.data?.detail || 'Error al adjuntar las facturas.');
     } finally {
       setSending(false);
     }
@@ -292,8 +316,16 @@ export default function ClientChatView({ threadId, onBack }: Props) {
                       ? 'bg-blue-600 text-white rounded-br-md'
                       : 'bg-slate-800 text-slate-200 rounded-bl-md border border-slate-700'
                   }`}>
-                    {msg.content && msg.message_type !== 'image' && (
+                    {msg.content && msg.message_type !== 'image' && msg.message_type !== 'invoice_mention' && (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    )}
+                    {msg.message_type === 'invoice_mention' && msg.invoices && (
+                      <div>
+                        {msg.content && !msg.content.startsWith('Facturas referenciadas') && (
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap mb-2">{msg.content}</p>
+                        )}
+                        <InvoiceMentionBubble invoices={msg.invoices} fromAdmin={!isClient} />
+                      </div>
                     )}
                     {msg.attachment_url && msg.message_type === 'image' && (
                       <div className="mt-2">
@@ -381,6 +413,16 @@ export default function ClientChatView({ threadId, onBack }: Props) {
               )}
             </button>
 
+            <button
+              type="button"
+              onClick={() => setInvoicePickerOpen(true)}
+              disabled={sending}
+              className="p-2.5 text-slate-500 hover:text-emerald-300 transition-colors rounded-xl hover:bg-slate-800 disabled:opacity-50"
+              title="Adjuntar facturas"
+            >
+              <Receipt className="w-5 h-5" />
+            </button>
+
             <textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
@@ -404,6 +446,12 @@ export default function ClientChatView({ threadId, onBack }: Props) {
           </div>
         </div>
       </div>
+
+      <InvoiceSelectorModal
+        open={invoicePickerOpen}
+        onClose={() => setInvoicePickerOpen(false)}
+        onConfirm={sendInvoiceMention}
+      />
     </div>
   );
 }

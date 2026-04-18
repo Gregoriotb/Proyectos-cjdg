@@ -131,11 +131,15 @@ def checkout(
 # --- Admin ---
 @router.get("/all", response_model=List[InvoiceResponse])
 def get_all_invoices(
+    user_id: Optional[str] = None,  # V2.3 — filtrar por cliente (para chat-cotizaciones)
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
-    """Lista TODAS las facturas del sistema (solo Admin)."""
-    return db.query(Invoice).order_by(Invoice.created_at.desc()).all()
+    """Lista TODAS las facturas del sistema (solo Admin). Filtrable por user_id."""
+    query = db.query(Invoice)
+    if user_id:
+        query = query.filter(Invoice.user_id == user_id)
+    return query.order_by(Invoice.created_at.desc()).all()
 
 
 @router.put("/{invoice_id}/status")
