@@ -1,6 +1,6 @@
 # Plan V3 — Rediseño Tech-Gray + Facturas en Chat
 
-**Estado:** 📋 Plan (pendiente de implementar)
+**Estado:** ✅ SHIPEADO 2026-04-18 (V2.3 en `e4af8b8` · V3.1 en `4439e8b` · V3.2+3.3 en `2496998`)
 **Basado en:** `rediseno/.vscode/*.md` (9 specs) + nueva feature conversacional de facturas
 
 Este plan combina **dos cambios** que van a correr en paralelo pero en fases separadas para no romper producción:

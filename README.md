@@ -323,28 +323,36 @@ Usar `""` en vez de `"/"` en routers montados con prefix, y `redirect_slashes=Fa
 
 ---
 
-## Estado al 2026-04-17
+## Estado al 2026-04-18
 
-- Último commit: `ab8a323` — Docs actualizados (README + doc V2.1)
-- V2.1 Chat-Cotizaciones shipeado: `18d2c60` · Hero especial: `5bb6594`
-- Feature probada en producción con usuario `crudopb · CLIENTE`
-- Región Railway movida a `us-west` → UX ~3-4x más rápida desde LATAM
+- Último commit: `2496998` — V3 rediseño Tech-Gray masivo (31 archivos)
+- Región Railway: **us-west** (movida desde Singapur)
+- **Paleta activa:** Tech-Gray (cj-*) — migrada completa. Legacy `cjdg-*` aún en tailwind.config.js pero sin usos.
 
----
+### Features shipeadas esta sesión
 
-## Próxima versión: V2.2 Dashboard Home (planificada)
+| Versión | Commits | Descripción |
+|---|---|---|
+| **V2.2** Dashboard Home | `64cb992`, `a96ff8c` | Hub del cliente: Hero + Special/Offers widgets con folder-overflow + QuickAccessNav |
+| **V2.3** Invoice Mentions | `e4af8b8` | Cliente/Admin pueden referenciar facturas en chat (`message_type=invoice_mention`) |
+| **V3 Fase 3.1** Cimientos | `4439e8b` | Tokens `cj-*` + `ThemeContext` + primitivas `components/ui/` |
+| **V3 Fases 3.2+3.3** Rediseño | `2496998` | Migración masiva de paleta dark → Tech-Gray en toda la app (31 archivos) |
 
-Hub de inicio para el cliente que reemplaza la actual "Panel General" vacía con:
+Detalle de cada feature: [docs/v2_2_dashboard_home.md](docs/v2_2_dashboard_home.md), [docs/v3_plan_redesign_y_facturas_en_chat.md](docs/v3_plan_redesign_y_facturas_en_chat.md), [rediseno/sesion_2026-04-18_resumen.md](../../rediseno/sesion_2026-04-18_resumen.md) (fuera del repo).
 
-- **HeroSection** con "Acerca de CJDG" + CTAs a catálogo y cotización.
-- **SpecialServicesWidget** — 3 cards de servicios destacados (`is_special`).
-- **OffersWidget** — grid/carrusel de productos en oferta (`is_offer`).
-- **QuickAccessNav** — links rápidos a las 4 secciones principales.
-- **Sidebar**: "Panel General" → **"Inicio"** con icono `Home`.
+### Tokens Tech-Gray (activos)
 
-Endpoints nuevos:
-- `GET /api/v1/catalog/offers?limit=6` — productos con mayor descuento.
-- `GET /api/v1/services/special` — hasta 3 servicios destacados activos.
+```
+Fondos:   cj-bg-{primary:#F8F9FA, secondary:#E9ECEF, tertiary:#DEE2E6}, cj-surface:#FFFFFF
+Textos:   cj-text-{primary:#212529, secondary:#6C757D, muted:#ADB5BD}
+Acento:   cj-accent-blue:#0D6EFD + -hover + -light (único acento permitido)
+Sombras:  shadow-cj-{sm, md, lg, xl} (opacity ≤ 0.15)
+Semánt.:  cj-success:#198754, cj-warning:#FFC107, cj-danger:#DC3545, cj-border:#CED4DA
+```
 
-Detalle completo en [docs/v2_2_dashboard_home.md](docs/v2_2_dashboard_home.md).
-Specs originales del usuario en `feat/*.md` (fuera del repo).
+### Qué NO se migró (intencional)
+- Hero premium del `ServiceBrowser` (Crown + gradiente purple animado + sparkles).
+- Hero del `ClientHome` (gradiente azul animado con orbs).
+- `text-white` sobre burbujas azules del chat (contraste correcto).
+- Badges rojos de notificación (unread, descuentos) — alto impacto.
+- Overlays oscuros sobre imágenes (carousel arrows, tile backgrounds).
