@@ -86,6 +86,8 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -112,38 +114,55 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
   }, [messages]);
 
   const sendMessage = async () => {
+    if (sending) return;
     if (!newMessage.trim() && !previewFile) return;
+
+    const contentToSend = newMessage.trim();
+    const fileToSend = previewFile;
+    // Limpieza optimista
+    setNewMessage('');
+    setPreviewFile(null);
+    setSending(true);
+
     try {
-      await api.post(`/chat-quotations/admin/threads/${threadId}/messages`, {
-        content: newMessage.trim() || (previewFile ? `Adjunto: ${previewFile.name}` : ''),
-        message_type: previewFile ? (previewFile.type.startsWith('image/') ? 'image' : 'file') : 'text',
-        attachment_url: previewFile?.url || null,
-        attachment_name: previewFile?.name || null,
-        attachment_type: previewFile?.type || null,
+      const res = await api.post(`/chat-quotations/admin/threads/${threadId}/messages`, {
+        content: contentToSend || (fileToSend ? `Adjunto: ${fileToSend.name}` : ''),
+        message_type: fileToSend ? (fileToSend.type.startsWith('image/') ? 'image' : 'file') : 'text',
+        attachment_url: fileToSend?.url || null,
+        attachment_name: fileToSend?.name || null,
+        attachment_type: fileToSend?.type || null,
       });
-      setNewMessage('');
-      setPreviewFile(null);
-      loadThread();
+      setMessages((prev) => [...prev, res.data]);
     } catch (e) {
       console.error(e);
+      setNewMessage(contentToSend);
+      setPreviewFile(fileToSend);
+      alert('Error al enviar el mensaje. Intenta de nuevo.');
+    } finally {
+      setSending(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      if (!sending) sendMessage();
     }
   };
 
   const changeStatus = async (newStatus: string) => {
+    if (changingStatus) return;
+    setChangingStatus(true);
     try {
       await api.patch(`/chat-quotations/admin/threads/${threadId}/status`, { new_status: newStatus });
       setShowStatusMenu(false);
-      loadThread();
+      await loadThread();
       onStatusChange?.();
     } catch (e) {
       console.error(e);
+      alert('Error al cambiar estado.');
+    } finally {
+      setChangingStatus(false);
     }
   };
 
@@ -210,7 +229,8 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
                   key={opt.value}
                   type="button"
                   onClick={() => changeStatus(opt.value)}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-slate-300 flex items-center gap-2"
+                  disabled={changingStatus}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-slate-300 flex items-center gap-2 disabled:opacity-50"
                 >
                   {opt.label}
                 </button>
@@ -424,17 +444,20 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Responder al cliente..."
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none max-h-32 min-h-[44px]"
+              disabled={sending}
+              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none max-h-32 min-h-[44px] disabled:opacity-60"
               rows={1}
             />
 
             <button
               type="button"
               onClick={sendMessage}
-              disabled={(!newMessage.trim() && !previewFile) || uploading}
-              className="p-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl transition-all active:scale-95"
+              disabled={sending || (!newMessage.trim() && !previewFile) || uploading}
+              className="p-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-xl transition-all active:scale-95"
             >
-              <Send className="w-4 h-4" />
+              {sending
+                ? <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                : <Send className="w-4 h-4" />}
             </button>
           </div>
         </div>

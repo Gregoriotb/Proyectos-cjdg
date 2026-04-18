@@ -69,6 +69,7 @@ export default function ClientChatView({ threadId, onBack }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -97,27 +98,40 @@ export default function ClientChatView({ threadId, onBack }: Props) {
   }, [messages]);
 
   const handleSend = async () => {
+    if (sending) return;
     if (!newMessage.trim() && !previewFile) return;
+
+    const contentToSend = newMessage.trim();
+    const fileToSend = previewFile;
+    // Limpieza optimista para que el usuario vea que ya "salió"
+    setNewMessage('');
+    setPreviewFile(null);
+    setSending(true);
+
     try {
-      await api.post(`/chat-quotations/threads/${threadId}/messages`, {
-        content: newMessage.trim() || (previewFile ? `Adjunto: ${previewFile.name}` : ''),
-        message_type: previewFile ? (previewFile.type.startsWith('image/') ? 'image' : 'file') : 'text',
-        attachment_url: previewFile?.url || null,
-        attachment_name: previewFile?.name || null,
-        attachment_type: previewFile?.type || null,
+      const res = await api.post(`/chat-quotations/threads/${threadId}/messages`, {
+        content: contentToSend || (fileToSend ? `Adjunto: ${fileToSend.name}` : ''),
+        message_type: fileToSend ? (fileToSend.type.startsWith('image/') ? 'image' : 'file') : 'text',
+        attachment_url: fileToSend?.url || null,
+        attachment_name: fileToSend?.name || null,
+        attachment_type: fileToSend?.type || null,
       });
-      setNewMessage('');
-      setPreviewFile(null);
-      loadThread();
+      setMessages((prev) => [...prev, res.data]);
     } catch (e) {
       console.error(e);
+      // Restauramos el input si falló, para que el usuario no pierda lo escrito
+      setNewMessage(contentToSend);
+      setPreviewFile(fileToSend);
+      alert('Error al enviar el mensaje. Intenta de nuevo.');
+    } finally {
+      setSending(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      if (!sending) handleSend();
     }
   };
 
@@ -372,17 +386,20 @@ export default function ClientChatView({ threadId, onBack }: Props) {
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Escribe tu mensaje..."
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none max-h-32 min-h-[44px]"
+              disabled={sending}
+              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none max-h-32 min-h-[44px] disabled:opacity-60"
               rows={1}
             />
 
             <button
               type="button"
               onClick={handleSend}
-              disabled={(!newMessage.trim() && !previewFile) || uploading}
+              disabled={sending || (!newMessage.trim() && !previewFile) || uploading}
               className="p-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-xl transition-all active:scale-95"
             >
-              <Send className="w-4 h-4" />
+              {sending
+                ? <div className="w-4 h-4 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                : <Send className="w-4 h-4" />}
             </button>
           </div>
         </div>
