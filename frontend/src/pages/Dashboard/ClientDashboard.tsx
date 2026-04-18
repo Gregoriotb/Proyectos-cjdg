@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ShoppingBag, ShoppingCart, Wrench, FileText, Receipt, User, LogOut, Menu, X, ChevronRight
+  Home, ShoppingBag, ShoppingCart, Wrench, MessageSquare, Receipt, User, LogOut, Menu, X
 } from 'lucide-react';
 import ProductCatalogGrid from '../../components/Client/ProductCatalogGrid';
 import ServiceBrowser from '../../components/Client/ServiceBrowser';
@@ -10,16 +10,17 @@ import ClientQuotationsList from '../../components/Client/Quotations/ClientQuota
 import ClientChatView from '../../components/Client/Quotations/ClientChatView';
 import InvoiceList from '../../components/Client/InvoiceList';
 import CartSection from '../../components/Client/CartSection';
+import ClientHome from '../../components/Client/Home/ClientHome';
 import { useCart } from '../../context/CartContext';
 
 type SectionType = 'overview' | 'catalog' | 'cart' | 'services' | 'quotations' | 'invoices' | 'profile';
 
 const SECTIONS = [
-  { key: 'overview' as SectionType, label: 'Panel General', icon: LayoutDashboard },
+  { key: 'overview' as SectionType, label: 'Inicio', icon: Home },
   { key: 'catalog' as SectionType, label: 'Catálogo', icon: ShoppingBag },
   { key: 'cart' as SectionType, label: 'Mi Carrito', icon: ShoppingCart },
   { key: 'services' as SectionType, label: 'Servicios CJDG', icon: Wrench },
-  { key: 'quotations' as SectionType, label: 'Cotizaciones', icon: FileText },
+  { key: 'quotations' as SectionType, label: 'Cotizaciones', icon: MessageSquare },
   { key: 'invoices' as SectionType, label: 'Facturas', icon: Receipt },
   { key: 'profile' as SectionType, label: 'Mi Perfil', icon: User },
 ];
@@ -163,7 +164,7 @@ const ClientDashboard = () => {
 
         {/* Content Area */}
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
-          {activeSection === 'overview' && <OverviewSection />}
+          {activeSection === 'overview' && <ClientHome onNavigate={(s) => handleSectionChange(s as SectionType)} />}
           {activeSection === 'catalog' && <ProductCatalogGrid />}
           {activeSection === 'cart' && <CartSection onGoToInvoices={() => setActiveSection('invoices')} />}
           {activeSection === 'services' && <ServiceBrowser />}
@@ -181,36 +182,6 @@ const ClientDashboard = () => {
 };
 
 // --- Secciones internas ---
-
-const OverviewSection = () => (
-  <div className="space-y-6">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="glass-panel p-6">
-        <h3 className="text-sm text-cjdg-textMuted mb-1">Catálogo</h3>
-        <p className="text-2xl font-bold text-white">Productos Físicos</p>
-        <p className="text-xs text-cjdg-textMuted mt-2">Explora equipos de redes, CCTV, climatización y más.</p>
-      </div>
-      <div className="glass-panel p-6">
-        <h3 className="text-sm text-cjdg-textMuted mb-1">Servicios CJDG</h3>
-        <p className="text-2xl font-bold text-white">4 Pilares</p>
-        <p className="text-xs text-cjdg-textMuted mt-2">Tecnología, Climatización, Energía e Ingeniería Civil.</p>
-      </div>
-      <div className="glass-panel p-6">
-        <h3 className="text-sm text-cjdg-textMuted mb-1">Soporte</h3>
-        <p className="text-2xl font-bold text-white">ventas@proyectoscjdg.com</p>
-        <p className="text-xs text-cjdg-textMuted mt-2">+58 212-2350938 · +58 414-2849979</p>
-      </div>
-    </div>
-    <div className="glass-panel p-6">
-      <h3 className="text-lg font-bold text-white mb-3">Bienvenido al Ecosistema CJDG</h3>
-      <p className="text-sm text-cjdg-textMuted leading-relaxed">
-        Desde este panel puedes explorar nuestro catálogo de productos físicos con checkout instantáneo,
-        solicitar cotizaciones de servicios corporativos por pilar, y hacer seguimiento de tus facturas y cotizaciones.
-        Usa el menú lateral para navegar entre las secciones.
-      </p>
-    </div>
-  </div>
-);
 
 const ProfileSection = () => {
   const { user } = useAuth();

@@ -14,9 +14,50 @@ import json
 from database import get_db
 from models.service import Service
 from models.catalog import CatalogItem
-from schemas.catalog import CatalogItemResponse
+from schemas.catalog import CatalogItemResponse, ProductOfferResponse
 
 router = APIRouter()
+
+
+# V2.2 — Dashboard Home
+@router.get("/offers", response_model=List[ProductOfferResponse])
+def get_active_offers(
+    limit: int = Query(6, ge=1, le=24),
+    db: Session = Depends(get_db),
+):
+    """
+    Productos físicos en oferta (públicos). Ordenados por mayor descuento.
+    Usado por el widget `OffersWidget` del ClientHome.
+    """
+    rows = (
+        db.query(CatalogItem, Service)
+          .join(Service, CatalogItem.service_id == Service.id)
+          .filter(
+              CatalogItem.is_offer == True,
+              CatalogItem.is_available == True,
+              CatalogItem.price.isnot(None),
+          )
+          .order_by(CatalogItem.discount_percentage.desc())
+          .limit(limit)
+          .all()
+    )
+
+    result = []
+    for item, svc in rows:
+        price = float(item.price or 0)
+        disc = float(item.discount_percentage or 0)
+        result.append(ProductOfferResponse(
+            catalog_id=item.id,
+            product_name=svc.nombre,
+            brand=svc.marca,
+            original_price=item.price,
+            discount_percentage=disc,
+            final_price=round(price * (1 - disc / 100), 2),
+            stock=item.stock or 0,
+            image_urls=svc.image_urls or [],
+            service_id=svc.id,
+        ))
+    return result
 
 
 @router.get("")

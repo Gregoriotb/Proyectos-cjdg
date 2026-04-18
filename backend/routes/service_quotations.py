@@ -52,6 +52,34 @@ def list_active_corporate_services(
     ]
 
 
+# V2.2 — Dashboard Home widget de servicios destacados
+@router.get("/services/special")
+def get_special_services(db: Session = Depends(get_db)):
+    """
+    Hasta 3 servicios corporativos marcados como destacados y activos.
+    PÚBLICO. Usado por el widget `SpecialServicesWidget` del ClientHome.
+    """
+    services = (
+        db.query(ServiceCatalog)
+          .filter(ServiceCatalog.is_special == True, ServiceCatalog.activo == True)
+          .order_by(ServiceCatalog.created_at.desc())
+          .limit(3)
+          .all()
+    )
+    return [
+        {
+            "id": s.id,
+            "nombre": s.nombre,
+            "descripcion": s.descripcion,
+            "pilar": s.pilar.value,
+            "precio_base": float(s.precio_base) if s.precio_base else None,
+            "image_urls": getattr(s, "image_urls", None) or [],
+            "is_special": True,
+        }
+        for s in services
+    ]
+
+
 @router.post("/service-quotation", response_model=QuotationResponse, status_code=status.HTTP_201_CREATED)
 def request_service_quotation(
     data: ServiceQuotationRequest,
