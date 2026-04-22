@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../../services/api';
+import { useWebSocket } from '../../../context/WebSocketContext';
 import {
   MessageCircle, Clock, ArrowRight, AlertCircle,
   DollarSign, Bell
@@ -50,11 +51,17 @@ export default function ClientQuotationsList({ onSelectThread }: Props) {
     }
   }, [filter]);
 
+  // SC-WS-01: carga inicial + refresh reactivo via WebSocket (sin polling)
+  const { subscribe } = useWebSocket();
+
   useEffect(() => {
     loadThreads();
-    const interval = setInterval(loadThreads, 10000);
-    return () => clearInterval(interval);
   }, [loadThreads]);
+
+  useEffect(() => {
+    const unsub = subscribe('thread_updated', () => loadThreads());
+    return unsub;
+  }, [subscribe, loadThreads]);
 
   if (loading) {
     return (

@@ -374,3 +374,7 @@ app.include_router(users_routes.router, prefix="/api/v1/users", tags=["Perfil de
 # V2.7 — [CONTEXT: NOTIFICATIONS] Inbox de notificaciones in-app por usuario
 from routes import notifications as notifications_routes
 app.include_router(notifications_routes.router, prefix="/api/v1/notifications", tags=["Notificaciones"])
+
+# V2.8 — [CONTEXT: REALTIME] WebSocket único por usuario (notificaciones + chat en tiempo real)
+from routes import ws as ws_routes
+app.include_router(ws_routes.router, prefix="/api/v1", tags=["WebSocket"])

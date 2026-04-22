@@ -2,7 +2,7 @@
 [CONTEXT: SERVICE_OPERATIONS] - Invoices Router
 Checkout: genera factura, descuenta stock. Admin gestiona estados.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
@@ -44,6 +44,7 @@ def get_my_invoices(
 @router.post("/checkout", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
 def checkout(
     data: CheckoutRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -127,7 +128,7 @@ def checkout(
     db.commit()
     db.refresh(invoice)
 
-    # SC-NOTIF-01: confirmar al cliente que su factura fue generada
+    # SC-NOTIF-01 + SC-WS-01: confirmar al cliente (DB + push WS)
     notify(
         db,
         user_id=current_user.id,
@@ -135,6 +136,7 @@ def checkout(
         title=f"Factura #{invoice.id} generada",
         message=f"Tu factura por ${total:.2f} fue creada exitosamente.",
         metadata={"invoice_id": invoice.id, "total": str(total)},
+        background_tasks=background_tasks,
     )
 
     return invoice
@@ -158,6 +160,7 @@ def get_all_invoices(
 def update_invoice_status(
     invoice_id: int,
     data: InvoiceStatusUpdate,
+    background_tasks: BackgroundTasks,
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
@@ -197,7 +200,7 @@ def update_invoice_status(
     db.commit()
     db.refresh(invoice)
 
-    # SC-NOTIF-01: notificar al cliente del cambio de estado de su factura
+    # SC-NOTIF-01 + SC-WS-01: notificar al cliente (DB + push WS)
     notify(
         db,
         user_id=invoice.user_id,
@@ -209,6 +212,7 @@ def update_invoice_status(
             "old_status": old_status_label,
             "new_status": new_status.value,
         },
+        background_tasks=background_tasks,
     )
 
     return {

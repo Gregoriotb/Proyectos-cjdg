@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
 
 export interface NotificationItem {
   id: string;
@@ -12,18 +13,21 @@ export interface NotificationItem {
   created_at: string;
 }
 
-const POLL_INTERVAL_MS = 30_000;
-
 /**
- * Hook compartido para notificaciones. Mantiene unread_count vía polling
- * y permite cargar la lista bajo demanda (cuando se abre el dropdown).
+ * Hook compartido para notificaciones.
+ *
+ * - Carga inicial: HTTP /notifications + /unread-count
+ * - Realtime: suscripción al evento 'notification' del WebSocket
+ * - Acciones (mark/delete): HTTP con actualización optimista
+ *
+ * NO hay polling. Si el WS está caído, la próxima reconexión refresca.
  */
 export const useNotifications = () => {
   const { isAuthenticated } = useAuth();
+  const { subscribe } = useWebSocket();
   const [unreadCount, setUnreadCount] = useState(0);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loadingList, setLoadingList] = useState(false);
-  const intervalRef = useRef<number | null>(null);
 
   const fetchUnreadCount = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -31,7 +35,7 @@ export const useNotifications = () => {
       const res = await api.get('/notifications/unread-count');
       setUnreadCount(res.data.unread_count ?? 0);
     } catch {
-      // silencioso para evitar spam si está offline
+      /* noop */
     }
   }, [isAuthenticated]);
 
@@ -51,9 +55,7 @@ export const useNotifications = () => {
       await api.put(`/notifications/${id}/read`);
       setItems((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
       setUnreadCount((c) => Math.max(0, c - 1));
-    } catch {
-      /* noop */
-    }
+    } catch { /* noop */ }
   }, []);
 
   const markAllRead = useCallback(async () => {
@@ -61,23 +63,19 @@ export const useNotifications = () => {
       await api.put('/notifications/mark-all-read');
       setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
       setUnreadCount(0);
-    } catch {
-      /* noop */
-    }
+    } catch { /* noop */ }
   }, []);
 
   const removeNotification = useCallback(async (id: string) => {
+    const wasUnread = items.find((n) => n.id === id)?.is_read === false;
     try {
-      const wasUnread = items.find((n) => n.id === id)?.is_read === false;
       await api.delete(`/notifications/${id}`);
       setItems((prev) => prev.filter((n) => n.id !== id));
       if (wasUnread) setUnreadCount((c) => Math.max(0, c - 1));
-    } catch {
-      /* noop */
-    }
+    } catch { /* noop */ }
   }, [items]);
 
-  // Polling de unread_count
+  // Carga inicial al autenticarse
   useEffect(() => {
     if (!isAuthenticated) {
       setUnreadCount(0);
@@ -85,14 +83,24 @@ export const useNotifications = () => {
       return;
     }
     fetchUnreadCount();
-    intervalRef.current = window.setInterval(fetchUnreadCount, POLL_INTERVAL_MS);
-    return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
   }, [isAuthenticated, fetchUnreadCount]);
+
+  // Realtime: nuevas notificaciones via WS
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const unsub = subscribe('notification', (event) => {
+      const notif = event.payload as NotificationItem;
+      if (!notif) return;
+      // Insertar al tope si la lista ya estaba cargada; si no, solo bump count
+      setItems((prev) => {
+        // Evitar duplicado si por alguna razón llega 2 veces
+        if (prev.some((n) => n.id === notif.id)) return prev;
+        return [notif, ...prev];
+      });
+      setUnreadCount((c) => c + 1);
+    });
+    return unsub;
+  }, [isAuthenticated, subscribe]);
 
   return {
     unreadCount,

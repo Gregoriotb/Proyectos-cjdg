@@ -1,33 +1,51 @@
 """
 [CONTEXT: NOTIFICATIONS] - Helper para crear notificaciones desde otros routers.
 
-Uso desde rutas existentes (chat, invoices, quotations):
-
+Uso:
     from services.notifications import notify
 
     notify(db, user_id=client.id, type="chat_message",
-           title="Nueva respuesta", message="...", metadata={"thread_id": str(thread.id)})
+           title="Nueva respuesta", message="...",
+           metadata={"thread_id": str(thread.id)},
+           background_tasks=background_tasks)  # opcional → push WS
 
-El helper hace try/except para que un fallo de notificación NUNCA tumbe el flow
-principal (ej: si la tabla aún no existe en producción).
+Si `background_tasks` se provee, además del INSERT en DB se programa un
+push WebSocket al user (evento {"type": "notification", "payload": {...}}).
+Si no se provee, solo se hace el INSERT (no realtime).
+
+El helper hace try/except para que un fallo de notificación NUNCA tumbe
+el flow principal.
 """
 import logging
 from typing import Optional, Dict, Any
 from uuid import UUID
 
+from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 
 from models.notification import Notification
+from services.ws_manager import ws_manager
 
 logger = logging.getLogger("cjdg.notifications")
 
-# Tipos válidos (frozenset para constant-time membership check)
 VALID_TYPES = frozenset({
     "chat_message",
     "quotation_status",
     "invoice_created",
     "invoice_status",
 })
+
+
+def _serialize_notification(n: Notification) -> Dict[str, Any]:
+    return {
+        "id": str(n.id),
+        "type": n.type,
+        "title": n.title,
+        "message": n.message,
+        "metadata": n.notification_metadata or {},
+        "is_read": n.is_read,
+        "created_at": n.created_at.isoformat() if n.created_at else None,
+    }
 
 
 def notify(
@@ -39,13 +57,9 @@ def notify(
     message: str,
     metadata: Optional[Dict[str, Any]] = None,
     commit: bool = True,
+    background_tasks: Optional[BackgroundTasks] = None,
 ) -> Optional[Notification]:
-    """
-    Crea una notificación. Si falla, loguea pero NO levanta excepción.
-
-    `commit=True` hace flush inmediato; usar `commit=False` si se va a hacer
-    parte de una transacción más amplia que el caller cerrará.
-    """
+    """Crea notif en DB y (opcional) la pushea por WS al user."""
     if type not in VALID_TYPES:
         logger.warning("notify(): tipo invalido '%s', se omite", type)
         return None
@@ -62,9 +76,7 @@ def notify(
         if commit:
             db.commit()
             db.refresh(n)
-        return n
     except Exception as e:
-        # No tumbar el flow principal por un fallo de notificación
         logger.exception("notify(): fallo al crear notificacion: %s", e)
         if commit:
             try:
@@ -72,3 +84,10 @@ def notify(
             except Exception:
                 pass
         return None
+
+    # WS push (no bloquea — corre después de la respuesta HTTP)
+    if background_tasks is not None and n is not None:
+        event = {"type": "notification", "payload": _serialize_notification(n)}
+        background_tasks.add_task(ws_manager.send_to_user, user_id, event)
+
+    return n

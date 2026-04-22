@@ -1,9 +1,8 @@
 """
-Routes: Chat-Cotizaciones V2.1
+Routes: Chat-Cotizaciones V2.1 + V2.8 (WebSocket realtime)
 Ruta: backend/routes/chat_quotation.py
-Incluye: Endpoints REST + Soporte de adjuntos (ImgBB reutilizado).
 """
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from uuid import UUID
@@ -22,8 +21,17 @@ from schemas.chat_quotation import (
 )
 from routes.uploads import upload_file_to_imgbb
 from services.notifications import notify
+from services.ws_manager import ws_manager
 
 router = APIRouter(prefix="/chat-quotations", tags=["Chat Quotations"])
+
+
+def _ws_chat_message_event(serialized: ChatMessageResponse) -> dict:
+    return {"type": "chat_message", "payload": serialized.model_dump(mode="json")}
+
+
+def _ws_thread_updated_event(thread_id: UUID) -> dict:
+    return {"type": "thread_updated", "payload": {"thread_id": str(thread_id)}}
 
 
 # ============================================================
@@ -290,6 +298,7 @@ async def get_thread_client(
 async def client_send_message(
     thread_id: UUID,
     data: ChatMessageCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -322,7 +331,15 @@ async def client_send_message(
     thread.admin_unread = (thread.admin_unread or 0) + 1
     db.commit()
     db.refresh(msg)
-    return _serialize_message(db, msg)
+
+    serialized = _serialize_message(db, msg)
+
+    # SC-WS-01: realtime push
+    background_tasks.add_task(ws_manager.broadcast_to_thread, thread.id, _ws_chat_message_event(serialized))
+    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, _ws_thread_updated_event(thread.id))
+    background_tasks.add_task(ws_manager.broadcast_to_admins, _ws_thread_updated_event(thread.id))
+
+    return serialized
 
 
 @router.post("/threads/{thread_id}/attachments")
@@ -413,6 +430,7 @@ async def get_thread_admin(
 async def admin_send_message(
     thread_id: UUID,
     data: ChatMessageCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin),
 ):
@@ -444,6 +462,8 @@ async def admin_send_message(
     db.commit()
     db.refresh(msg)
 
+    serialized = _serialize_message(db, msg)
+
     # SC-NOTIF-01: notificar al cliente que recibió respuesta del equipo
     notify(
         db,
@@ -452,9 +472,15 @@ async def admin_send_message(
         title=f"Nueva respuesta en: {thread.service_name}",
         message=(content[:160] + "...") if len(content) > 160 else content,
         metadata={"thread_id": str(thread.id)},
+        background_tasks=background_tasks,
     )
 
-    return _serialize_message(db, msg)
+    # SC-WS-01: realtime push
+    background_tasks.add_task(ws_manager.broadcast_to_thread, thread.id, _ws_chat_message_event(serialized))
+    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, _ws_thread_updated_event(thread.id))
+    background_tasks.add_task(ws_manager.broadcast_to_admins, _ws_thread_updated_event(thread.id))
+
+    return serialized
 
 
 @router.post("/admin/threads/{thread_id}/attachments")
@@ -480,6 +506,7 @@ async def admin_upload_attachment(
 async def update_thread_status(
     thread_id: UUID,
     data: StatusUpdateRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin),
 ):
@@ -505,6 +532,7 @@ async def update_thread_status(
 
     db.commit()
     db.refresh(thread)
+    db.refresh(system_msg)
 
     # SC-NOTIF-01: notificar al cliente del cambio de status
     notify(
@@ -518,6 +546,13 @@ async def update_thread_status(
             "old_status": old_status,
             "new_status": data.new_status,
         },
+        background_tasks=background_tasks,
     )
+
+    # SC-WS-01: realtime push (mensaje de sistema + thread_updated a todos)
+    serialized_sys = _serialize_message(db, system_msg)
+    background_tasks.add_task(ws_manager.broadcast_to_thread, thread.id, _ws_chat_message_event(serialized_sys))
+    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, _ws_thread_updated_event(thread.id))
+    background_tasks.add_task(ws_manager.broadcast_to_admins, _ws_thread_updated_event(thread.id))
 
     return QuotationThreadResponse(**_serialize_thread(thread, include_client=True))

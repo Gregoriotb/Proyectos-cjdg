@@ -52,3 +52,24 @@ def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
             detail="Permisos insuficientes"
         )
     return current_user
+
+
+def get_user_from_ws_token(token: str, db: Session) -> User | None:
+    """
+    [SC-WS-01] Valida un JWT venido de la query string del WebSocket.
+    Retorna el User o None si el token es inválido. NO lanza HTTPException
+    porque WebSocket usa close codes en vez de status HTTP.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            return None
+        user_id = UUID(user_id_str)
+    except (JWTError, ValueError):
+        return None
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None or not user.is_active:
+        return None
+    return user

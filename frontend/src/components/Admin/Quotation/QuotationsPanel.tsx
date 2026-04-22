@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../services/api';
 import AdminChatPanel from './AdminChatPanel';
+import { useWebSocket } from '../../../context/WebSocketContext';
 import {
   MessageSquare, Clock, AlertCircle, Filter, ChevronRight,
   User, Building2, DollarSign, Bell, MapPin,
@@ -68,11 +69,17 @@ export default function QuotationsPanel() {
     }
   }, [filter]);
 
+  // SC-WS-01: carga inicial + refresh reactivo via WebSocket (sin polling)
+  const { subscribe } = useWebSocket();
+
   useEffect(() => {
     loadThreads();
-    const interval = setInterval(loadThreads, 10000);
-    return () => clearInterval(interval);
   }, [loadThreads]);
+
+  useEffect(() => {
+    const unsub = subscribe('thread_updated', () => loadThreads());
+    return unsub;
+  }, [subscribe, loadThreads]);
 
   if (selectedThread) {
     return (

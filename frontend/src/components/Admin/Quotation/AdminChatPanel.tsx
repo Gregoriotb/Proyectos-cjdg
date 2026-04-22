@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { api } from '../../../services/api';
+import { useWebSocket } from '../../../context/WebSocketContext';
 import {
   Send, Building2, MapPin, DollarSign, Phone, Mail, User, CheckCheck, Check,
   ArrowLeft, MoreVertical, RefreshCw, Tag, Paperclip, Image as ImageIcon,
@@ -107,11 +108,33 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
     }
   }, [threadId]);
 
+  // SC-WS-01: carga inicial + suscripción WebSocket (sin polling)
+  const { subscribe, subscribeThread, unsubscribeThread } = useWebSocket();
+
   useEffect(() => {
     loadThread();
-    const interval = setInterval(loadThread, 8000);
-    return () => clearInterval(interval);
-  }, [loadThread]);
+    subscribeThread(threadId);
+    return () => unsubscribeThread(threadId);
+  }, [loadThread, threadId, subscribeThread, unsubscribeThread]);
+
+  useEffect(() => {
+    const unsub = subscribe('chat_message', (event) => {
+      const msg = event.payload;
+      if (!msg || msg.thread_id !== threadId) return;
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+    });
+    return unsub;
+  }, [subscribe, threadId]);
+
+  useEffect(() => {
+    const unsub = subscribe('thread_updated', (event) => {
+      if (event.payload?.thread_id === threadId) loadThread();
+    });
+    return unsub;
+  }, [subscribe, threadId, loadThread]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
