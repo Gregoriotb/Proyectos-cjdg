@@ -357,6 +357,10 @@ app.include_router(admin_services.router, prefix="/api/v1/admin", tags=["Servici
 # SC-ADMIN-EXPORT-01 — Export unificado (reportes/backups)
 app.include_router(admin_export.router, prefix="/api/v1/admin", tags=["Admin Export"])
 
+# SC-API-KEYS-01 — Gestión de API Keys (admin)
+from routes import api_keys as api_keys_routes
+app.include_router(api_keys_routes.router, prefix="/api/v1/admin", tags=["API Keys"])
+
 # SC-CLIENT-01 — [CONTEXT: SERVICE_OPERATIONS] Facturas
 app.include_router(invoices.router, prefix="/api/v1/invoices", tags=["Facturas"])
 

@@ -1,8 +1,9 @@
 """
 [CONTEXT: USER_GATEWAY] - AuthService Dependencies
 Provee la lógica para recuperar y autorizar al usuario actual a partir del Bearer Token JWT.
+SC-API-KEYS-01: agrega auth dual (JWT admin OR X-API-Key).
 """
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
@@ -52,6 +53,61 @@ def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
             detail="Permisos insuficientes"
         )
     return current_user
+
+
+def get_admin_via_any_auth(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    [SC-API-KEYS-01] Acepta autenticación vía:
+      1. Header `X-API-Key: pcjdg_...` (key activa, no expirada, dueño admin)
+      2. Header `Authorization: Bearer <JWT>` con rol admin
+
+    Si la API key es válida, registra uso (last_used_at, usage_count).
+    """
+    from services.api_keys import verify_api_key, record_usage
+
+    # 1) Intento con X-API-Key
+    api_key_raw = request.headers.get("x-api-key") or request.headers.get("X-API-Key")
+    if api_key_raw:
+        ak = verify_api_key(api_key_raw, db)
+        if not ak:
+            raise HTTPException(status_code=401, detail="API key inválida o expirada")
+
+        user = db.query(User).filter(User.id == ak.user_id).first()
+        if not user or not user.is_active:
+            raise HTTPException(status_code=401, detail="Usuario asociado a la key no válido")
+        if user.role.value.lower() != "admin":
+            raise HTTPException(status_code=403, detail="Permisos insuficientes")
+
+        record_usage(ak, db)
+        return user
+
+    # 2) Fallback a JWT
+    auth_header = request.headers.get("authorization") or request.headers.get("Authorization", "")
+    if auth_header.lower().startswith("bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_id_str = payload.get("sub")
+            if not user_id_str:
+                raise HTTPException(status_code=401, detail="Token inválido")
+            user_id = UUID(user_id_str)
+        except (JWTError, ValueError):
+            raise HTTPException(status_code=401, detail="Token inválido")
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user or not user.is_active:
+            raise HTTPException(status_code=401, detail="Usuario inválido")
+        if user.role.value.lower() != "admin":
+            raise HTTPException(status_code=403, detail="Permisos insuficientes")
+        return user
+
+    raise HTTPException(
+        status_code=401,
+        detail="Falta autenticación. Usa header 'X-API-Key' o 'Authorization: Bearer <token>'",
+    )
 
 
 def get_user_from_ws_token(token: str, db: Session) -> User | None:

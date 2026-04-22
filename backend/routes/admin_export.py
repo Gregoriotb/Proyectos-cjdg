@@ -1,13 +1,13 @@
 """
 [CONTEXT: ADMIN_CONSOLE] - Admin Export API
-SC-ADMIN-EXPORT-01: Endpoint unificado para reportes/backups.
+SC-ADMIN-EXPORT-01: Endpoint unificado para reportes/backups/integraciones.
 
 GET /admin/export-all
-  - Solo admin
-  - Retorna JSON con: usuarios (sin hashes), catálogo, service_catalog,
-    facturas con items, cotizaciones con counts de mensajes.
-  - Cache en memoria por 5 min (query param ?refresh=true lo bypassea).
-  - selectinload para evitar N+1 en relaciones.
+  Auth: header 'X-API-Key' (api key activa de admin) o 'Authorization: Bearer <JWT>' admin.
+  Cache: 5 min en memoria (proceso único). Query param ?refresh=true lo bypassea.
+  Payload: users, catalog, service_catalog, invoices+items, quotation_threads+messages,
+           notifications, ecommerce_settings, summary con totales.
+  Excluye: hashed_password, oauth_id, key_hash. Expone has_password como bool.
 """
 import time
 from datetime import datetime, timezone
@@ -18,10 +18,12 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session, selectinload
 
 from database import get_db
-from dependencies import get_current_admin
+from dependencies import get_admin_via_any_auth
 from models.catalog import CatalogItem
 from models.chat_quotation import ChatMessage, QuotationThread
+from models.ecommerce_settings import EcommerceSettings
 from models.invoice import Invoice, InvoiceItem
+from models.notification import Notification
 from models.service import Service
 from models.service_catalog import ServiceCatalog
 from models.user import User
@@ -49,7 +51,7 @@ def _cache_set(data: Dict[str, Any]) -> None:
 
 
 # --------------------------------------------------------------
-# Serializadores (dict-safe: sin UUID/Decimal/datetime nativos)
+# Serializadores (JSON-safe)
 # --------------------------------------------------------------
 def _iso(dt) -> Optional[str]:
     return dt.isoformat() if dt else None
@@ -62,7 +64,6 @@ def _dec(value) -> Optional[str]:
 
 
 def _serialize_user(u: User) -> Dict[str, Any]:
-    """Excluye hashed_password y oauth_id (información sensible)."""
     return {
         "id": str(u.id),
         "username": u.username,
@@ -135,6 +136,23 @@ def _serialize_service_catalog(s: ServiceCatalog) -> Dict[str, Any]:
     }
 
 
+def _serialize_chat_message(m: ChatMessage) -> Dict[str, Any]:
+    return {
+        "id": str(m.id),
+        "thread_id": str(m.thread_id),
+        "sender_type": m.sender_type,
+        "sender_id": str(m.sender_id) if m.sender_id else None,
+        "content": m.content,
+        "message_type": m.message_type,
+        "attachment_url": m.attachment_url,
+        "attachment_name": m.attachment_name,
+        "attachment_type": m.attachment_type,
+        "metadata": m.message_metadata or {},
+        "read_at": _iso(m.read_at),
+        "created_at": _iso(m.created_at),
+    }
+
+
 def _serialize_thread(t: QuotationThread) -> Dict[str, Any]:
     messages = t.messages or []
     return {
@@ -148,7 +166,25 @@ def _serialize_thread(t: QuotationThread) -> Dict[str, Any]:
         "updated_at": _iso(t.updated_at),
         "last_message_at": _iso(t.last_message_at),
         "message_count": len(messages),
+        "messages": [_serialize_chat_message(m) for m in messages],
     }
+
+
+def _serialize_notification(n: Notification) -> Dict[str, Any]:
+    return {
+        "id": str(n.id),
+        "user_id": str(n.user_id),
+        "type": n.type,
+        "title": n.title,
+        "message": n.message,
+        "metadata": n.notification_metadata or {},
+        "is_read": n.is_read,
+        "created_at": _iso(n.created_at),
+    }
+
+
+def _serialize_settings(s: EcommerceSettings) -> Dict[str, Any]:
+    return {c.name: getattr(s, c.name) for c in s.__table__.columns}
 
 
 # --------------------------------------------------------------
@@ -157,29 +193,22 @@ def _serialize_thread(t: QuotationThread) -> Dict[str, Any]:
 @router.get("/export-all")
 def export_all(
     refresh: bool = Query(False, description="Forzar refresh, ignorar cache"),
-    current_admin: User = Depends(get_current_admin),
+    admin_user: User = Depends(get_admin_via_any_auth),  # JWT admin OR API key
     db: Session = Depends(get_db),
 ):
-    """
-    Export unificado: usuarios + catálogo + servicios + facturas + cotizaciones.
-    Cache 5 min. Usar ?refresh=true para forzar recálculo.
-    """
+    """Export unificado completo. Cache 5 min. `?refresh=true` fuerza recálculo."""
     if not refresh:
         cached = _cache_get()
         if cached is not None:
             return {**cached, "cache_hit": True}
 
-    # Fetches con selectinload para evitar N+1
     users: List[User] = db.query(User).all()
 
     invoices: List[Invoice] = (
-        db.query(Invoice)
-        .options(selectinload(Invoice.items))
-        .all()
+        db.query(Invoice).options(selectinload(Invoice.items)).all()
     )
 
     catalog_items: List[CatalogItem] = db.query(CatalogItem).all()
-    # Mapa service_id → Service para joinear sin N+1
     service_ids = {c.service_id for c in catalog_items if c.service_id}
     services = db.query(Service).filter(Service.id.in_(service_ids)).all() if service_ids else []
     service_by_id = {s.id: s for s in services}
@@ -187,18 +216,20 @@ def export_all(
     service_catalog: List[ServiceCatalog] = db.query(ServiceCatalog).all()
 
     threads: List[QuotationThread] = (
-        db.query(QuotationThread)
-        .options(selectinload(QuotationThread.messages))
-        .all()
+        db.query(QuotationThread).options(selectinload(QuotationThread.messages)).all()
     )
 
-    # Métricas agregadas rápidas
+    notifications: List[Notification] = db.query(Notification).all()
+    settings_rows: List[EcommerceSettings] = db.query(EcommerceSettings).all()
+
     total_revenue = sum(
         float(inv.total or 0)
         for inv in invoices
         if inv.status and inv.status.value == "PAID"
     )
     clients_count = sum(1 for u in users if u.role and u.role.value.lower() == "cliente")
+    total_messages = sum(len(t.messages or []) for t in threads)
+    unread_notifs = sum(1 for n in notifications if not n.is_read)
 
     data = {
         "exported_at": datetime.now(timezone.utc).isoformat(),
@@ -210,12 +241,17 @@ def export_all(
             "total_catalog_items": len(catalog_items),
             "total_corporate_services": len(service_catalog),
             "total_quotation_threads": len(threads),
+            "total_chat_messages": total_messages,
+            "total_notifications": len(notifications),
+            "unread_notifications": unread_notifs,
         },
         "users": [_serialize_user(u) for u in users],
         "invoices": [_serialize_invoice(i) for i in invoices],
         "catalog": [_serialize_catalog_item(c, service_by_id) for c in catalog_items],
         "service_catalog": [_serialize_service_catalog(s) for s in service_catalog],
         "quotations": [_serialize_thread(t) for t in threads],
+        "notifications": [_serialize_notification(n) for n in notifications],
+        "ecommerce_settings": [_serialize_settings(s) for s in settings_rows],
     }
 
     _cache_set(data)
