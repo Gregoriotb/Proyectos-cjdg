@@ -16,7 +16,7 @@ import os
 import sys
 
 # Importación de routers (se activarán por subcontexto)
-from routes import auth, catalog, cart, quotations, admin, admin_services, invoices, service_quotations, chat_quotation
+from routes import auth, catalog, cart, quotations, admin, admin_services, admin_export, invoices, service_quotations, chat_quotation
 
 # ----------------------------------------------------------
 # LOGGING — Salida en stdout para Railway
@@ -353,6 +353,9 @@ app.include_router(admin.router, prefix="/api/v1/admin", tags=["Administrador"])
 
 # SC-ADMIN-02 — [CONTEXT: ADMIN_CONSOLE] Servicios Corporativos
 app.include_router(admin_services.router, prefix="/api/v1/admin", tags=["Servicios Corporativos"])
+
+# SC-ADMIN-EXPORT-01 — Export unificado (reportes/backups)
+app.include_router(admin_export.router, prefix="/api/v1/admin", tags=["Admin Export"])
 
 # SC-CLIENT-01 — [CONTEXT: SERVICE_OPERATIONS] Facturas
 app.include_router(invoices.router, prefix="/api/v1/invoices", tags=["Facturas"])
