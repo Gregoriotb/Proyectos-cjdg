@@ -21,6 +21,7 @@ from schemas.chat_quotation import (
     ClientInfo, InvoiceBrief,
 )
 from routes.uploads import upload_file_to_imgbb
+from services.notifications import notify
 
 router = APIRouter(prefix="/chat-quotations", tags=["Chat Quotations"])
 
@@ -442,6 +443,17 @@ async def admin_send_message(
     thread.client_unread = (thread.client_unread or 0) + 1
     db.commit()
     db.refresh(msg)
+
+    # SC-NOTIF-01: notificar al cliente que recibió respuesta del equipo
+    notify(
+        db,
+        user_id=thread.client_id,
+        type="chat_message",
+        title=f"Nueva respuesta en: {thread.service_name}",
+        message=(content[:160] + "...") if len(content) > 160 else content,
+        metadata={"thread_id": str(thread.id)},
+    )
+
     return _serialize_message(db, msg)
 
 
@@ -493,4 +505,19 @@ async def update_thread_status(
 
     db.commit()
     db.refresh(thread)
+
+    # SC-NOTIF-01: notificar al cliente del cambio de status
+    notify(
+        db,
+        user_id=thread.client_id,
+        type="quotation_status",
+        title=f"Cotización: {thread.service_name}",
+        message=f"Estado actualizado de '{old_status}' a '{data.new_status}'.",
+        metadata={
+            "thread_id": str(thread.id),
+            "old_status": old_status,
+            "new_status": data.new_status,
+        },
+    )
+
     return QuotationThreadResponse(**_serialize_thread(thread, include_client=True))

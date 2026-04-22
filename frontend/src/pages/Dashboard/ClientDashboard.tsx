@@ -13,6 +13,7 @@ import InvoiceList from '../../components/Client/InvoiceList';
 import CartSection from '../../components/Client/CartSection';
 import ClientHome from '../../components/Client/Home/ClientHome';
 import ProfileForm from '../../components/Client/Profile/ProfileForm';
+import NotificationBell from '../../components/NotificationBell';
 import { useCart } from '../../context/CartContext';
 
 type SectionType = 'overview' | 'catalog' | 'cart' | 'services' | 'quotations' | 'invoices' | 'profile';
@@ -179,8 +180,20 @@ const ClientDashboard = () => {
               {SECTIONS.find((s) => s.key === activeSection)?.label}
             </h1>
           </div>
-          <div className="text-sm text-cj-text-secondary hidden sm:block">
-            {user?.full_name} · <span className="uppercase text-xs text-cj-accent-blue font-semibold">{user?.role}</span>
+          <div className="flex items-center gap-3">
+            <NotificationBell
+              onNavigate={(n) => {
+                if (n.type === 'chat_message' || n.type === 'quotation_status') {
+                  if (n.metadata?.thread_id) setSelectedThreadId(n.metadata.thread_id);
+                  handleSectionChange('quotations');
+                } else if (n.type === 'invoice_created' || n.type === 'invoice_status') {
+                  handleSectionChange('invoices');
+                }
+              }}
+            />
+            <div className="text-sm text-cj-text-secondary hidden sm:block">
+              {user?.full_name} · <span className="uppercase text-xs text-cj-accent-blue font-semibold">{user?.role}</span>
+            </div>
           </div>
         </header>
 

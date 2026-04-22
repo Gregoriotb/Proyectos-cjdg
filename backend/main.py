@@ -370,3 +370,7 @@ app.include_router(chat_quotation.router, prefix="/api/v1", tags=["Chat Cotizaci
 # V2.5 — [CONTEXT: USER_GATEWAY] Perfil del cliente (RIF, dirección fiscal)
 from routes import users as users_routes
 app.include_router(users_routes.router, prefix="/api/v1/users", tags=["Perfil de Usuario"])
+
+# V2.7 — [CONTEXT: NOTIFICATIONS] Inbox de notificaciones in-app por usuario
+from routes import notifications as notifications_routes
+app.include_router(notifications_routes.router, prefix="/api/v1/notifications", tags=["Notificaciones"])

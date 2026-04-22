@@ -13,6 +13,7 @@ from models.user import User
 from models.invoice import Invoice, InvoiceItem, InvoiceTypeEnum, InvoiceStatusEnum
 from models.cart import Cart, CartItem
 from models.catalog import CatalogItem
+from services.notifications import notify
 from models.service import Service
 from schemas.invoice import InvoiceResponse
 from dependencies import get_current_user, get_current_admin
@@ -125,6 +126,17 @@ def checkout(
 
     db.commit()
     db.refresh(invoice)
+
+    # SC-NOTIF-01: confirmar al cliente que su factura fue generada
+    notify(
+        db,
+        user_id=current_user.id,
+        type="invoice_created",
+        title=f"Factura #{invoice.id} generada",
+        message=f"Tu factura por ${total:.2f} fue creada exitosamente.",
+        metadata={"invoice_id": invoice.id, "total": str(total)},
+    )
+
     return invoice
 
 
@@ -177,12 +189,27 @@ def update_invoice_status(
                 if catalog_item:
                     catalog_item.stock += inv_item.cantidad
 
+    old_status_label = invoice.status.value if invoice.status else "—"
     invoice.status = new_status
     if data.notas:
         invoice.notas = data.notas
 
     db.commit()
     db.refresh(invoice)
+
+    # SC-NOTIF-01: notificar al cliente del cambio de estado de su factura
+    notify(
+        db,
+        user_id=invoice.user_id,
+        type="invoice_status",
+        title=f"Factura #{invoice.id}: {new_status.value}",
+        message=f"Tu factura cambió de '{old_status_label}' a '{new_status.value}'.",
+        metadata={
+            "invoice_id": invoice.id,
+            "old_status": old_status_label,
+            "new_status": new_status.value,
+        },
+    )
 
     return {
         "message": "Estado actualizado",
