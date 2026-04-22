@@ -23,7 +23,7 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)  # Nullable: usuarios OAuth no tienen password local
     full_name = Column(String, nullable=False)
     role = Column(Enum(UserRoleEnum), default=UserRoleEnum.CLIENTE, nullable=False)
     is_active = Column(Boolean, default=True)

@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing/Landing';
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
+import AuthCallback from './pages/AuthCallback/AuthCallback';
 import Catalog from './pages/Catalog/Catalog';
 import Cart from './pages/Cart/Cart';
 import Admin from './pages/Admin/Admin';
@@ -19,6 +20,7 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* Rutas Privadas (Requieren Sesión Activa) */}
             <Route element={<ProtectedRoute />}>

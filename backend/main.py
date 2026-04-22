@@ -9,6 +9,7 @@ SC-DEPLOY-002 — Adaptado para producción en Railway
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 from datetime import datetime, timezone
 import logging
 import os
@@ -51,6 +52,17 @@ app = FastAPI(
     docs_url="/api/v1/docs" if ENVIRONMENT != "production" else None,
     redoc_url="/api/v1/redoc" if ENVIRONMENT != "production" else None,
     openapi_url="/api/v1/openapi.json" if ENVIRONMENT != "production" else None,
+)
+
+# ----------------------------------------------------------
+# SESSION — Requerido por authlib (OAuth state/CSRF). Cookie corta, solo para el handshake.
+# ----------------------------------------------------------
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SECRET_KEY", "CHANGE_THIS_IN_PRODUCTION_VERY_LONG_STRING"),
+    same_site="lax",
+    https_only=ENVIRONMENT == "production",
+    max_age=600,
 )
 
 # ----------------------------------------------------------
