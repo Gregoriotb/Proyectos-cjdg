@@ -37,7 +37,11 @@ class User(Base):
     last_name = Column(String(100), nullable=True)
     phone = Column(String(30), nullable=True)
     company_name = Column(String(255), nullable=True)
-    address = Column(Text, nullable=True)
+
+    # V2.5 — Perfil fiscal completo (renombrado address → fiscal_address)
+    fiscal_address = Column(Text, nullable=True)
+    rif = Column(String(50), nullable=True, unique=True, index=True)
+    rif_file_url = Column(String(500), nullable=True)
 
     quotation_threads = relationship(
         "QuotationThread",

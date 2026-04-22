@@ -89,14 +89,25 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 @router.get("/verify")
 def verify_token(current_user: User = Depends(get_current_user)):
     """
-    Valida el token JWT contra el backend.
-    El frontend llama a este endpoint en cada carga de ruta protegida.
+    Valida el token JWT contra el backend y retorna el perfil completo.
+    El frontend llama a este endpoint en cada carga de ruta protegida y
+    para refrescar el estado del usuario después de actualizar el perfil.
     """
     return {
         "valid": True,
+        "id": str(current_user.id),
         "role": current_user.role.value,
-        "full_name": current_user.full_name,
         "username": current_user.username,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "phone": current_user.phone,
+        "company_name": current_user.company_name,
+        "fiscal_address": current_user.fiscal_address,
+        "rif": current_user.rif,
+        "rif_file_url": current_user.rif_file_url,
+        "oauth_provider": current_user.oauth_provider,
     }
 
 

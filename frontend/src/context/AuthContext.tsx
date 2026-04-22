@@ -1,11 +1,20 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
-interface UserData {
+export interface UserData {
+  id?: string;
   full_name: string;
   role: 'admin' | 'tecnico' | 'cliente';
   username: string;
+  email?: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
+  company_name?: string | null;
+  fiscal_address?: string | null;
+  rif?: string | null;
+  rif_file_url?: string | null;
+  oauth_provider?: string | null;
 }
 
 interface AuthContextType {
@@ -15,9 +24,26 @@ interface AuthContextType {
   login: (token: string, userData: UserData) => void;
   logout: () => void;
   verifySession: () => Promise<boolean>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const normalizeUser = (raw: any): UserData => ({
+  id: raw.id,
+  full_name: raw.full_name,
+  role: (raw.role || '').toLowerCase() as UserData['role'],
+  username: raw.username,
+  email: raw.email,
+  first_name: raw.first_name ?? null,
+  last_name: raw.last_name ?? null,
+  phone: raw.phone ?? null,
+  company_name: raw.company_name ?? null,
+  fiscal_address: raw.fiscal_address ?? null,
+  rif: raw.rif ?? null,
+  rif_file_url: raw.rif_file_url ?? null,
+  oauth_provider: raw.oauth_provider ?? null,
+});
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserData | null>(null);
@@ -33,11 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const res = await api.get('/auth/verify');
-      const userData: UserData = {
-        role: res.data.role.toLowerCase(),
-        full_name: res.data.full_name,
-        username: res.data.username,
-      };
+      const userData = normalizeUser(res.data);
       setUser(userData);
       localStorage.setItem('cjdg_user', JSON.stringify(userData));
       return true;
@@ -49,6 +71,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
   }, []);
+
+  // Re-fetch del perfil sin invalidar la sesión (uso post-update)
+  const refreshUser = useCallback(async () => {
+    await verifySession();
+  }, [verifySession]);
 
   // Bootstrapping: intenta recuperar sesión del localStorage y verificar
   useEffect(() => {
@@ -67,8 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (token: string, userData: UserData) => {
-    // Normalizar role a lowercase para consistencia
-    const normalized = { ...userData, role: userData.role.toLowerCase() as UserData['role'] };
+    const normalized = normalizeUser({ ...userData, role: userData.role });
     localStorage.setItem('cjdg_token', token);
     localStorage.setItem('cjdg_user', JSON.stringify(normalized));
     setUser(normalized);
@@ -83,7 +109,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, verifySession }}>
+    <AuthContext.Provider
+      value={{ user, isAuthenticated: !!user, isLoading, login, logout, verifySession, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

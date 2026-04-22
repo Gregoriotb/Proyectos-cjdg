@@ -48,6 +48,49 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+# V2.5 — Perfil fiscal editable por el propio usuario
+class ProfileUpdate(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=2, max_length=255)
+    first_name: Optional[str] = Field(None, max_length=100)
+    last_name: Optional[str] = Field(None, max_length=100)
+    phone: Optional[str] = Field(None, max_length=30)
+    company_name: Optional[str] = Field(None, max_length=255)
+    fiscal_address: Optional[str] = Field(None, max_length=2000)
+    rif: Optional[str] = Field(None, max_length=50)
+    rif_file_url: Optional[str] = Field(None, max_length=500)
+
+    @field_validator("rif")
+    @classmethod
+    def validate_rif_format(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == "":
+            return None
+        v = v.strip().upper()
+        # Formato venezolano flexible: letra(VEJGPC) + dígitos + opcional dígito verificador
+        if not re.match(r'^[VEJGPC]-?\d{6,9}-?\d?$', v):
+            raise ValueError("Formato de RIF inválido. Ejemplo: J-12345678-9")
+        return v
+
+
+class ProfileResponse(BaseModel):
+    """Respuesta de /auth/verify y /users/profile — incluye todos los campos editables."""
+    id: UUID
+    username: str
+    email: EmailStr
+    role: UserRole
+    full_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    company_name: Optional[str] = None
+    fiscal_address: Optional[str] = None
+    rif: Optional[str] = None
+    rif_file_url: Optional[str] = None
+    oauth_provider: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class UserResponse(UserBase):
     id: UUID
 

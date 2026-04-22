@@ -366,3 +366,7 @@ app.include_router(uploads.router, prefix="/api/v1", tags=["Archivos e Imágenes
 
 # V2.1 — [CONTEXT: CHAT_QUOTATIONS] Chat-Cotizaciones con hilos y adjuntos
 app.include_router(chat_quotation.router, prefix="/api/v1", tags=["Chat Cotizaciones"])
+
+# V2.5 — [CONTEXT: USER_GATEWAY] Perfil del cliente (RIF, dirección fiscal)
+from routes import users as users_routes
+app.include_router(users_routes.router, prefix="/api/v1/users", tags=["Perfil de Usuario"])

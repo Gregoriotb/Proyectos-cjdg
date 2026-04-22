@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
-  Home, ShoppingBag, ShoppingCart, Wrench, MessageSquare, Receipt, User, LogOut, Menu, X
+  Home, ShoppingBag, ShoppingCart, Wrench, MessageSquare, Receipt, User, LogOut, Menu, X, AlertCircle, ArrowRight
 } from 'lucide-react';
 import ProductCatalogGrid from '../../components/Client/ProductCatalogGrid';
 import ServiceBrowser from '../../components/Client/ServiceBrowser';
@@ -11,6 +11,7 @@ import ClientChatView from '../../components/Client/Quotations/ClientChatView';
 import InvoiceList from '../../components/Client/InvoiceList';
 import CartSection from '../../components/Client/CartSection';
 import ClientHome from '../../components/Client/Home/ClientHome';
+import ProfileForm from '../../components/Client/Profile/ProfileForm';
 import { useCart } from '../../context/CartContext';
 
 type SectionType = 'overview' | 'catalog' | 'cart' | 'services' | 'quotations' | 'invoices' | 'profile';
@@ -29,10 +30,18 @@ const ClientDashboard = () => {
   const [activeSection, setActiveSection] = useState<SectionType>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { cart } = useCart();
   const navigate = useNavigate();
   const cartCount = cart?.items?.length || 0;
+
+  // Refresca el perfil al montar para asegurar que tenemos campos fiscales
+  // (el localStorage puede tener una snapshot vieja sin los nuevos campos)
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
+
+  const profileIncomplete = !user?.rif || !user?.fiscal_address;
 
   const handleLogout = () => {
     logout();
@@ -163,6 +172,30 @@ const ClientDashboard = () => {
 
         {/* Content Area */}
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto bg-cj-bg-primary">
+          {/* Banner de perfil incompleto — visible en todas las secciones excepto 'profile' */}
+          {profileIncomplete && activeSection !== 'profile' && (
+            <button
+              type="button"
+              onClick={() => handleSectionChange('profile')}
+              className="w-full mb-6 group flex items-center justify-between gap-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md text-left hover:bg-yellow-100 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-yellow-900">
+                    Completa tu información fiscal
+                  </p>
+                  <p className="text-xs text-yellow-800 mt-0.5">
+                    Necesitas registrar tu RIF y dirección fiscal para emitir facturas.
+                  </p>
+                </div>
+              </div>
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-yellow-900 group-hover:translate-x-1 transition-transform">
+                Completar ahora <ArrowRight className="w-4 h-4" />
+              </span>
+            </button>
+          )}
+
           {activeSection === 'overview' && <ClientHome onNavigate={(s) => handleSectionChange(s as SectionType)} />}
           {activeSection === 'catalog' && <ProductCatalogGrid />}
           {activeSection === 'cart' && <CartSection onGoToInvoices={() => setActiveSection('invoices')} />}
@@ -173,33 +206,8 @@ const ClientDashboard = () => {
               : <ClientQuotationsList onSelectThread={setSelectedThreadId} />
           )}
           {activeSection === 'invoices' && <InvoiceList />}
-          {activeSection === 'profile' && <ProfileSection />}
+          {activeSection === 'profile' && <ProfileForm />}
         </main>
-      </div>
-    </div>
-  );
-};
-
-// --- Secciones internas ---
-
-const ProfileSection = () => {
-  const { user } = useAuth();
-  return (
-    <div className="glass-panel p-8 max-w-lg">
-      <h2 className="text-xl font-bold text-cj-text-primary mb-6">Mi Perfil</h2>
-      <div className="space-y-4">
-        <div>
-          <label className="text-xs text-cj-text-secondary uppercase tracking-wider">Nombre</label>
-          <p className="text-cj-text-primary">{user?.full_name}</p>
-        </div>
-        <div>
-          <label className="text-xs text-cj-text-secondary uppercase tracking-wider">Usuario</label>
-          <p className="text-cj-text-primary">@{user?.username}</p>
-        </div>
-        <div>
-          <label className="text-xs text-cj-text-secondary uppercase tracking-wider">Rol</label>
-          <p className="text-cj-text-primary uppercase">{user?.role}</p>
-        </div>
       </div>
     </div>
   );
