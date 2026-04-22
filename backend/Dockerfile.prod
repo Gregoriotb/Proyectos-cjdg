@@ -12,9 +12,9 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
-# Apt cache mount → reusa listas entre builds
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+# Apt cache mount → reusa listas entre builds (id= requerido por Railway BuildKit)
+RUN --mount=type=cache,id=cjdg-apt-cache-builder,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=cjdg-apt-lib-builder,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev
@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 COPY requirements.txt .
 
 # Pip cache mount → reusa wheels descargados entre builds
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN --mount=type=cache,id=cjdg-pip-cache,target=/root/.cache/pip \
     pip install --prefix=/install -r requirements.txt
 
 # --- Etapa 2: Runtime (imagen final sin compilador) ---
@@ -32,8 +32,8 @@ FROM python:3.11-slim AS runtime
 WORKDIR /app
 
 # Solo libpq para runtime (sin gcc ni headers)
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+RUN --mount=type=cache,id=cjdg-apt-cache-runtime,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=cjdg-apt-lib-runtime,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
     libpq5
 
