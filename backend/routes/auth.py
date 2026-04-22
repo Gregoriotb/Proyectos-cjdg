@@ -101,14 +101,8 @@ def verify_token(current_user: User = Depends(get_current_user)):
     }
 
 
-# Rutas OAuth preparadas (sin lógica aún)
+# Rutas OAuth preparadas (SC-AUTH-OAUTH — implementación pendiente)
 @router.get("/google")
 def oauth_google():
     """Placeholder para OAuth con Google. Sin implementación aún."""
     raise HTTPException(status_code=501, detail="OAuth con Google aún no implementado")
-
-
-@router.get("/github")
-def oauth_github():
-    """Placeholder para OAuth con GitHub. Sin implementación aún."""
-    raise HTTPException(status_code=501, detail="OAuth con GitHub aún no implementado")
