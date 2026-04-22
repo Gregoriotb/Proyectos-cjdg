@@ -21,10 +21,13 @@ Plataforma digital de **Proyectos CJDG** (Venezuela) — empresa de servicios t�
 
 | Servicio | URL |
 |---|---|
-| Frontend | <https://proyectos-cjdg.vercel.app> |
+| Frontend (canonical) | <https://www.proyectoscjdg.com> |
 | Backend API | <https://proyectos-cjdg-production.up.railway.app/api/v1> |
 | Health Check | <https://proyectos-cjdg-production.up.railway.app/api/v1/health> |
+| WebSocket | `wss://proyectos-cjdg-production.up.railway.app/api/v1/ws?token=<JWT>` |
 | Neon Console | `console.neon.tech/app/projects/purple-tree-14242206` |
+
+> El dominio `proyectos-cjdg.vercel.app` redirige (308) al canonical `www.proyectoscjdg.com`.
 
 ---
 
@@ -33,9 +36,10 @@ Plataforma digital de **Proyectos CJDG** (Venezuela) — empresa de servicios t�
 ```
 Browser
   │
-  ├── https://proyectos-cjdg.vercel.app (Frontend React/Vite)
+  ├── https://www.proyectoscjdg.com (Frontend React/Vite)
   │     VITE_API_URL → Railway directamente
   │     axios `api` instance con JWT auto-inyectado (services/api.ts)
+  │     WebSocketProvider con una conexión por user (reconexión + heartbeat)
   │
   ├── https://proyectos-cjdg-production.up.railway.app (FastAPI)
   │     CORS: allow_origins=["*"]
@@ -51,17 +55,72 @@ Browser
 
 ---
 
-## Versión Actual: V2.1 Chat-Cotizaciones (Apr 2026)
+## Versión Actual: V2.8 "Feat Grande" (Apr 2026)
 
-La versión actual reemplaza el viejo flujo de "service_quotations" (tabla muerta de leads) con un sistema de **hilos de conversación persistentes** entre cliente y admin, con **adjuntos de archivos/imágenes**.
+Serie de iteraciones V2.2 → V2.8 que añaden OAuth, perfil fiscal completo, sistema de notificaciones, WebSocket en tiempo real, export API y gestión de API keys. Ver [CHANGELOG.md](CHANGELOG.md) para el detalle por versión.
 
-### Features clave V2.1
-- **Hilos persistentes** (`quotation_threads`): cada solicitud de cotización es una conversación con estado (`pending`, `active`, `quoted`, `negotiating`, `closed`, `cancelled`).
-- **Mensajes con adjuntos** (`chat_messages`): texto, imágenes (inline preview), PDFs y otros documentos (subidos a ImgBB, URL guardada).
-- **Contadores de no leídos** por lado (cliente / admin) + polling de 8-10s.
-- **Mensajes de sistema automáticos** al cambiar estado del hilo.
-- **Hero premium** para el servicio destacado (badge dorado, gradiente animado, sparkles).
-- **User profile extendido**: `first_name`, `last_name`, `phone`, `company_name`, `address` para mostrar contexto al admin.
+### Features clave vigentes
+
+**Autenticación (V2.2)**
+- Registro/login tradicional con username + password
+- **Google OAuth 2.0** (authlib): auto-crea usuario CLIENTE, username derivado del email
+- Primera sesión OAuth → redirect a `/onboarding` para elegir tipo (empresa/particular)
+- Set/change password desde el panel (soporta cuentas OAuth-only sin password local)
+
+**Perfil fiscal (V2.5–V2.6)**
+- Tipo de cuenta: `empresa` (RIF) o `particular` (cédula) — UI etiqueta condicional
+- Campos: `full_name`, `first_name`, `last_name`, `phone`, `company_name`, `fiscal_address`, `rif`, `rif_file_url`, `profile_photo_url`
+- Upload de archivo del RIF (PDF o imagen) + foto de perfil (logo/avatar) vía ImgBB
+- Banner en dashboard que gatea completar perfil (`!account_type || !rif || !fiscal_address`)
+
+**Chat-cotizaciones (V2.1) + tiempo real (V2.8)**
+- Hilos persistentes con estado (`pending`, `active`, `quoted`, `negotiating`, `closed`, `cancelled`)
+- Adjuntos de archivos/imágenes (ImgBB), mensajes de sistema automáticos al cambiar estado
+- **Sin polling**: WebSocket único por usuario entrega `chat_message` + `thread_updated` instantáneo
+
+**Notificaciones (V2.7)**
+- Tabla `notifications` con UUID FK a users, tipos: `chat_message`, `quotation_status`, `invoice_created`, `invoice_status`
+- Disparadas automáticamente desde chat/invoices con helper `services.notifications.notify()`
+- Campana en el header del dashboard cliente con badge + dropdown (sin polling — vía WebSocket)
+
+**Admin API (V2.8)**
+- `GET /admin/export-all` — JSON unificado (usuarios, catálogo, invoices+items, quotations+messages, notifications, settings). Auth dual: JWT admin OR header `X-API-Key`.
+- **Sistema de API Keys**: admin crea/revoca/borra desde tab "API Keys". Raw key se muestra UNA VEZ. SHA-256 en DB. Opcional `expires_at`.
+
+### Endpoints V2.8 añadidos
+
+```
+# Auth
+GET    /auth/google/login                 # Redirect a consent Google
+GET    /auth/google/callback              # Callback → JWT → frontend (#token)
+GET    /auth/verify                       # Perfil completo del user (incl. has_password)
+
+# Perfil
+GET    /users/profile                     # Perfil actual
+PUT    /users/profile                     # Update parcial (exclude_unset)
+POST   /users/profile/rif-upload          # RIF/Cédula (PDF/imagen)
+POST   /users/profile/photo-upload        # Foto de perfil (solo imágenes)
+POST   /users/password                    # Set (OAuth-only) o change (con verify actual)
+
+# Notificaciones
+GET    /notifications                     # Lista paginada
+GET    /notifications/unread-count        # Badge count (cheap)
+PUT    /notifications/{id}/read           # Marcar leída
+PUT    /notifications/mark-all-read
+DELETE /notifications/{id}
+
+# Admin API
+GET    /admin/export-all                  # Export JSON (JWT admin o X-API-Key)
+POST   /admin/api-keys                    # Crear (raw once)
+GET    /admin/api-keys                    # Lista (masked)
+PATCH  /admin/api-keys/{id}               # Toggle is_active (revocar/reactivar)
+DELETE /admin/api-keys/{id}               # Hard delete
+
+# WebSocket
+WSS    /ws?token=<JWT>                    # Conexión única por user
+  Cliente → server: {action: "ping"|"subscribe_thread"|"unsubscribe_thread", ...}
+  Server → cliente: {type: "notification"|"chat_message"|"thread_updated", payload}
+```
 
 ### Endpoints V2.1 (`/api/v1/chat-quotations/*`)
 
@@ -86,19 +145,28 @@ PATCH  /chat-quotations/admin/threads/{id}/status        # Cambiar estado
 ## Los 2 Paneles
 
 ### Panel Admin (`/admin`)
-- **Cotizaciones Entrantes** → Chat-cotizaciones con drill-in al hilo
+- **Cotizaciones** → Chat-cotizaciones con drill-in al hilo (realtime WS)
 - **Catálogo** → Gestión de productos físicos (precio, stock, ofertas, imágenes)
 - **Servicios** → CRUD de servicios corporativos del Brochure CJDG
 - **Facturación** → Invoices (`PRODUCT_SALE` y `SERVICE_QUOTATION`)
+- **API Keys** → Crear/revocar tokens programáticos + docs del endpoint `/admin/export-all`
 - **Ajustes Globales** → Toggles de e-commerce
 
 ### Panel Cliente (`/dashboard`)
+- **Campana de notificaciones** en el header (contador + dropdown, realtime WS)
+- **Banner fiscal** condicional: aparece si falta `account_type`, `rif` o `fiscal_address`
+- **Inicio** → Overview + accesos rápidos
 - **Catálogo** → Productos con checkout tipo Amazon
 - **Mi Carrito** → Persistente
 - **Servicios CJDG** → Browser por pilares + hero del servicio especial
-- **Cotizaciones** → Lista de hilos + vista de chat con adjuntos
+- **Cotizaciones** → Lista de hilos + vista de chat con adjuntos (realtime WS)
 - **Facturas** → Historial de compras y cotizaciones pagadas
-- **Mi Perfil**
+- **Mi Perfil** → Datos personales, foto, tipo cuenta, info fiscal, seguridad (password)
+
+### Onboarding OAuth (`/onboarding`)
+- Página forzada en la primera sesión vía Google cuando `account_type IS NULL`
+- Selección Empresa/Particular + nombre/apellido (prefill de Google) + teléfono
+- Tras guardar → redirige a `/dashboard` (banner de info fiscal pendiente seguirá visible hasta completar RIF + dirección)
 
 ---
 
@@ -124,7 +192,7 @@ Cliente "Cotizaciones"            Admin "Cotizaciones Entrantes"
   ClientQuotationsList              QuotationsPanel
   → drill-in                        → drill-in
   ClientChatView                    AdminChatPanel (con sidebar del cliente)
-  ↔ mensajes en tiempo real (polling 8-10s) con adjuntos ↔
+  ↔ mensajes en tiempo real (WebSocket instant push) con adjuntos ↔
   
 Admin cambia estado → quoted → negotiating → closed
   → Si se aprueba: Admin genera Invoice SERVICE_QUOTATION desde el panel
@@ -178,7 +246,13 @@ proyectos-cjdg/
 │   │
 │   ├── migrations/
 │   │   ├── versions/             Alembic (última: d4e5f6a7b8c9 = V2.1)
-│   │   └── v2_1_chat_quotations_neon.sql   Script SQL idempotente manual
+│   │   ├── v2_1_chat_quotations_neon.sql
+│   │   ├── v2_3_invoice_mention_neon.sql
+│   │   ├── v2_4_oauth_google_neon.sql
+│   │   ├── v2_5_complete_profile_neon.sql
+│   │   ├── v2_6_account_type_photo_neon.sql
+│   │   ├── v2_7_notifications_neon.sql
+│   │   └── v2_8_api_keys_neon.sql
 │   │
 │   ├── scripts/
 │   │   ├── ingest_catalogs.py    Extrae productos de PDFs
@@ -218,12 +292,16 @@ proyectos-cjdg/
 ## Variables de Entorno
 
 ### Railway (Backend)
-| Variable | Valor |
-|---|---|
-| `DATABASE_URL` | `postgresql://...@neon.tech/neondb?sslmode=require` |
-| `SECRET_KEY` | Clave JWT |
-| `IMGBB_API_KEY` | Para CDN externo de adjuntos/imágenes |
-| `ENVIRONMENT` | `production` |
+| Variable | Requerida | Valor |
+|---|---|---|
+| `DATABASE_URL` | ✅ | `postgresql://...@neon.tech/neondb?sslmode=require` |
+| `SECRET_KEY` | ✅ | Clave para JWT + SessionMiddleware (OAuth state) |
+| `ENVIRONMENT` | ✅ | `production` |
+| `GOOGLE_CLIENT_ID` | OAuth | Google Cloud Console → OAuth 2.0 Client IDs |
+| `GOOGLE_CLIENT_SECRET` | OAuth | idem |
+| `GOOGLE_REDIRECT_URI` | OAuth | `https://proyectos-cjdg-production.up.railway.app/api/v1/auth/google/callback` — **EXACTO** match con Google Cloud |
+| `FRONTEND_URL` | OAuth | `https://www.proyectoscjdg.com` (destino del redirect post-login) |
+| `IMGBB_API_KEY` | Opcional | CDN externo para uploads. Sin ella, caen a `/static/uploads` (efímero en Railway — se borra al redeploy) |
 
 ### Vercel (Frontend)
 | Variable | Valor |
