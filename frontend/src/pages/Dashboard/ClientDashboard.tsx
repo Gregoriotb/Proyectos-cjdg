@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
-  Home, ShoppingBag, ShoppingCart, Wrench, MessageSquare, Receipt, User, LogOut, Menu, X, AlertCircle, ArrowRight
+  Home, ShoppingBag, ShoppingCart, Wrench, MessageSquare, Receipt, User, LogOut, Menu, X, AlertCircle, ArrowRight, Building2
 } from 'lucide-react';
+import { getImageUrl } from '../../services/api';
 import ProductCatalogGrid from '../../components/Client/ProductCatalogGrid';
 import ServiceBrowser from '../../components/Client/ServiceBrowser';
 import ClientQuotationsList from '../../components/Client/Quotations/ClientQuotationsList';
@@ -41,7 +42,9 @@ const ClientDashboard = () => {
     refreshUser();
   }, [refreshUser]);
 
-  const profileIncomplete = !user?.rif || !user?.fiscal_address;
+  const profileIncomplete = !user?.account_type || !user?.rif || !user?.fiscal_address;
+  const avatarUrl = user?.profile_photo_url ? getImageUrl(user.profile_photo_url) : null;
+  const isCompany = user?.account_type === 'empresa';
 
   const handleLogout = () => {
     logout();
@@ -95,15 +98,26 @@ const ClientDashboard = () => {
 
         {/* User Info + Logout */}
         <div className="border-t border-cj-border p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-cj-accent-blue-light flex items-center justify-center">
-              <User className="w-4 h-4 text-cj-accent-blue" />
+          <button
+            type="button"
+            onClick={() => handleSectionChange('profile')}
+            className="w-full flex items-center gap-3 mb-3 group hover:bg-cj-bg-primary rounded-lg p-1 -m-1 transition-colors"
+            title="Ir a Mi Perfil"
+          >
+            <div className="w-9 h-9 rounded-full bg-cj-accent-blue-light flex items-center justify-center overflow-hidden flex-shrink-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+              ) : isCompany ? (
+                <Building2 className="w-4 h-4 text-cj-accent-blue" />
+              ) : (
+                <User className="w-4 h-4 text-cj-accent-blue" />
+              )}
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-cj-text-primary truncate">{user?.full_name}</p>
               <p className="text-xs text-cj-text-muted">@{user?.username}</p>
             </div>
-          </div>
+          </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-cj-danger hover:bg-red-50 transition-colors"

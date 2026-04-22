@@ -43,6 +43,11 @@ class User(Base):
     rif = Column(String(50), nullable=True, unique=True, index=True)
     rif_file_url = Column(String(500), nullable=True)
 
+    # V2.6 — Tipo de cuenta (empresa/particular) y foto de perfil
+    # 'rif' guarda RIF si empresa, Cédula si particular (UI etiqueta condicional)
+    account_type = Column(String(20), nullable=True)  # 'empresa' | 'particular'
+    profile_photo_url = Column(String(500), nullable=True)
+
     quotation_threads = relationship(
         "QuotationThread",
         foreign_keys="QuotationThread.client_id",

@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { api } from '../services/api';
 
+export type AccountType = 'empresa' | 'particular';
+
 export interface UserData {
   id?: string;
   full_name: string;
@@ -14,7 +16,10 @@ export interface UserData {
   fiscal_address?: string | null;
   rif?: string | null;
   rif_file_url?: string | null;
+  account_type?: AccountType | null;
+  profile_photo_url?: string | null;
   oauth_provider?: string | null;
+  has_password?: boolean;
 }
 
 interface AuthContextType {
@@ -42,7 +47,10 @@ const normalizeUser = (raw: any): UserData => ({
   fiscal_address: raw.fiscal_address ?? null,
   rif: raw.rif ?? null,
   rif_file_url: raw.rif_file_url ?? null,
+  account_type: (raw.account_type ?? null) as AccountType | null,
+  profile_photo_url: raw.profile_photo_url ?? null,
   oauth_provider: raw.oauth_provider ?? null,
+  has_password: raw.has_password ?? false,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {

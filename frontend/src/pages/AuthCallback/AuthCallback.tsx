@@ -26,14 +26,19 @@ const AuthCallback = () => {
       localStorage.setItem('cjdg_token', token);
       try {
         const res = await api.get('/auth/verify');
-        login(token, {
-          role: res.data.role.toLowerCase(),
-          full_name: res.data.full_name,
-          username: res.data.username,
-        });
+        login(token, res.data);
 
-        // 3) Limpiar URL (quita el fragment) y redirigir segun rol
-        const destination = res.data.role.toLowerCase() === 'admin' ? '/admin' : '/dashboard';
+        // 3) Decidir destino:
+        //    - Admin → /admin
+        //    - OAuth user sin account_type definido → /onboarding (eligen empresa o particular)
+        //    - Resto → /dashboard
+        const role = (res.data.role || '').toLowerCase();
+        const isOAuthFirstLogin = !!res.data.oauth_provider && !res.data.account_type;
+
+        let destination = '/dashboard';
+        if (role === 'admin') destination = '/admin';
+        else if (isOAuthFirstLogin) destination = '/onboarding';
+
         window.history.replaceState(null, '', destination);
         navigate(destination, { replace: true });
       } catch {

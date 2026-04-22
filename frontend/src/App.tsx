@@ -5,6 +5,7 @@ import Landing from './pages/Landing/Landing';
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
 import AuthCallback from './pages/AuthCallback/AuthCallback';
+import Onboarding from './pages/Onboarding/Onboarding';
 import Catalog from './pages/Catalog/Catalog';
 import Cart from './pages/Cart/Cart';
 import Admin from './pages/Admin/Admin';
@@ -24,6 +25,7 @@ function App() {
 
             {/* Rutas Privadas (Requieren Sesión Activa) */}
             <Route element={<ProtectedRoute />}>
+              <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<ClientDashboard />} />
               <Route path="/catalog" element={<Catalog />} />
               <Route path="/cart" element={<Cart />} />

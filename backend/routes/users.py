@@ -8,18 +8,27 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models.user import User
-from schemas.user import ProfileUpdate, ProfileResponse
+from schemas.user import ProfileUpdate, ProfileResponse, PasswordSetOrChange
+from core.security import verify_password, get_password_hash
 from dependencies import get_current_user
 from routes.uploads import upload_file_to_imgbb
 
 router = APIRouter()
 
-# Tipos MIME aceptados para el archivo del RIF
+# Tipos MIME aceptados para el archivo del RIF/Cédula
 ALLOWED_RIF_MIMES = {
     "application/pdf",
     "image/jpeg",
     "image/png",
     "image/webp",
+}
+
+# Tipos MIME aceptados para foto de perfil (solo imágenes)
+ALLOWED_PHOTO_MIMES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
 }
 
 
@@ -62,7 +71,7 @@ async def upload_rif_file(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Sube el archivo del RIF (PDF o imagen). Devuelve URL pública.
+    Sube el archivo del RIF/Cédula (PDF o imagen). Devuelve URL pública.
     El frontend luego hace PUT /users/profile con rif_file_url=<url>.
     """
     if file.content_type not in ALLOWED_RIF_MIMES:
@@ -71,10 +80,67 @@ async def upload_rif_file(
             detail="Tipo de archivo no permitido. Sube PDF, JPG, PNG o WEBP.",
         )
 
-    # Reutiliza el helper existente (ImgBB con fallback local)
     result = await upload_file_to_imgbb(file)
     return {
         "url": result["url"],
         "name": result.get("name"),
         "type": result.get("type"),
+    }
+
+
+@router.post("/profile/photo-upload")
+async def upload_profile_photo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Sube la foto de perfil (logo de empresa o avatar personal).
+    Solo imágenes. Devuelve URL para guardar en profile_photo_url vía PUT /users/profile.
+    """
+    if file.content_type not in ALLOWED_PHOTO_MIMES:
+        raise HTTPException(
+            status_code=400,
+            detail="Tipo de archivo no permitido. Sube JPG, PNG, WEBP o GIF.",
+        )
+
+    result = await upload_file_to_imgbb(file)
+    return {
+        "url": result["url"],
+        "name": result.get("name"),
+        "type": result.get("type"),
+    }
+
+
+@router.post("/password")
+def set_or_change_password(
+    payload: PasswordSetOrChange,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint único para cambiar O establecer contraseña.
+
+    - Si el usuario YA tiene password: requiere current_password válido.
+    - Si el usuario NO tiene password (OAuth-only): current_password se ignora.
+    """
+    has_password = current_user.hashed_password is not None
+
+    if has_password:
+        if not payload.current_password:
+            raise HTTPException(
+                status_code=400,
+                detail="Debes ingresar tu contraseña actual.",
+            )
+        if not verify_password(payload.current_password, current_user.hashed_password):
+            raise HTTPException(
+                status_code=400,
+                detail="La contraseña actual es incorrecta.",
+            )
+
+    current_user.hashed_password = get_password_hash(payload.new_password)
+    db.commit()
+
+    return {
+        "ok": True,
+        "message": "Contraseña actualizada." if has_password else "Contraseña establecida.",
     }

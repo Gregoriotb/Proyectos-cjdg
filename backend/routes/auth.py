@@ -107,7 +107,10 @@ def verify_token(current_user: User = Depends(get_current_user)):
         "fiscal_address": current_user.fiscal_address,
         "rif": current_user.rif,
         "rif_file_url": current_user.rif_file_url,
+        "account_type": current_user.account_type,
+        "profile_photo_url": current_user.profile_photo_url,
         "oauth_provider": current_user.oauth_provider,
+        "has_password": current_user.hashed_password is not None,
     }
 
 
