@@ -334,10 +334,13 @@ async def client_send_message(
 
     serialized = _serialize_message(db, msg)
 
-    # SC-WS-01: realtime push
-    background_tasks.add_task(ws_manager.broadcast_to_thread, thread.id, _ws_chat_message_event(serialized))
-    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, _ws_thread_updated_event(thread.id))
-    background_tasks.add_task(ws_manager.broadcast_to_admins, _ws_thread_updated_event(thread.id))
+    # SC-WS-01: realtime push (envío directo, sin depender de subscribe_thread para evitar race)
+    chat_event = _ws_chat_message_event(serialized)
+    thread_event = _ws_thread_updated_event(thread.id)
+    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, chat_event)
+    background_tasks.add_task(ws_manager.broadcast_to_admins, chat_event)
+    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, thread_event)
+    background_tasks.add_task(ws_manager.broadcast_to_admins, thread_event)
 
     return serialized
 
@@ -475,10 +478,13 @@ async def admin_send_message(
         background_tasks=background_tasks,
     )
 
-    # SC-WS-01: realtime push
-    background_tasks.add_task(ws_manager.broadcast_to_thread, thread.id, _ws_chat_message_event(serialized))
-    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, _ws_thread_updated_event(thread.id))
-    background_tasks.add_task(ws_manager.broadcast_to_admins, _ws_thread_updated_event(thread.id))
+    # SC-WS-01: realtime push directo
+    chat_event = _ws_chat_message_event(serialized)
+    thread_event = _ws_thread_updated_event(thread.id)
+    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, chat_event)
+    background_tasks.add_task(ws_manager.broadcast_to_admins, chat_event)
+    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, thread_event)
+    background_tasks.add_task(ws_manager.broadcast_to_admins, thread_event)
 
     return serialized
 
@@ -549,10 +555,13 @@ async def update_thread_status(
         background_tasks=background_tasks,
     )
 
-    # SC-WS-01: realtime push (mensaje de sistema + thread_updated a todos)
+    # SC-WS-01: realtime push directo (mensaje de sistema + thread_updated a todos)
     serialized_sys = _serialize_message(db, system_msg)
-    background_tasks.add_task(ws_manager.broadcast_to_thread, thread.id, _ws_chat_message_event(serialized_sys))
-    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, _ws_thread_updated_event(thread.id))
-    background_tasks.add_task(ws_manager.broadcast_to_admins, _ws_thread_updated_event(thread.id))
+    chat_event = _ws_chat_message_event(serialized_sys)
+    thread_event = _ws_thread_updated_event(thread.id)
+    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, chat_event)
+    background_tasks.add_task(ws_manager.broadcast_to_admins, chat_event)
+    background_tasks.add_task(ws_manager.send_to_user, thread.client_id, thread_event)
+    background_tasks.add_task(ws_manager.broadcast_to_admins, thread_event)
 
     return QuotationThreadResponse(**_serialize_thread(thread, include_client=True))
