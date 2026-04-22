@@ -1,10 +1,11 @@
-# syntax=docker/dockerfile:1.7
 # ============================================================
 # Proyectos CJDG — Dockerfile Produccion (Railway)
-# SC-DEPLOY-002 + chore(docker-cache): multi-stage + BuildKit cache mounts
+# SC-DEPLOY-002: multi-stage build para imagen ligera.
 #
-# Los cache mounts (--mount=type=cache) persisten entre builds de Railway,
-# haciendo que rebuilds sin cambios en requirements.txt sean 3-5x mas rapidos.
+# Nota: se removieron los BuildKit cache mounts (--mount=type=cache)
+# porque Railway requiere un formato de id especifico al sandboxed de
+# su plataforma y no vale la pena pelearse con eso. El build sin cache
+# tarda ~2 min — aceptable para la frecuencia de deploys actual.
 # ============================================================
 
 # --- Etapa 1: Builder (instala dependencias con compilador) ---
@@ -12,19 +13,15 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
-# Apt cache mount → reusa listas entre builds (id= requerido por Railway BuildKit)
-RUN --mount=type=cache,id=cjdg-apt-cache-builder,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=cjdg-apt-lib-builder,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
+# Solo lo necesario para compilar psycopg2
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    libpq-dev
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Root Directory = backend/, asi que las rutas son relativas a backend/
 COPY requirements.txt .
-
-# Pip cache mount → reusa wheels descargados entre builds
-RUN --mount=type=cache,id=cjdg-pip-cache,target=/root/.cache/pip \
-    pip install --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # --- Etapa 2: Runtime (imagen final sin compilador) ---
 FROM python:3.11-slim AS runtime
@@ -32,10 +29,9 @@ FROM python:3.11-slim AS runtime
 WORKDIR /app
 
 # Solo libpq para runtime (sin gcc ni headers)
-RUN --mount=type=cache,id=cjdg-apt-cache-runtime,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=cjdg-apt-lib-runtime,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-    libpq5
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copiar dependencias pre-compiladas del builder
 COPY --from=builder /install /usr/local
