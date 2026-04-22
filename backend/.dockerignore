@@ -1,8 +1,48 @@
+# --- Bytecode / cache ---
 __pycache__
 *.pyc
+*.pyo
+*.pyd
+**/__pycache__
+.pytest_cache
+.mypy_cache
+
+# --- Entornos locales y secretos ---
 .env
+.env.*
+!.env.example
+.venv
+venv
+
+# --- Git ---
 .git
 .gitignore
+
+# --- Docs / metadata (no usadas en runtime) ---
 *.md
+LICENSE*
+CHANGELOG*
+
+# --- Archivos temporales y uploads locales ---
 tmp_*
-migrations/__pycache__
+static/uploads/*
+!static/uploads/.gitkeep
+
+# --- SQL manual (se ejecuta en Neon, no empaquetar) ---
+migrations/*.sql
+
+# --- Scripts de seed (uso manual, no runtime) ---
+seed.py
+seed_admin.py
+seed_catalog.py
+scripts/
+
+# --- Editor / OS ---
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+
+# --- Railway/Docker config (ya en contexto via Dockerfile) ---
+Dockerfile
+.dockerignore
