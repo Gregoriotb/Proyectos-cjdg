@@ -14,6 +14,7 @@ from models.invoice import Invoice, InvoiceItem, InvoiceTypeEnum, InvoiceStatusE
 from models.cart import Cart, CartItem
 from models.catalog import CatalogItem
 from services.notifications import notify
+from services.profile_validator import require_complete_profile
 from models.service import Service
 from schemas.invoice import InvoiceResponse
 from dependencies import get_current_user, get_current_admin
@@ -50,8 +51,10 @@ def checkout(
 ):
     """
     Convierte el carrito en factura. Descuenta stock automáticamente.
-    Solo items con precio y stock disponible.
+    Solo items con precio y stock disponible. Requiere perfil completo.
     """
+    require_complete_profile(current_user)
+
     cart = db.query(Cart).filter(Cart.user_id == current_user.id).first()
     if not cart or not cart.items:
         raise HTTPException(status_code=400, detail="El carrito está vacío")

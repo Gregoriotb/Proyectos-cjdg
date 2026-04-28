@@ -41,11 +41,19 @@ def _get_client() -> Optional[ExternalAPIClient]:
     if not base_url or not api_key:
         logger.info("ArtificialIC sync omitido: faltan ARTIFICIALIC_API_URL o ARTIFICIALIC_API_KEY")
         return None
+
+    headers = {"Content-Type": "application/json"}
+    # Algunas API keys de ArtificialIC tienen restricción por Origin.
+    origin = os.getenv("ARTIFICIALIC_ORIGIN")
+    if origin:
+        headers["Origin"] = origin
+        headers["Referer"] = origin
+
     return ExternalAPIClient(
         base_url=base_url,
         api_key=api_key,
         auth_type="bearer",
-        default_headers={"Content-Type": "application/json"},
+        default_headers=headers,
         timeout=20.0,
     )
 
