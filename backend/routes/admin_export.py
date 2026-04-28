@@ -1,20 +1,24 @@
 """
 [CONTEXT: ADMIN_CONSOLE] - Admin Export API
-SC-ADMIN-EXPORT-01: Endpoint unificado para reportes/backups/integraciones.
+SC-ADMIN-EXPORT-01: Endpoints individuales por servicio.
 
-GET /admin/export-all
-  Auth: header 'X-API-Key' (api key activa de admin) o 'Authorization: Bearer <JWT>' admin.
-  Cache: 5 min en memoria (proceso único). Query param ?refresh=true lo bypassea.
-  Payload: users, catalog, service_catalog, invoices+items, quotation_threads+messages,
-           notifications, ecommerce_settings, summary con totales.
-  Excluye: hashed_password, oauth_id, key_hash. Expone has_password como bool.
+Endpoints (todos requieren auth admin: X-API-Key o Bearer JWT):
+  GET /admin/export/users         → Solo usuarios
+  GET /admin/export/invoices      → Solo facturas + items
+  GET /admin/export/catalog       → Solo catálogo de productos
+  GET /admin/export/services      → Solo catálogo corporativo de servicios
+  GET /admin/export/quotations    → Solo threads de cotización + mensajes
+  GET /admin/export/notifications → Solo notificaciones
+  GET /admin/export/settings      → Solo ecommerce settings
+  GET /admin/export/summary       → Solo totales/resumen
+
+Excluye: hashed_password, oauth_id, key_hash. Expone has_password como bool.
 """
-import time
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, selectinload
 
 from database import get_db
@@ -29,25 +33,6 @@ from models.service_catalog import ServiceCatalog
 from models.user import User
 
 router = APIRouter()
-
-# --------------------------------------------------------------
-# Cache en memoria (proceso único). Para multi-worker usar Redis.
-# --------------------------------------------------------------
-CACHE_TTL_SECONDS = 300
-_cache: Dict[str, Any] = {"data": None, "ts": 0.0}
-
-
-def _cache_get() -> Optional[Dict[str, Any]]:
-    if _cache["data"] is None:
-        return None
-    if time.time() - _cache["ts"] > CACHE_TTL_SECONDS:
-        return None
-    return _cache["data"]
-
-
-def _cache_set(data: Dict[str, Any]) -> None:
-    _cache["data"] = data
-    _cache["ts"] = time.time()
 
 
 # --------------------------------------------------------------
@@ -99,11 +84,13 @@ def _serialize_invoice(inv: Invoice) -> Dict[str, Any]:
     return {
         "id": inv.id,
         "user_id": str(inv.user_id),
-        "type": inv.type.value if inv.type else None,
+        "invoice_type": inv.invoice_type.value if inv.invoice_type else None,
         "status": inv.status.value if inv.status else None,
         "total": _dec(inv.total),
         "notas": inv.notas,
+        "quotation_id": inv.quotation_id,
         "created_at": _iso(getattr(inv, "created_at", None)),
+        "updated_at": _iso(getattr(inv, "updated_at", None)),
         "items": [_serialize_invoice_item(i) for i in (inv.items or [])],
     }
 
@@ -188,39 +175,49 @@ def _serialize_settings(s: EcommerceSettings) -> Dict[str, Any]:
 
 
 # --------------------------------------------------------------
-# Endpoint
+# Loaders (queries reusables)
 # --------------------------------------------------------------
-@router.get("/export-all")
-def export_all(
-    refresh: bool = Query(False, description="Forzar refresh, ignorar cache"),
-    admin_user: User = Depends(get_admin_via_any_auth),  # JWT admin OR API key
-    db: Session = Depends(get_db),
-):
-    """Export unificado completo. Cache 5 min. `?refresh=true` fuerza recálculo."""
-    if not refresh:
-        cached = _cache_get()
-        if cached is not None:
-            return {**cached, "cache_hit": True}
+def _load_users(db: Session) -> List[Dict[str, Any]]:
+    return [_serialize_user(u) for u in db.query(User).all()]
 
-    users: List[User] = db.query(User).all()
 
-    invoices: List[Invoice] = (
-        db.query(Invoice).options(selectinload(Invoice.items)).all()
-    )
+def _load_invoices(db: Session) -> List[Dict[str, Any]]:
+    invoices = db.query(Invoice).options(selectinload(Invoice.items)).all()
+    return [_serialize_invoice(i) for i in invoices]
 
-    catalog_items: List[CatalogItem] = db.query(CatalogItem).all()
+
+def _load_catalog(db: Session) -> List[Dict[str, Any]]:
+    catalog_items = db.query(CatalogItem).all()
     service_ids = {c.service_id for c in catalog_items if c.service_id}
     services = db.query(Service).filter(Service.id.in_(service_ids)).all() if service_ids else []
     service_by_id = {s.id: s for s in services}
+    return [_serialize_catalog_item(c, service_by_id) for c in catalog_items]
 
-    service_catalog: List[ServiceCatalog] = db.query(ServiceCatalog).all()
 
-    threads: List[QuotationThread] = (
-        db.query(QuotationThread).options(selectinload(QuotationThread.messages)).all()
-    )
+def _load_services(db: Session) -> List[Dict[str, Any]]:
+    return [_serialize_service_catalog(s) for s in db.query(ServiceCatalog).all()]
 
-    notifications: List[Notification] = db.query(Notification).all()
-    settings_rows: List[EcommerceSettings] = db.query(EcommerceSettings).all()
+
+def _load_quotations(db: Session) -> List[Dict[str, Any]]:
+    threads = db.query(QuotationThread).options(selectinload(QuotationThread.messages)).all()
+    return [_serialize_thread(t) for t in threads]
+
+
+def _load_notifications(db: Session) -> List[Dict[str, Any]]:
+    return [_serialize_notification(n) for n in db.query(Notification).all()]
+
+
+def _load_settings(db: Session) -> List[Dict[str, Any]]:
+    return [_serialize_settings(s) for s in db.query(EcommerceSettings).all()]
+
+
+def _build_summary(db: Session) -> Dict[str, Any]:
+    users = db.query(User).all()
+    invoices = db.query(Invoice).all()
+    catalog_count = db.query(CatalogItem).count()
+    services_count = db.query(ServiceCatalog).count()
+    threads = db.query(QuotationThread).options(selectinload(QuotationThread.messages)).all()
+    notifications = db.query(Notification).all()
 
     total_revenue = sum(
         float(inv.total or 0)
@@ -231,28 +228,91 @@ def export_all(
     total_messages = sum(len(t.messages or []) for t in threads)
     unread_notifs = sum(1 for n in notifications if not n.is_read)
 
-    data = {
-        "exported_at": datetime.now(timezone.utc).isoformat(),
-        "summary": {
-            "total_users": len(users),
-            "total_clients": clients_count,
-            "total_invoices": len(invoices),
-            "total_paid_revenue": total_revenue,
-            "total_catalog_items": len(catalog_items),
-            "total_corporate_services": len(service_catalog),
-            "total_quotation_threads": len(threads),
-            "total_chat_messages": total_messages,
-            "total_notifications": len(notifications),
-            "unread_notifications": unread_notifs,
-        },
-        "users": [_serialize_user(u) for u in users],
-        "invoices": [_serialize_invoice(i) for i in invoices],
-        "catalog": [_serialize_catalog_item(c, service_by_id) for c in catalog_items],
-        "service_catalog": [_serialize_service_catalog(s) for s in service_catalog],
-        "quotations": [_serialize_thread(t) for t in threads],
-        "notifications": [_serialize_notification(n) for n in notifications],
-        "ecommerce_settings": [_serialize_settings(s) for s in settings_rows],
+    return {
+        "total_users": len(users),
+        "total_clients": clients_count,
+        "total_invoices": len(invoices),
+        "total_paid_revenue": total_revenue,
+        "total_catalog_items": catalog_count,
+        "total_corporate_services": services_count,
+        "total_quotation_threads": len(threads),
+        "total_chat_messages": total_messages,
+        "total_notifications": len(notifications),
+        "unread_notifications": unread_notifs,
     }
 
-    _cache_set(data)
-    return {**data, "cache_hit": False}
+
+# --------------------------------------------------------------
+# Endpoints separados por servicio
+# --------------------------------------------------------------
+@router.get("/export/users")
+def export_users(
+    admin_user: User = Depends(get_admin_via_any_auth),
+    db: Session = Depends(get_db),
+):
+    data = _load_users(db)
+    return {"exported_at": datetime.now(timezone.utc).isoformat(), "count": len(data), "users": data}
+
+
+@router.get("/export/invoices")
+def export_invoices(
+    admin_user: User = Depends(get_admin_via_any_auth),
+    db: Session = Depends(get_db),
+):
+    data = _load_invoices(db)
+    return {"exported_at": datetime.now(timezone.utc).isoformat(), "count": len(data), "invoices": data}
+
+
+@router.get("/export/catalog")
+def export_catalog(
+    admin_user: User = Depends(get_admin_via_any_auth),
+    db: Session = Depends(get_db),
+):
+    data = _load_catalog(db)
+    return {"exported_at": datetime.now(timezone.utc).isoformat(), "count": len(data), "catalog": data}
+
+
+@router.get("/export/services")
+def export_services(
+    admin_user: User = Depends(get_admin_via_any_auth),
+    db: Session = Depends(get_db),
+):
+    data = _load_services(db)
+    return {"exported_at": datetime.now(timezone.utc).isoformat(), "count": len(data), "service_catalog": data}
+
+
+@router.get("/export/quotations")
+def export_quotations(
+    admin_user: User = Depends(get_admin_via_any_auth),
+    db: Session = Depends(get_db),
+):
+    data = _load_quotations(db)
+    return {"exported_at": datetime.now(timezone.utc).isoformat(), "count": len(data), "quotations": data}
+
+
+@router.get("/export/notifications")
+def export_notifications(
+    admin_user: User = Depends(get_admin_via_any_auth),
+    db: Session = Depends(get_db),
+):
+    data = _load_notifications(db)
+    return {"exported_at": datetime.now(timezone.utc).isoformat(), "count": len(data), "notifications": data}
+
+
+@router.get("/export/settings")
+def export_settings(
+    admin_user: User = Depends(get_admin_via_any_auth),
+    db: Session = Depends(get_db),
+):
+    data = _load_settings(db)
+    return {"exported_at": datetime.now(timezone.utc).isoformat(), "count": len(data), "ecommerce_settings": data}
+
+
+@router.get("/export/summary")
+def export_summary(
+    admin_user: User = Depends(get_admin_via_any_auth),
+    db: Session = Depends(get_db),
+):
+    return {"exported_at": datetime.now(timezone.utc).isoformat(), "summary": _build_summary(db)}
+
+

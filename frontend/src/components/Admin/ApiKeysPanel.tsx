@@ -1,8 +1,8 @@
 /**
  * SC-API-KEYS-01 — Panel de gestión de API Keys + documentación.
  *
- * Permite al admin crear/listar/revocar/borrar keys para el endpoint
- * /admin/export-all. El raw key solo se muestra UNA VEZ al crear.
+ * Permite al admin crear/listar/revocar/borrar keys para los endpoints
+ * /admin/export/*. El raw key solo se muestra UNA VEZ al crear.
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -27,7 +27,24 @@ interface CreatedApiKey extends ApiKey {
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/api/v1';
-const EXPORT_ENDPOINT = `${API_URL}/admin/export-all`;
+const EXPORT_BASE = `${API_URL}/admin/export`;
+
+interface ExportEndpoint {
+  path: string;
+  label: string;
+  description: string;
+}
+
+const EXPORT_ENDPOINTS: ExportEndpoint[] = [
+  { path: '/users', label: 'Usuarios', description: 'Listado de usuarios (sin password ni oauth_id)' },
+  { path: '/invoices', label: 'Facturas', description: 'Facturas con items, status y totales' },
+  { path: '/catalog', label: 'Catálogo de productos', description: 'Productos con servicio asociado, precio y stock' },
+  { path: '/services', label: 'Servicios corporativos', description: 'Catálogo corporativo de servicios por pilar' },
+  { path: '/quotations', label: 'Cotizaciones', description: 'Threads de cotización con todos los mensajes' },
+  { path: '/notifications', label: 'Notificaciones', description: 'Notificaciones in-app de todos los usuarios' },
+  { path: '/settings', label: 'Ecommerce settings', description: 'Configuración global del ecommerce' },
+  { path: '/summary', label: 'Resumen', description: 'Totales agregados (usuarios, ingresos, mensajes...)' },
+];
 
 const EXPIRATION_PRESETS: Array<{ label: string; days: number | null }> = [
   { label: 'Nunca', days: null },
@@ -107,7 +124,7 @@ const ApiKeysPanel = () => {
             API Keys & Integraciones
           </h2>
           <p className="text-sm text-cj-text-secondary mt-1">
-            Gestiona tokens programáticos para el endpoint de export unificado.
+            Gestiona tokens programáticos para los endpoints de export por servicio.
           </p>
         </div>
         <button
@@ -414,37 +431,88 @@ const NewKeyDisplayModal = ({ apiKey, onClose }: { apiKey: CreatedApiKey; onClos
 };
 
 // =========================================================
-//       Documentación del endpoint expuesto
+//       Documentación de los endpoints expuestos
 // =========================================================
 const EndpointDocs = () => {
-  const [copied, setCopied] = useState(false);
+  const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  const [activePath, setActivePath] = useState<string>(EXPORT_ENDPOINTS[0].path);
 
-  const curlExample = `curl -H "X-API-Key: pcjdg_XXXXXXXX..." \\
-  ${EXPORT_ENDPOINT}`;
+  const fullUrl = (path: string) => `${EXPORT_BASE}${path}`;
 
-  const jsExample = `fetch("${EXPORT_ENDPOINT}", {
-  headers: { "X-API-Key": "pcjdg_XXXXXXXX..." }
-}).then(r => r.json()).then(console.log);`;
+  const curlExample = (path: string) =>
+    `curl -H "X-API-Key: pcjdg_XXXXXXXX..." \\\n  ${fullUrl(path)}`;
 
-  const copy = async (text: string) => {
+  const jsExample = (path: string) =>
+    `fetch("${fullUrl(path)}", {\n  headers: { "X-API-Key": "pcjdg_XXXXXXXX..." }\n}).then(r => r.json()).then(console.log);`;
+
+  const copy = async (text: string, path: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedPath(path);
+      setTimeout(() => setCopiedPath(null), 2000);
     } catch { /* noop */ }
   };
 
+  const active = EXPORT_ENDPOINTS.find((e) => e.path === activePath) || EXPORT_ENDPOINTS[0];
+
   return (
     <div className="glass-panel p-5">
-      <h3 className="text-sm font-semibold text-cj-text-primary flex items-center gap-2 mb-3">
-        <FileCode2 className="w-4 h-4 text-cj-accent-blue" /> Endpoint expuesto
+      <h3 className="text-sm font-semibold text-cj-text-primary flex items-center gap-2 mb-1">
+        <FileCode2 className="w-4 h-4 text-cj-accent-blue" /> Endpoints expuestos por servicio
       </h3>
+      <p className="text-xs text-cj-text-muted mb-4">
+        Cada servicio tiene su propio endpoint. Consume solo lo que necesitas — no más payloads gigantes.
+      </p>
 
+      {/* Tabla de endpoints */}
+      <div className="border border-cj-border rounded-lg overflow-hidden mb-5">
+        <table className="w-full text-xs">
+          <thead className="bg-cj-bg-primary">
+            <tr>
+              <th className="text-left px-3 py-2 font-semibold text-cj-text-secondary">Servicio</th>
+              <th className="text-left px-3 py-2 font-semibold text-cj-text-secondary">URL</th>
+              <th className="text-right px-3 py-2 font-semibold text-cj-text-secondary">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-cj-border">
+            {EXPORT_ENDPOINTS.map((ep) => (
+              <tr
+                key={ep.path}
+                className={`hover:bg-cj-bg-primary transition-colors cursor-pointer ${
+                  activePath === ep.path ? 'bg-cj-accent-blue-light/30' : ''
+                }`}
+                onClick={() => setActivePath(ep.path)}
+              >
+                <td className="px-3 py-2">
+                  <div className="font-semibold text-cj-text-primary">{ep.label}</div>
+                  <div className="text-cj-text-muted">{ep.description}</div>
+                </td>
+                <td className="px-3 py-2">
+                  <code className="text-xs text-cj-text-primary break-all">GET {EXPORT_BASE.replace(API_URL, '')}{ep.path}</code>
+                </td>
+                <td className="px-3 py-2 text-right whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); copy(fullUrl(ep.path), ep.path); }}
+                    className="text-cj-accent-blue inline-flex items-center gap-1 hover:underline"
+                  >
+                    <Copy className="w-3 h-3" /> {copiedPath === ep.path ? 'Copiado' : 'URL'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Detalle del endpoint activo */}
       <div className="space-y-4">
         <div>
-          <p className="text-xs text-cj-text-muted mb-1 uppercase tracking-wider">Método y URL</p>
+          <p className="text-xs text-cj-text-muted mb-1 uppercase tracking-wider">
+            Detalle: {active.label}
+          </p>
           <code className="block text-xs bg-cj-bg-primary border border-cj-border px-3 py-2 rounded break-all">
-            GET {EXPORT_ENDPOINT}
+            GET {fullUrl(active.path)}
           </code>
         </div>
 
@@ -456,38 +524,37 @@ const EndpointDocs = () => {
         </div>
 
         <div>
-          <p className="text-xs text-cj-text-muted mb-1 uppercase tracking-wider">Query params</p>
-          <div className="text-xs text-cj-text-secondary space-y-1">
-            <p><code className="bg-cj-bg-primary px-1 rounded">?refresh=true</code> — bypassea el cache de 5 min</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-cj-text-muted uppercase tracking-wider">Ejemplo curl</p>
+            <button
+              onClick={() => copy(curlExample(active.path), `curl-${active.path}`)}
+              className="text-cj-accent-blue text-xs inline-flex items-center gap-1 hover:underline"
+            >
+              <Copy className="w-3 h-3" /> {copiedPath === `curl-${active.path}` ? 'Copiado' : 'Copiar'}
+            </button>
           </div>
+          <pre className="text-xs bg-cj-bg-primary border border-cj-border px-3 py-2 rounded overflow-x-auto text-cj-text-primary">{curlExample(active.path)}</pre>
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1">
-            <p className="text-xs text-cj-text-muted uppercase tracking-wider">Ejemplo curl</p>
-            <button onClick={() => copy(curlExample)} className="text-cj-accent-blue text-xs inline-flex items-center gap-1 hover:underline">
-              <Copy className="w-3 h-3" /> {copied ? 'Copiado' : 'Copiar'}
+            <p className="text-xs text-cj-text-muted uppercase tracking-wider">Ejemplo JavaScript</p>
+            <button
+              onClick={() => copy(jsExample(active.path), `js-${active.path}`)}
+              className="text-cj-accent-blue text-xs inline-flex items-center gap-1 hover:underline"
+            >
+              <Copy className="w-3 h-3" /> {copiedPath === `js-${active.path}` ? 'Copiado' : 'Copiar'}
             </button>
           </div>
-          <pre className="text-xs bg-cj-bg-primary border border-cj-border px-3 py-2 rounded overflow-x-auto text-cj-text-primary">{curlExample}</pre>
-        </div>
-
-        <div>
-          <p className="text-xs text-cj-text-muted mb-1 uppercase tracking-wider">Ejemplo JavaScript</p>
-          <pre className="text-xs bg-cj-bg-primary border border-cj-border px-3 py-2 rounded overflow-x-auto text-cj-text-primary">{jsExample}</pre>
+          <pre className="text-xs bg-cj-bg-primary border border-cj-border px-3 py-2 rounded overflow-x-auto text-cj-text-primary">{jsExample(active.path)}</pre>
         </div>
 
         <div className="text-xs text-cj-text-secondary border-t border-cj-border pt-3">
-          <p className="font-semibold text-cj-text-primary mb-1">Payload incluye:</p>
+          <p className="font-semibold text-cj-text-primary mb-1">Notas:</p>
           <ul className="list-disc list-inside space-y-0.5 pl-2">
-            <li>users (sin hashes ni oauth_id)</li>
-            <li>invoices con items</li>
-            <li>catalog (productos con service joineado)</li>
-            <li>service_catalog (servicios corporativos)</li>
-            <li>quotations con messages completos</li>
-            <li>notifications</li>
-            <li>ecommerce_settings</li>
-            <li>summary con totales agregados</li>
+            <li>Todos los endpoints requieren rol admin (X-API-Key o Bearer JWT).</li>
+            <li>Los datos sensibles (password hashes, oauth_id, key_hash) están excluidos.</li>
+            <li>Cada respuesta incluye <code className="bg-cj-bg-primary px-1 rounded">exported_at</code> y <code className="bg-cj-bg-primary px-1 rounded">count</code>.</li>
           </ul>
         </div>
       </div>

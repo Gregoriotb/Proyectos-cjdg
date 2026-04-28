@@ -284,7 +284,7 @@ proyectos-cjdg/
     ├── sesion_security_01.md         SC-SECURITY-01
     ├── sesion_admin_02.md            SC-ADMIN-02
     ├── sesion_client_01.md           SC-CLIENT-01
-    └── v2_1_chat_cotizaciones.md     V2.1 (este shipment)
+    └── v2_1_chat_cotizaciones.md     V2.1
 ```
 
 ---
