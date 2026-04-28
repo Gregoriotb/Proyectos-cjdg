@@ -22,6 +22,7 @@ from schemas.chat_quotation import (
 from routes.uploads import upload_file_to_imgbb
 from services.notifications import notify
 from services.ws_manager import ws_manager
+from services.artificialic_sync import FINALIZED_STATUSES, sync_thread_to_artificialic
 
 router = APIRouter(prefix="/chat-quotations", tags=["Chat Quotations"])
 
@@ -563,5 +564,9 @@ async def update_thread_status(
     background_tasks.add_task(ws_manager.broadcast_to_admins, chat_event)
     background_tasks.add_task(ws_manager.send_to_user, thread.client_id, thread_event)
     background_tasks.add_task(ws_manager.broadcast_to_admins, thread_event)
+
+    # SC-INTEG-ARTIFICIALIC: si el thread quedó finalizado, sincronizar a ArtificialIC
+    if data.new_status in FINALIZED_STATUSES and old_status not in FINALIZED_STATUSES:
+        background_tasks.add_task(sync_thread_to_artificialic, thread.id)
 
     return QuotationThreadResponse(**_serialize_thread(thread, include_client=True))
