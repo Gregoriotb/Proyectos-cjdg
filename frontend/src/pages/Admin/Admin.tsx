@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, Settings, Users, Activity, ToggleLeft, ToggleRight, FileText, ShoppingBag, Wrench, Receipt, KeyRound } from 'lucide-react';
+import { LogOut, Settings, Users, Activity, ToggleLeft, ToggleRight, FileText, ShoppingBag, Wrench, Receipt, KeyRound, Archive } from 'lucide-react';
 import CatalogPanel from '../../components/Admin/CatalogPanel';
 import ServicePricingPanel from '../../components/Admin/ServicePricingPanel';
 import InvoicesPanel from '../../components/Admin/InvoicesPanel';
 import QuotationsPanel from '../../components/Admin/Quotation/QuotationsPanel';
 import ApiKeysPanel from '../../components/Admin/ApiKeysPanel';
+import HistorialPanel from '../../components/Admin/HistorialPanel';
 
 interface EcommerceSettings {
   is_catalog_visible: boolean;
@@ -16,13 +17,14 @@ interface EcommerceSettings {
   support_phone: string;
 }
 
-type TabType = 'leads' | 'catalog' | 'services' | 'invoices' | 'api' | 'settings';
+type TabType = 'leads' | 'catalog' | 'services' | 'invoices' | 'historial' | 'api' | 'settings';
 
 const TABS: Array<{ key: TabType; label: string; Icon: typeof FileText }> = [
   { key: 'leads',    label: 'Cotizaciones',      Icon: FileText },
   { key: 'catalog',  label: 'Catálogo',          Icon: ShoppingBag },
   { key: 'services', label: 'Servicios',         Icon: Wrench },
   { key: 'invoices', label: 'Facturación',       Icon: Receipt },
+  { key: 'historial', label: 'Historial',        Icon: Archive },
   { key: 'api',      label: 'API Keys',          Icon: KeyRound },
   { key: 'settings', label: 'Ajustes',           Icon: Settings },
 ];
@@ -152,6 +154,12 @@ const Admin = () => {
         {activeTab === 'invoices' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <InvoicesPanel />
+          </div>
+        )}
+
+        {activeTab === 'historial' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <HistorialPanel />
           </div>
         )}
 
