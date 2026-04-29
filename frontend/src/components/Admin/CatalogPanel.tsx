@@ -143,7 +143,7 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
             )}
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium text-cj-text-primary truncate max-w-[200px]">{nombre}</div>
+            <div className="text-sm font-medium text-cj-text-primary truncate max-w-[140px] sm:max-w-[180px] lg:max-w-[260px]">{nombre}</div>
             <div className="flex gap-1 mt-0.5">
               {marca && <span className="text-xs text-cj-accent-blue">{marca}</span>}
               {modelo && <span className="text-xs text-cj-text-secondary font-mono">· {modelo}</span>}

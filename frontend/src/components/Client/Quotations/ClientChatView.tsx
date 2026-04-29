@@ -5,7 +5,7 @@ import {
   Send, Paperclip, MapPin, Building2, DollarSign,
   Clock, Check, CheckCheck, ArrowLeft, AlertCircle,
   FileText, Image as ImageIcon, X, Download, File as FileIcon,
-  Receipt,
+  Receipt, Info, ChevronUp, ChevronDown,
 } from 'lucide-react';
 import InvoiceSelectorModal from './InvoiceSelectorModal';
 import InvoiceMentionBubble, { InvoiceBriefData } from './InvoiceMentionBubble';
@@ -78,6 +78,7 @@ export default function ClientChatView({ threadId, onBack }: Props) {
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
   const [invoicePickerOpen, setInvoicePickerOpen] = useState(false);
+  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -286,20 +287,74 @@ export default function ClientChatView({ threadId, onBack }: Props) {
 
       {/* Columna de chat */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header móvil */}
-        <div className="border-b border-cj-border p-4 flex items-center justify-between bg-cj-surface lg:hidden">
-          <div className="flex items-center gap-3">
-            <button onClick={onBack} className="text-cj-text-secondary hover:text-cj-text-primary">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h3 className="text-cj-text-primary font-medium text-sm">{thread.service_name}</h3>
-              <p className="text-xs text-cj-text-muted">Conversación activa</p>
+        {/* Header móvil/tablet */}
+        <div className="lg:hidden">
+          <div className="border-b border-cj-border p-3 sm:p-4 flex items-center justify-between gap-2 bg-cj-surface">
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={onBack}
+                className="p-1.5 -ml-1.5 text-cj-text-secondary hover:text-cj-text-primary shrink-0"
+                aria-label="Volver"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="min-w-0">
+                <h3 className="text-cj-text-primary font-medium text-sm truncate">{thread.service_name}</h3>
+                <p className="text-[10px] text-cj-text-muted">#{thread.id.slice(0, 8).toUpperCase()}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${STATUS_COLORS[thread.status]}`}>
+                {STATUS_LABELS[thread.status] || thread.status}
+              </div>
+              <button
+                onClick={() => setMobileInfoOpen((v) => !v)}
+                className="p-2 rounded-lg border border-cj-border bg-cj-bg-primary text-cj-text-secondary hover:text-cj-text-primary"
+                aria-label="Detalles"
+                aria-expanded={mobileInfoOpen}
+              >
+                {mobileInfoOpen ? <ChevronUp className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+              </button>
             </div>
           </div>
-          <div className={`px-2.5 py-1 rounded-full text-xs border ${STATUS_COLORS[thread.status]}`}>
-            {STATUS_LABELS[thread.status] || thread.status}
-          </div>
+          {mobileInfoOpen && (
+            <div className="border-b border-cj-border bg-cj-bg-secondary p-4 space-y-3 max-h-[55vh] overflow-y-auto">
+              {thread.company_name && (
+                <div className="flex items-start gap-2 text-sm">
+                  <Building2 className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-cj-text-muted uppercase">Empresa</p>
+                    <p className="text-cj-text-primary truncate">{thread.company_name}</p>
+                  </div>
+                </div>
+              )}
+              {(thread.client_address || thread.location_notes) && (
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-cj-text-muted uppercase">Ubicación</p>
+                    <p className="text-cj-text-primary">{thread.location_notes || thread.client_address}</p>
+                  </div>
+                </div>
+              )}
+              {thread.budget_estimate != null && (
+                <div className="flex items-start gap-2 text-sm">
+                  <DollarSign className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-cj-text-muted uppercase">Presupuesto</p>
+                    <p className="text-emerald-600 font-medium">${Number(thread.budget_estimate).toLocaleString('es-VE')}</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-start gap-2 text-sm">
+                <Clock className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] text-cj-text-muted uppercase">Solicitud original</p>
+                  <p className="text-cj-text-secondary bg-cj-bg-tertiary p-2 rounded-lg mt-1 whitespace-pre-wrap text-xs">{thread.requirements}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Header desktop */}

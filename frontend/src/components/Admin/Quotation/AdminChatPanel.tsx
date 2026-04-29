@@ -4,7 +4,7 @@ import { useWebSocket } from '../../../context/WebSocketContext';
 import {
   Send, Building2, MapPin, DollarSign, Phone, Mail, User, CheckCheck, Check,
   ArrowLeft, MoreVertical, RefreshCw, Tag, Paperclip, Image as ImageIcon,
-  FileText, File as FileIcon, Download, X, Receipt,
+  FileText, File as FileIcon, Download, X, Receipt, Info, ChevronUp,
 } from 'lucide-react';
 import InvoiceSelectorModal from '../../Client/Quotations/InvoiceSelectorModal';
 import InvoiceMentionBubble, { InvoiceBriefData } from '../../Client/Quotations/InvoiceMentionBubble';
@@ -95,6 +95,7 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
   const [uploading, setUploading] = useState(false);
   const [invoicePickerOpen, setInvoicePickerOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -367,10 +368,100 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
               </p>
             </div>
           </div>
-          <div className={`xl:hidden px-3 py-1 rounded-full text-xs border ${currentStatus?.color}`}>
-            {currentStatus?.label || thread.status}
+          <div className="xl:hidden flex items-center gap-1.5 shrink-0">
+            <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${currentStatus?.color}`}>
+              {currentStatus?.label || thread.status}
+            </div>
+            <button
+              onClick={() => setMobileInfoOpen((v) => !v)}
+              className="p-2 rounded-lg border border-cj-border bg-cj-bg-primary text-cj-text-secondary hover:text-cj-text-primary"
+              aria-label="Detalles del cliente"
+              aria-expanded={mobileInfoOpen}
+            >
+              {mobileInfoOpen ? <ChevronUp className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+            </button>
           </div>
         </div>
+
+        {/* Panel de info colapsable mobile/tablet */}
+        {mobileInfoOpen && (
+          <div className="xl:hidden border-b border-cj-border bg-cj-bg-secondary p-4 space-y-3 max-h-[55vh] overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="flex items-start gap-2">
+                <User className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-cj-text-muted uppercase">Cliente</p>
+                  <p className="text-cj-text-primary font-medium truncate">{displayName}</p>
+                </div>
+              </div>
+              {thread.client?.email && (
+                <div className="flex items-start gap-2">
+                  <Mail className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-cj-text-muted uppercase">Email</p>
+                    <p className="text-cj-text-primary truncate">{thread.client.email}</p>
+                  </div>
+                </div>
+              )}
+              {thread.client?.phone && (
+                <div className="flex items-start gap-2">
+                  <Phone className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-cj-text-muted uppercase">Teléfono</p>
+                    <p className="text-cj-text-primary">{thread.client.phone}</p>
+                  </div>
+                </div>
+              )}
+              {(thread.client?.company_name || thread.company_name) && (
+                <div className="flex items-start gap-2">
+                  <Building2 className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-cj-text-muted uppercase">Empresa</p>
+                    <p className="text-cj-text-primary truncate">{thread.client?.company_name || thread.company_name}</p>
+                  </div>
+                </div>
+              )}
+              {(thread.client_address || thread.location_notes || thread.client?.address) && (
+                <div className="flex items-start gap-2 sm:col-span-2">
+                  <MapPin className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-cj-text-muted uppercase">Ubicación</p>
+                    <p className="text-cj-text-primary">{thread.location_notes || thread.client_address || thread.client?.address}</p>
+                  </div>
+                </div>
+              )}
+              {thread.budget_estimate != null && (
+                <div className="flex items-start gap-2">
+                  <DollarSign className="w-4 h-4 mt-0.5 text-cj-text-muted shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-cj-text-muted uppercase">Presupuesto</p>
+                    <p className="text-emerald-600 font-medium">${Number(thread.budget_estimate).toLocaleString('es-VE')}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="pt-2 border-t border-cj-border">
+              <p className="text-[10px] text-cj-text-muted uppercase mb-1">Cambiar estado</p>
+              <div className="flex flex-wrap gap-1.5">
+                {STATUS_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => changeStatus(opt.value)}
+                    disabled={changingStatus || thread.status === opt.value}
+                    className={`px-2.5 py-1 rounded-full text-[11px] border ${
+                      thread.status === opt.value
+                        ? opt.color + ' opacity-100'
+                        : 'border-cj-border text-cj-text-secondary hover:bg-cj-bg-primary'
+                    } disabled:opacity-50`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-cj-bg-primary">
           {messages.map((msg, idx) => {

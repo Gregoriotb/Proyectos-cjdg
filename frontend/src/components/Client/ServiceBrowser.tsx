@@ -125,8 +125,8 @@ const ServiceBrowser = () => {
           <Sparkles className="absolute bottom-10 right-1/3 w-5 h-5 text-pink-300/70 animate-pulse" style={{ animationDelay: '0.8s' }} />
           <Sparkles className="absolute top-1/3 right-10 w-3 h-3 text-cyan-300/70 animate-pulse" style={{ animationDelay: '1.2s' }} />
 
-          <div className="relative z-10 p-8 sm:p-12 lg:p-14">
-            <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8 lg:gap-12 items-center">
+          <div className="relative z-10 p-5 sm:p-12 lg:p-14">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 lg:gap-12 items-center">
               {/* Columna izquierda: contenido */}
               <div>
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-yellow-400/90 to-amber-500/90 text-purple-950 text-xs sm:text-sm font-bold uppercase tracking-wider shadow-lg mb-5">

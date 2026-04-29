@@ -67,7 +67,7 @@ const Login = () => {
       {/* Background Glow sutil */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cj-accent-blue/10 blur-[100px] rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10 bg-cj-surface border border-cj-border shadow-cj-lg rounded-xl p-8">
+      <div className="w-full max-w-md relative z-10 bg-cj-surface border border-cj-border shadow-cj-lg rounded-xl p-6 sm:p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-cj-text-primary">
             Proyectos <span className="text-cj-accent-blue">CJDG</span>

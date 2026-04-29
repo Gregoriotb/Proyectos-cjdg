@@ -167,7 +167,7 @@ export default function QuotationsPanel() {
                   </span>
                 )}
                 {thread.location_notes && (
-                  <span className="flex items-center gap-1.5 truncate max-w-[200px]">
+                  <span className="flex items-center gap-1.5 truncate max-w-[120px] sm:max-w-[160px] lg:max-w-[200px]">
                     <MapPin className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">{thread.location_notes}</span>
                   </span>

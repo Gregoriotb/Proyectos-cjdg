@@ -107,21 +107,21 @@ const Admin = () => {
 
       {/* Tabs */}
       <div className="border-b border-cj-border bg-cj-surface">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-8 overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6">
+          <div className="flex gap-3 sm:gap-6 lg:gap-8 overflow-x-auto scrollbar-thin">
             {TABS.map(({ key, label, Icon }) => {
               const isActive = activeTab === key;
               return (
                 <button
                   key={key}
                   onClick={() => changeTab(key)}
-                  className={`py-4 px-2 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${
+                  className={`py-3 sm:py-4 px-1 sm:px-2 font-medium text-xs sm:text-sm whitespace-nowrap transition-all border-b-2 ${
                     isActive
                       ? 'border-cj-accent-blue text-cj-accent-blue'
                       : 'border-transparent text-cj-text-secondary hover:text-cj-text-primary'
                   }`}
                 >
-                  <div className="flex items-center gap-2"><Icon className="w-4 h-4" /> {label}</div>
+                  <div className="flex items-center gap-1.5 sm:gap-2"><Icon className="w-4 h-4 shrink-0" /> {label}</div>
                 </button>
               );
             })}

@@ -176,7 +176,7 @@ const Register = () => {
     <div className="min-h-screen bg-cj-bg-primary flex items-center justify-center p-4">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cj-accent-blue/10 blur-[100px] rounded-full pointer-events-none"></div>
 
-      <div className="w-full max-w-md relative z-10 glass-panel p-8">
+      <div className="w-full max-w-md relative z-10 glass-panel p-6 sm:p-8">
 
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-cj-text-primary tracking-wide">Registro Corporativo</h1>
