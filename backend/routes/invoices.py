@@ -15,6 +15,7 @@ from models.cart import Cart, CartItem
 from models.catalog import CatalogItem
 from services.notifications import notify
 from services.profile_validator import require_complete_profile
+from services import stock_service
 from models.service import Service
 from schemas.invoice import InvoiceResponse
 from dependencies import get_current_user, get_current_admin
@@ -71,11 +72,11 @@ def checkout(
         if not service:
             continue
 
-        # Verificar stock
-        if catalog_item.stock < cart_item.quantity:
+        # Verificar stock disponible (físico - reservado)
+        if stock_service.available(catalog_item) < cart_item.quantity:
             raise HTTPException(
                 status_code=400,
-                detail=f"Stock insuficiente para '{service.nombre}'. Disponible: {catalog_item.stock}, solicitado: {cart_item.quantity}"
+                detail=f"Stock insuficiente para '{service.nombre}'. Disponible: {stock_service.available(catalog_item)}, solicitado: {cart_item.quantity}"
             )
 
         # Calcular precio con descuento si aplica
@@ -108,10 +109,11 @@ def checkout(
     db.add(invoice)
     db.flush()
 
-    # Crear items de factura + descontar stock
+    # Crear items de factura + reservar stock (no descontamos físico hasta que se pague)
     for item_data in invoice_items:
         inv_item = InvoiceItem(
             invoice_id=invoice.id,
+            catalog_item_id=item_data["catalog_item_id"],
             descripcion=item_data["descripcion"],
             cantidad=item_data["cantidad"],
             precio_unitario=item_data["precio_unitario"],
@@ -119,10 +121,15 @@ def checkout(
         )
         db.add(inv_item)
 
-        # Descontar stock
-        catalog_item = db.query(CatalogItem).filter(CatalogItem.id == item_data["catalog_item_id"]).first()
-        if catalog_item:
-            catalog_item.stock -= item_data["cantidad"]
+        # Reservar stock (incrementa stock_reservado, no toca stock físico)
+        stock_service.reserve_stock(
+            db,
+            catalog_item_id=item_data["catalog_item_id"],
+            quantity=item_data["cantidad"],
+            reference_type="invoice",
+            reference_id=str(invoice.id),
+            user_id=current_user.id,
+        )
 
     # Limpiar carrito
     for cart_item in cart.items:
@@ -184,16 +191,42 @@ def update_invoice_status(
     if not new_status:
         raise HTTPException(status_code=400, detail=f"Estado no válido: {data.status}")
 
-    # Si se cancela, devolver stock
-    if new_status == InvoiceStatusEnum.CANCELLED and invoice.status != InvoiceStatusEnum.CANCELLED:
+    # FEAT-Historial-v2.4: ajuste de stock por transición de status
+    # PAID → confirm (descuenta físico, libera reserva)
+    # CANCELLED / OVERDUE → release (libera reserva, no toca físico)
+    prev_status = invoice.status
+    is_transition_in = prev_status not in (InvoiceStatusEnum.PAID, InvoiceStatusEnum.CANCELLED, InvoiceStatusEnum.OVERDUE)
+    confirm_states = {InvoiceStatusEnum.PAID}
+    release_states = {InvoiceStatusEnum.CANCELLED, InvoiceStatusEnum.OVERDUE}
+
+    if is_transition_in and (new_status in confirm_states or new_status in release_states):
         for inv_item in invoice.items:
-            # Buscar catalog_item por descripción (ya que no guardamos el ID directo)
-            service_name = inv_item.descripcion.split(" (")[0]
-            service = db.query(Service).filter(Service.nombre == service_name).first()
-            if service:
-                catalog_item = db.query(CatalogItem).filter(CatalogItem.service_id == service.id).first()
-                if catalog_item:
-                    catalog_item.stock += inv_item.cantidad
+            if not inv_item.catalog_item_id:
+                continue
+            try:
+                if new_status in confirm_states:
+                    stock_service.confirm_stock(
+                        db,
+                        catalog_item_id=inv_item.catalog_item_id,
+                        quantity=inv_item.cantidad,
+                        reference_type="invoice",
+                        reference_id=str(invoice.id),
+                        user_id=current_admin.id,
+                        notes=f"status → {new_status.value}",
+                    )
+                else:
+                    stock_service.release_stock(
+                        db,
+                        catalog_item_id=inv_item.catalog_item_id,
+                        quantity=inv_item.cantidad,
+                        reference_type="invoice",
+                        reference_id=str(invoice.id),
+                        user_id=current_admin.id,
+                        notes=f"status → {new_status.value}",
+                    )
+            except HTTPException:
+                # No bloquear el cambio de status si el stock_service falla
+                pass
 
     old_status_label = invoice.status.value if invoice.status else "—"
     invoice.status = new_status

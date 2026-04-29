@@ -51,6 +51,7 @@ class InvoiceItem(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     invoice_id = Column(Integer, ForeignKey("invoices.id"), nullable=False)
+    catalog_item_id = Column(Integer, ForeignKey("catalog_items.id"), nullable=True)  # FEAT-Historial-v2.4
     descripcion = Column(String(300), nullable=False)
     cantidad = Column(Integer, nullable=False, default=1)
     precio_unitario = Column(Numeric(12, 2), nullable=False)

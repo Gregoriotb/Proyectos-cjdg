@@ -80,8 +80,12 @@ def upgrade() -> None:
 
     op.add_column('catalog_items', sa.Column('stock_reservado', sa.Integer, nullable=False, server_default='0'))
 
+    # invoice_items: link al catalog_item para poder ajustar stock en transiciones de status
+    op.add_column('invoice_items', sa.Column('catalog_item_id', sa.Integer, sa.ForeignKey('catalog_items.id'), nullable=True))
+
 
 def downgrade() -> None:
+    op.drop_column('invoice_items', 'catalog_item_id')
     op.drop_column('catalog_items', 'stock_reservado')
 
     op.drop_index('ix_quotation_threads_archivado_en', table_name='quotation_threads')
