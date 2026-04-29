@@ -49,5 +49,7 @@ USER appuser
 # Railway asigna PORT dinamicamente
 EXPOSE ${PORT:-8000}
 
-# Produccion: sin --reload, host 0.0.0.0, puerto desde $PORT
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2 --log-level info
+# Produccion: corre 'alembic upgrade head' ANTES de arrancar uvicorn.
+# Si la migracion falla, el contenedor crashea y Railway reintenta — preferimos
+# fallar fuerte y visible que arrancar con schema desincronizado del codigo.
+CMD alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2 --log-level info
