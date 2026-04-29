@@ -4,6 +4,45 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
+## [V2.9] — 2026-04-29 · FEAT-Historial-Transacciones-v2.4
+
+### Added — Historial de Transacciones, Stock Reserva/Liberación, tipo_documento
+
+- **Migración `f1a2b3c4d5e6`** — schema completo del feature (tablas `transaction_history`, `transaction_history_items`, `stock_movements` + columnas a `invoices`, `quotation_threads`, `catalog_items`, `invoice_items`).
+- **Stock Service** — modelo de inventario con `stock` físico vs `stock_reservado`. `reserve_stock` (checkout), `confirm_stock` (PAID/DELIVERED), `release_stock` (CANCELLED/OVERDUE). SELECT FOR UPDATE + log en `stock_movements`.
+- **Archive Service** — `archive_invoice` / `archive_quotation_thread` con snapshot JSONB. `reactivate` mantiene `original_id` y marca `reactivated_at`. `sweep_quotations` archiva threads con `fecha_concretada` > 7d.
+- **API Admin Historial** (`/admin/historial`): list paginado con filtros, detalle, cambio estado, reactivar, delete (single + bulk con `?confirmado=true`), export Excel (3 hojas), sweep manual.
+- **API Cliente Historial** (`/cliente/historial`): list + detalle read-only scoped a `current_user.id` (404 si no es del cliente, no 403).
+- **DELETE invoice cliente** (SC-05): solo si `status == PENDING` y no archivada. Soft-archive con `DELETED_BY_CLIENT` + libera stock.
+- **Soft-delete chat per-thread** (SC-06): `PATCH /threads/{id}/ocultar` y `/recuperar`. Cliente oculta de su vista, admin sigue viéndolo.
+- **tipo_documento en checkout** (SC-08): `factura` (requiere perfil fiscal completo) o `nota_entrega` (solo full_name + phone + email).
+- **Triggers automáticos**: Invoice → terminal → auto-archive + ajuste stock; Thread → closed → marca `fecha_concretada` para sweep 7d; listados filtran `archivado_en IS NULL`.
+- **Frontend**:
+  - `components/ui/Modal.tsx` y `ConfirmDialog.tsx` reutilizables (variants destructive/warning, busy state).
+  - `hooks/useHistorial.ts` shared admin + cliente con filtros y paginación.
+  - Tab admin **Historial**: tabla, filtros, acciones por fila/globales, export Excel descarga blob.
+  - Sección cliente **Mi Historial** mobile-first (cards mobile, tabla desktop).
+  - Cart: selector visual tipo_documento.
+  - ClientChatView: botón "Ocultar conversación" con ConfirmDialog.
+
+### Decisiones arquitectónicas (vs spec original)
+
+- Stack respetado: sync SQLAlchemy, axios crudo, primitivos UI propios. No se instalaron TanStack Query / shadcn / RHF / Zod / Sonner.
+- Single-tenant (eliminado `empresa_id`). Estados en inglés en backend, traducidos solo en UI.
+- Numeración generada al archivar (`INV-{id:06d}`, `COT-{first8(uuid)}`).
+- Soft-delete chat per-thread (no per-message como pedía spec) — mejor UX.
+- Reactivación mantiene `original_id`.
+- TTL 7d lazy on read + endpoint manual (sin cron/trigger SQL).
+
+### Dependencies
+- `openpyxl==3.1.5` agregado a backend.
+
+### Branches
+- `feat/historial-transacciones` (backend, 6 commits) → mergeada a master.
+- `feat/historial-frontend-v24` (frontend, 4 commits) → en proceso de merge.
+
+---
+
 ## [V2.8] — 2026-04-22 · "Feat Grande" completo
 
 ### Added — API Keys, Export API, WebSocket Realtime
