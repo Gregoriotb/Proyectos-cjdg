@@ -243,14 +243,23 @@ async def create_quotation_thread(
 @router.get("/my-threads", response_model=List[ThreadListItem])
 async def get_my_threads(
     status_filter: Optional[str] = None,
+    only_hidden: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Lista los threads del cliente.
+    - Default: solo threads activos (no archivados, no ocultos por el cliente)
+    - ?only_hidden=true: solo los que el cliente ocultó (para poder recuperarlos)
+    """
     query = db.query(QuotationThread).filter(
         QuotationThread.client_id == current_user.id,
-        QuotationThread.eliminado_por_cliente.is_(False),
         QuotationThread.archivado_en.is_(None),
     )
+    if only_hidden:
+        query = query.filter(QuotationThread.eliminado_por_cliente.is_(True))
+    else:
+        query = query.filter(QuotationThread.eliminado_por_cliente.is_(False))
     if status_filter:
         query = query.filter(QuotationThread.status == status_filter)
 

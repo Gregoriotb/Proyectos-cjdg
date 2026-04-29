@@ -11,6 +11,7 @@ const Cart = () => {
   const [invoiceId, setInvoiceId] = useState<number | null>(null);
   const [invoiceTotal, setInvoiceTotal] = useState<number>(0);
   const [notas, setNotas] = useState('');
+  const [tipoDocumento, setTipoDocumento] = useState<'factura' | 'nota_entrega'>('factura');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -22,7 +23,8 @@ const Cart = () => {
 
     try {
       const res = await api.post('/invoices/checkout', {
-        notas: notas || null
+        notas: notas || null,
+        tipo_documento: tipoDocumento,
       });
 
       setInvoiceId(res.data.id);
@@ -118,6 +120,33 @@ const Cart = () => {
           <div className="lg:w-1/3">
             <div className="glass-panel p-6 sticky top-24">
               <h2 className="text-xl font-bold text-cj-text-primary border-b border-cj-border pb-4 mb-4">Confirmar Compra</h2>
+
+              {/* SC-08 (FEAT-Historial-v2.4): selector tipo de documento */}
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-cj-text-secondary mb-2">Tipo de documento</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['factura', 'nota_entrega'] as const).map((tipo) => {
+                    const active = tipoDocumento === tipo;
+                    const label = tipo === 'factura' ? 'Factura fiscal' : 'Nota de entrega';
+                    const sub = tipo === 'factura' ? 'Requiere RIF + dirección' : 'Sin valor fiscal';
+                    return (
+                      <button
+                        key={tipo}
+                        type="button"
+                        onClick={() => setTipoDocumento(tipo)}
+                        className={`px-3 py-2 text-left rounded-lg border transition-all ${
+                          active
+                            ? 'bg-cj-accent-blue-light border-cj-accent-blue text-cj-accent-blue'
+                            : 'bg-cj-bg-primary border-cj-border text-cj-text-secondary hover:border-cj-accent-blue/50'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold">{label}</div>
+                        <div className="text-[10px] mt-0.5 opacity-80">{sub}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               <div className="mb-6">
                 <label className="block text-sm font-medium text-cj-text-secondary mb-2">
