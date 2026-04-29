@@ -24,6 +24,7 @@ from services.notifications import notify
 from services.ws_manager import ws_manager
 from services.artificialic_sync import notify_admin_reply
 from services.profile_validator import require_complete_profile
+from services import archive_service
 
 router = APIRouter(prefix="/chat-quotations", tags=["Chat Quotations"])
 
@@ -382,7 +383,16 @@ async def get_all_threads(
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_admin),
 ):
-    query = db.query(QuotationThread).options(joinedload(QuotationThread.client))
+    # FEAT-Historial-v2.4: lazy sweep — archiva threads concretadas hace >7d antes de listar.
+    try:
+        if archive_service.sweep_quotations(db) > 0:
+            db.commit()
+    except Exception:
+        db.rollback()
+
+    query = db.query(QuotationThread).options(joinedload(QuotationThread.client)).filter(
+        QuotationThread.archivado_en.is_(None)
+    )
     if status_filter:
         query = query.filter(QuotationThread.status == status_filter)
 
@@ -532,6 +542,12 @@ async def update_thread_status(
 
     old_status = thread.status
     thread.status = data.new_status
+
+    # FEAT-Historial-v2.4: marcar fecha_concretada al pasar a estado archivable.
+    # El archivado real ocurre 7 días después vía sweep_quotations.
+    archivable = {"closed", "quoted", "cancelled"}
+    if data.new_status in archivable and old_status not in archivable and not thread.fecha_concretada:
+        thread.fecha_concretada = datetime.utcnow()
 
     system_msg = ChatMessage(
         thread_id=thread_id,

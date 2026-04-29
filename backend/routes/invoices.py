@@ -15,7 +15,7 @@ from models.cart import Cart, CartItem
 from models.catalog import CatalogItem
 from services.notifications import notify
 from services.profile_validator import require_complete_profile
-from services import stock_service
+from services import stock_service, archive_service
 from models.service import Service
 from schemas.invoice import InvoiceResponse
 from dependencies import get_current_user, get_current_admin
@@ -39,8 +39,13 @@ def get_my_invoices(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Lista las facturas del usuario autenticado."""
-    return db.query(Invoice).filter(Invoice.user_id == current_user.id).order_by(Invoice.created_at.desc()).all()
+    """Lista las facturas del usuario autenticado (no archivadas)."""
+    return (
+        db.query(Invoice)
+        .filter(Invoice.user_id == current_user.id, Invoice.archivado_en.is_(None))
+        .order_by(Invoice.created_at.desc())
+        .all()
+    )
 
 
 @router.post("/checkout", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
@@ -156,11 +161,14 @@ def checkout(
 @router.get("/all", response_model=List[InvoiceResponse])
 def get_all_invoices(
     user_id: Optional[str] = None,  # V2.3 — filtrar por cliente (para chat-cotizaciones)
+    include_archived: bool = False,  # V2.4 — opt-in para ver archivadas en el endpoint vivo
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """Lista TODAS las facturas del sistema (solo Admin). Filtrable por user_id."""
     query = db.query(Invoice)
+    if not include_archived:
+        query = query.filter(Invoice.archivado_en.is_(None))
     if user_id:
         query = query.filter(Invoice.user_id == user_id)
     return query.order_by(Invoice.created_at.desc()).all()
@@ -232,6 +240,9 @@ def update_invoice_status(
     invoice.status = new_status
     if data.notas:
         invoice.notas = data.notas
+
+    # FEAT-Historial-v2.4: si el status quedó terminal, archivar (idempotente)
+    archive_service.auto_archive_invoice_if_terminal(db, invoice, archived_by=current_admin.id)
 
     db.commit()
     db.refresh(invoice)
