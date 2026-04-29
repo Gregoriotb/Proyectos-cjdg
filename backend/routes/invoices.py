@@ -26,6 +26,8 @@ router = APIRouter()
 # --- Schemas ---
 class CheckoutRequest(BaseModel):
     notas: Optional[str] = None
+    # SC-08 (FEAT-Historial-v2.4): cliente elige tipo de documento
+    tipo_documento: str = "factura"  # 'factura' | 'nota_entrega'
 
 
 class InvoiceStatusUpdate(BaseModel):
@@ -57,9 +59,31 @@ def checkout(
 ):
     """
     Convierte el carrito en factura. Descuenta stock automáticamente.
-    Solo items con precio y stock disponible. Requiere perfil completo.
+    Solo items con precio y stock disponible.
+    Si tipo_documento='factura', requiere perfil fiscal completo.
+    'nota_entrega' solo requiere datos básicos (full_name + phone + email).
     """
-    require_complete_profile(current_user)
+    tipo_doc = (data.tipo_documento or "factura").strip().lower()
+    if tipo_doc not in ("factura", "nota_entrega"):
+        raise HTTPException(status_code=400, detail="tipo_documento inválido. Usa 'factura' o 'nota_entrega'.")
+
+    if tipo_doc == "factura":
+        require_complete_profile(current_user)
+    else:
+        # nota_entrega: solo necesitamos contactabilidad básica
+        missing = []
+        if not (current_user.full_name and current_user.full_name.strip()):
+            missing.append("full_name")
+        if not (current_user.phone and current_user.phone.strip()):
+            missing.append("phone")
+        if not (current_user.email and current_user.email.strip()):
+            missing.append("email")
+        if missing:
+            raise HTTPException(status_code=400, detail={
+                "code": "PROFILE_INCOMPLETE",
+                "message": "Completa los datos básicos para emitir nota de entrega.",
+                "missing_fields": missing,
+            })
 
     cart = db.query(Cart).filter(Cart.user_id == current_user.id).first()
     if not cart or not cart.items:
@@ -110,6 +134,7 @@ def checkout(
         status=InvoiceStatusEnum.PENDING,
         total=total,
         notas=data.notas,
+        tipo_documento=tipo_doc,
     )
     db.add(invoice)
     db.flush()

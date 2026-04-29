@@ -19,12 +19,14 @@ from math import ceil
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from database import get_db
 from dependencies import get_current_admin
 from models.invoice import Invoice
+from models.stock_movement import StockMovement
 from models.transaction_history import TransactionHistory, TransactionHistoryItem
 from models.user import User
 from schemas.historial import (
@@ -41,6 +43,7 @@ from schemas.historial import (
     ReactivarResponse,
 )
 from services import archive_service
+from services.excel_export import build_historial_workbook, filename_for_export
 
 router = APIRouter(prefix="/historial", tags=["Admin Historial"])
 
@@ -283,6 +286,85 @@ def delete_historial_entry(
     db.delete(history)
     db.commit()
     return DeleteResponse(message=f"Historial #{historial_id} eliminado")
+
+
+# --------------------------------------------------------------------------
+# SC-07: GET /admin/historial/exportar — Excel
+# --------------------------------------------------------------------------
+@router.get("/exportar/xlsx")
+def export_historial_excel(
+    tipo: Optional[str] = Query(None, description="invoice | quotation_thread"),
+    fecha_desde: Optional[datetime] = Query(None),
+    fecha_hasta: Optional[datetime] = Query(None),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+):
+    """Genera un .xlsx con tres hojas: Resumen, Detalle Items, Movimientos Stock."""
+    q = db.query(TransactionHistory).options(
+        joinedload(TransactionHistory.user),
+        selectinload(TransactionHistory.items),
+    )
+    if tipo:
+        q = q.filter(TransactionHistory.source_type == tipo)
+    if fecha_desde:
+        q = q.filter(TransactionHistory.archived_at >= fecha_desde)
+    if fecha_hasta:
+        q = q.filter(TransactionHistory.archived_at <= fecha_hasta)
+    histories = q.order_by(TransactionHistory.archived_at.desc()).all()
+
+    if not histories:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "NO_DATA", "message": "No hay historial para exportar con esos filtros."},
+        )
+
+    # Movimientos de stock en el mismo rango (si aplica)
+    stock_q = db.query(StockMovement)
+    if fecha_desde:
+        stock_q = stock_q.filter(StockMovement.created_at >= fecha_desde)
+    if fecha_hasta:
+        stock_q = stock_q.filter(StockMovement.created_at <= fecha_hasta)
+    stock_movements = stock_q.order_by(StockMovement.created_at.desc()).all()
+
+    output = build_historial_workbook(histories, stock_movements)
+    filename = filename_for_export()
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# --------------------------------------------------------------------------
+# SC-07: DELETE /admin/historial — bulk delete tras respaldo
+# --------------------------------------------------------------------------
+@router.delete("")
+def bulk_delete_historial(
+    confirmado: bool = Query(False, description="Confirmación explícita requerida"),
+    tipo: Optional[str] = Query(None, description="invoice | quotation_thread (None = todos)"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+):
+    """
+    Elimina TODO el historial (o filtrado por tipo). Requiere ?confirmado=true.
+    Pensado para usarse SOLO después de exportar a Excel.
+    """
+    if not confirmado:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "CONFIRMATION_REQUIRED", "message": "Pasa ?confirmado=true para confirmar."},
+        )
+
+    q = db.query(TransactionHistory)
+    if tipo:
+        q = q.filter(TransactionHistory.source_type == tipo)
+    count = q.count()
+    if not count:
+        return DeleteResponse(message="No hay registros para eliminar")
+
+    q.delete(synchronize_session=False)
+    db.commit()
+    return DeleteResponse(message=f"{count} registros eliminados del historial")
 
 
 # --------------------------------------------------------------------------
