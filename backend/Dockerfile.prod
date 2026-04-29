@@ -49,7 +49,8 @@ USER appuser
 # Railway asigna PORT dinamicamente
 EXPOSE ${PORT:-8000}
 
-# Produccion: corre 'alembic upgrade head' ANTES de arrancar uvicorn.
-# Si la migracion falla, el contenedor crashea y Railway reintenta — preferimos
-# fallar fuerte y visible que arrancar con schema desincronizado del codigo.
-CMD alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2 --log-level info
+# Produccion: corre el migrador resiliente (idempotente con IF NOT EXISTS)
+# antes de arrancar uvicorn. Necesario porque la DB de produccion acumuló
+# cambios fuera de alembic; ver scripts/migrate_resilient.py para detalles.
+# Si falla, el contenedor crashea y Railway reintenta.
+CMD python scripts/migrate_resilient.py && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2 --log-level info
