@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { formatApiError } from '../../services/errors';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/api/v1';
 
@@ -42,7 +43,7 @@ const Login = () => {
       const destination = role && role.toLowerCase() === 'admin' ? '/admin' : '/dashboard';
       navigate(destination, { replace: true });
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error al iniciar sesión. Verifica tus credenciales.');
+      setError(formatApiError(err, 'Error al iniciar sesión. Verifica tus credenciales.'));
     } finally {
       setLoading(false);
     }

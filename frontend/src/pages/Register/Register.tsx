@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, User, Building, AlertCircle, ArrowRight, ArrowLeft, Check, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { api } from '../../services/api';
+import { formatApiError } from '../../services/errors';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/api/v1';
 
@@ -115,7 +116,7 @@ const Register = () => {
         navigate('/login', { replace: true });
       }, 2500);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Ocurrió un error al registrar la cuenta.');
+      setError(formatApiError(err, 'Ocurrió un error al registrar la cuenta.'));
     } finally {
       setLoading(false);
     }

@@ -10,6 +10,7 @@ import {
   Power, PowerOff, Clock, Activity, FileCode2, X,
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { formatApiError } from '../../services/errors';
 
 interface ApiKey {
   id: string;
@@ -86,7 +87,7 @@ const ApiKeysPanel = () => {
       const res = await api.get('/admin/api-keys');
       setKeys(res.data || []);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'No se pudieron cargar las API keys.');
+      setError(formatApiError(err, 'No se pudieron cargar las API keys.'));
     } finally {
       setLoading(false);
     }
@@ -101,7 +102,7 @@ const ApiKeysPanel = () => {
       await api.patch(`/admin/api-keys/${k.id}`, { is_active: !k.is_active });
       loadKeys();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'No se pudo actualizar la key.');
+      setError(formatApiError(err, 'No se pudo actualizar la key.'));
     }
   };
 
@@ -111,7 +112,7 @@ const ApiKeysPanel = () => {
       await api.delete(`/admin/api-keys/${k.id}`);
       loadKeys();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'No se pudo borrar la key.');
+      setError(formatApiError(err, 'No se pudo borrar la key.'));
     }
   };
 
@@ -278,7 +279,7 @@ const CreateKeyModal = ({
       const res = await api.post('/admin/api-keys', payload);
       onCreated(res.data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'No se pudo crear la key.');
+      setError(formatApiError(err, 'No se pudo crear la key.'));
     } finally {
       setSaving(false);
     }

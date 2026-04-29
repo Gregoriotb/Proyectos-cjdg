@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../../services/api';
 import { X, UploadCloud, AlertCircle } from 'lucide-react';
+import { formatApiError } from '../../services/errors';
 
 interface InventoryFormProps {
   onSave: () => void;
@@ -40,7 +41,7 @@ const InventoryForm = ({ onSave, onCancel }: InventoryFormProps) => {
       });
       setImages(prev => [...prev, res.data.url]);
     } catch (e: any) {
-      setError(e.response?.data?.detail || 'Error subiendo la imagen');
+      setError(formatApiError(e, 'Error subiendo la imagen'));
     } finally {
       setUploadingImg(false);
     }
@@ -73,7 +74,7 @@ const InventoryForm = ({ onSave, onCancel }: InventoryFormProps) => {
       });
       onSave();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error guardando en inventario');
+      setError(formatApiError(err, 'Error guardando en inventario'));
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 import { Search, DollarSign, RefreshCw, Edit2, X, Check, Plus, Trash2, ToggleLeft, ToggleRight, AlertCircle, UploadCloud } from 'lucide-react';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import { formatApiError } from '../../services/errors';
 
 interface CorporateService {
   id: number;
@@ -64,7 +65,7 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
       });
       setImages(prev => [...prev, res.data.url]);
     } catch (e: any) {
-      setError(e.response?.data?.detail || 'Error subiendo la imagen');
+      setError(formatApiError(e, 'Error subiendo la imagen'));
     } finally {
       setUploadingImg(false);
     }
@@ -98,7 +99,7 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
       }
       onSave();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error al guardar el servicio');
+      setError(formatApiError(err, 'Error al guardar el servicio'));
     } finally {
       setSaving(false);
     }

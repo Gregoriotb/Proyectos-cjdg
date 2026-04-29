@@ -6,6 +6,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../services/api';
+import { formatApiError } from '../services/errors';
 
 export interface HistorialUserBrief {
   id: string;
@@ -76,7 +77,7 @@ export function useHistorial(basePath: '/admin/historial' | '/cliente/historial'
       setData(res.data?.data || []);
       setPagination(res.data?.pagination || null);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Error cargando historial');
+      setError(formatApiError(err, 'Error cargando historial'));
     } finally {
       setLoading(false);
     }

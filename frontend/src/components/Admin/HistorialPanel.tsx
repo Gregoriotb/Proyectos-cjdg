@@ -12,6 +12,7 @@ import {
   FileText, MessageSquare, Eye, RotateCcw, Loader2, AlertCircle, Sparkles,
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { formatApiError } from '../../services/errors';
 import { useHistorial, HistorialListItem } from '../../hooks/useHistorial';
 import Modal from '../ui/Modal';
 import ConfirmDialog from '../ui/ConfirmDialog';
@@ -96,7 +97,7 @@ export default function HistorialPanel() {
       if (err?.response?.status === 404 && (typeof detail === 'object' && detail?.code === 'NO_DATA')) {
         setNoDataModalOpen(true);
       } else {
-        setFeedback(detail?.message || detail || 'Error al exportar.');
+        setFeedback(formatApiError(err, 'Error al exportar.'));
       }
     } finally {
       setExporting(false);
@@ -110,7 +111,7 @@ export default function HistorialPanel() {
       setFeedback(`✅ Sweep ejecutado. ${res.data?.archived || 0} cotizaciones archivadas.`);
       refetch();
     } catch (err: any) {
-      setFeedback(err?.response?.data?.detail || 'Error al ejecutar sweep.');
+      setFeedback(formatApiError(err, 'Error al ejecutar sweep.'));
     } finally {
       setSweeping(false);
     }
