@@ -95,6 +95,7 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
   const [uploading, setUploading] = useState(false);
   const [invoicePickerOpen, setInvoicePickerOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [automating, setAutomating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -195,8 +196,6 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
       if (!sending) sendMessage();
     }
   };
-
-  const [automating, setAutomating] = useState(false);
 
   const automateThread = async () => {
     if (automating) return;
@@ -398,8 +397,20 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
               </p>
             </div>
           </div>
-          <div className={`xl:hidden px-3 py-1 rounded-full text-xs border ${currentStatus?.color}`}>
-            {currentStatus?.label || thread.status}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={automateThread}
+              disabled={automating}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs font-semibold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              title="Enviar contacto, mensajes y facturas a ArtificialIC"
+            >
+              <Zap className={`w-3.5 h-3.5 ${automating ? 'animate-pulse' : ''}`} />
+              <span className="hidden sm:inline">{automating ? 'Enviando...' : 'Automatizar'}</span>
+            </button>
+            <div className={`xl:hidden px-3 py-1 rounded-full text-xs border ${currentStatus?.color}`}>
+              {currentStatus?.label || thread.status}
+            </div>
           </div>
         </div>
 
