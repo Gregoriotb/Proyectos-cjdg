@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 import { Receipt, RefreshCw, ChevronDown, ChevronUp, Package, Search } from 'lucide-react';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 interface InvoiceItem {
   id: number;
@@ -42,6 +43,7 @@ const InvoicesPanel = () => {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [confirmStatus, setConfirmStatus] = useState<{ invoiceId: number; newStatus: string; current: string } | null>(null);
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
@@ -57,19 +59,28 @@ const InvoicesPanel = () => {
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
-  const handleStatusChange = async (invoiceId: number, newStatus: string) => {
+  const performStatusChange = async (invoiceId: number, newStatus: string) => {
     setUpdatingId(invoiceId);
     try {
       await api.put(`/invoices/${invoiceId}/status`, { status: newStatus });
-      // Actualizar local
-      setInvoices(prev => prev.map(inv =>
-        inv.id === invoiceId ? { ...inv, status: newStatus } : inv
-      ));
+      // Si pasó a terminal (PAID/CANCELLED/OVERDUE), backend la archivó — la sacamos del listado
+      if (['PAID', 'CANCELLED', 'OVERDUE'].includes(newStatus)) {
+        setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+      } else {
+        setInvoices(prev => prev.map(inv =>
+          inv.id === invoiceId ? { ...inv, status: newStatus } : inv
+        ));
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  const handleStatusChange = (invoiceId: number, newStatus: string) => {
+    const inv = invoices.find(i => i.id === invoiceId);
+    setConfirmStatus({ invoiceId, newStatus, current: inv?.status || 'PENDING' });
   };
 
   const filtered = invoices.filter(inv => !statusFilter || inv.status === statusFilter);
@@ -243,6 +254,27 @@ const InvoicesPanel = () => {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmStatus !== null}
+        onClose={() => setConfirmStatus(null)}
+        onConfirm={async () => {
+          if (confirmStatus) await performStatusChange(confirmStatus.invoiceId, confirmStatus.newStatus);
+        }}
+        title="Cambiar estado de factura"
+        description={confirmStatus ? `Factura #${confirmStatus.invoiceId.toString().padStart(4, '0')}` : undefined}
+        variant={confirmStatus && ['CANCELLED', 'OVERDUE'].includes(confirmStatus.newStatus) ? 'destructive' : 'warning'}
+        confirmLabel={`Cambiar a ${confirmStatus ? STATUS_CONFIG[confirmStatus.newStatus]?.label || confirmStatus.newStatus : ''}`}
+      >
+        {confirmStatus && (
+          <>
+            <p>Estado actual: <strong>{STATUS_CONFIG[confirmStatus.current]?.label || confirmStatus.current}</strong></p>
+            <p className="mt-1">Nuevo estado: <strong>{STATUS_CONFIG[confirmStatus.newStatus]?.label || confirmStatus.newStatus}</strong></p>
+            {confirmStatus.newStatus === 'PAID' && <p className="mt-2 text-xs text-cj-text-muted">Se descontará el stock físico, se liberará la reserva y la factura se archivará automáticamente.</p>}
+            {['CANCELLED', 'OVERDUE'].includes(confirmStatus.newStatus) && <p className="mt-2 text-xs text-cj-text-muted">Se liberará el stock reservado y la factura se archivará automáticamente.</p>}
+          </>
+        )}
+      </ConfirmDialog>
     </div>
   );
 };

@@ -4,8 +4,9 @@ import { useWebSocket } from '../../../context/WebSocketContext';
 import {
   Send, Building2, MapPin, DollarSign, Phone, Mail, User, CheckCheck, Check,
   ArrowLeft, MoreVertical, RefreshCw, Tag, Paperclip, Image as ImageIcon,
-  FileText, File as FileIcon, Download, X, Receipt, Info, ChevronUp,
+  FileText, File as FileIcon, Download, X, Receipt, Info, ChevronUp, EyeOff,
 } from 'lucide-react';
+import ConfirmDialog from '../../ui/ConfirmDialog';
 import InvoiceSelectorModal from '../../Client/Quotations/InvoiceSelectorModal';
 import InvoiceMentionBubble, { InvoiceBriefData } from '../../Client/Quotations/InvoiceMentionBubble';
 
@@ -34,6 +35,7 @@ interface Thread {
   last_message_at?: string;
   client_unread: number;
   admin_unread: number;
+  eliminado_por_cliente?: boolean;
   client?: ClientSummary;
 }
 
@@ -197,7 +199,9 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
     }
   };
 
-  const changeStatus = async (newStatus: string) => {
+  const [confirmStatus, setConfirmStatus] = useState<string | null>(null);
+
+  const performStatusChange = async (newStatus: string) => {
     if (changingStatus) return;
     setChangingStatus(true);
     try {
@@ -211,6 +215,11 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
     } finally {
       setChangingStatus(false);
     }
+  };
+
+  const changeStatus = (newStatus: string) => {
+    if (newStatus === thread?.status) return;
+    setConfirmStatus(newStatus);
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,6 +264,12 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-cj-text-primary mb-1">{thread.service_name}</h3>
           <p className="text-xs text-cj-text-muted font-mono">ID: {thread.id.slice(0, 8).toUpperCase()}</p>
+          {thread.eliminado_por_cliente && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-50 border border-orange-200 text-orange-700 text-xs">
+              <EyeOff className="w-3.5 h-3.5" />
+              <span>Cliente ocultó este chat de su vista</span>
+            </div>
+          )}
         </div>
 
         <div className="mb-6 relative">
@@ -629,6 +644,28 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
         onClose={() => setInvoicePickerOpen(false)}
         onConfirm={sendInvoiceMention}
       />
+
+      <ConfirmDialog
+        open={confirmStatus !== null}
+        onClose={() => setConfirmStatus(null)}
+        onConfirm={async () => {
+          if (confirmStatus) await performStatusChange(confirmStatus);
+        }}
+        title="Cambiar estado de la cotización"
+        description={`${thread.service_name} → ${STATUS_OPTIONS.find(s => s.value === confirmStatus)?.label || confirmStatus}`}
+        variant={confirmStatus === 'cancelled' ? 'destructive' : 'warning'}
+        confirmLabel="Cambiar estado"
+      >
+        {confirmStatus && (
+          <>
+            <p>Estado actual: <strong>{STATUS_OPTIONS.find(s => s.value === thread.status)?.label || thread.status}</strong></p>
+            <p className="mt-1">Nuevo estado: <strong>{STATUS_OPTIONS.find(s => s.value === confirmStatus)?.label || confirmStatus}</strong></p>
+            {['closed', 'quoted', 'cancelled'].includes(confirmStatus) && (
+              <p className="mt-2 text-xs text-cj-text-muted">Esta cotización quedará marcada como concretada y se archivará automáticamente al historial en 7 días.</p>
+            )}
+          </>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

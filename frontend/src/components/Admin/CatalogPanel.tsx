@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import PaginationControls from '../Pagination/PaginationControls';
 import InventoryForm from './InventoryForm';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 interface CatalogProduct {
   id: number;         // CatalogItem.id
@@ -331,9 +332,9 @@ const CatalogPanel = () => {
   const [total, setTotal] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: number; name: string } | null>(null);
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("¿Estás seguro de eliminar este artículo del catálogo?")) return;
+  const performDelete = async (id: number) => {
     setDeletingId(id);
     try {
       await api.delete(`/admin/inventory/${id}`);
@@ -343,6 +344,11 @@ const CatalogPanel = () => {
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleDelete = (id: number) => {
+    const item = items.find((it) => it.id === id);
+    setConfirmDelete({ id, name: item?.service?.nombre || `Ítem #${id}` });
   };
 
   const fetchItems = useCallback(async () => {
@@ -473,14 +479,28 @@ const CatalogPanel = () => {
 
       {/* Paginación */}
       <div className="px-4 pb-4">
-        <PaginationControls 
-          page={page} 
-          totalPages={totalPages} 
-          totalItems={total} 
-          pageSize={PAGE_SIZE} 
-          onPageChange={setPage} 
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          totalItems={total}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
         />
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={async () => {
+          if (confirmDelete) await performDelete(confirmDelete.id);
+        }}
+        title="Eliminar artículo del catálogo"
+        description={confirmDelete?.name}
+        variant="destructive"
+        confirmLabel="Eliminar"
+      >
+        <p>Esta acción es <strong>irreversible</strong>. Si hay stock asociado, también se perderá la trazabilidad de movimientos.</p>
+      </ConfirmDialog>
     </div>
   );
 };

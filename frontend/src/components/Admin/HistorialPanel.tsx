@@ -58,6 +58,7 @@ export default function HistorialPanel() {
   const [detailId, setDetailId] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<null | { item: HistorialListItem; type: 'reactivar' | 'delete' }>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [noDataModalOpen, setNoDataModalOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [sweeping, setSweeping] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -90,7 +91,13 @@ export default function HistorialPanel() {
       URL.revokeObjectURL(url);
       setFeedback('✅ Excel descargado.');
     } catch (err: any) {
-      setFeedback(err?.response?.data?.detail?.message || 'Error al exportar.');
+      // 404 NO_DATA → mostrar modal informativo, no error rojo
+      const detail = err?.response?.data?.detail;
+      if (err?.response?.status === 404 && (typeof detail === 'object' && detail?.code === 'NO_DATA')) {
+        setNoDataModalOpen(true);
+      } else {
+        setFeedback(detail?.message || detail || 'Error al exportar.');
+      }
     } finally {
       setExporting(false);
     }
@@ -385,6 +392,31 @@ export default function HistorialPanel() {
       >
         Esta acción borra <strong>permanentemente</strong> esta entrada del historial. La transacción original no se ve afectada.
       </ConfirmDialog>
+
+      {/* No hay datos */}
+      <Modal
+        open={noDataModalOpen}
+        onClose={() => setNoDataModalOpen(false)}
+        title="Sin datos para exportar"
+        size="sm"
+        footer={
+          <button
+            type="button"
+            onClick={() => setNoDataModalOpen(false)}
+            className="px-4 py-1.5 text-sm rounded-lg bg-cj-accent-blue hover:bg-cj-accent-blue-dark text-white"
+          >
+            Entendido
+          </button>
+        }
+      >
+        <div className="flex items-start gap-3">
+          <Archive className="w-5 h-5 text-cj-text-muted mt-0.5 shrink-0" />
+          <div>
+            <p>No hay transacciones archivadas que coincidan con los filtros actuales.</p>
+            <p className="mt-2 text-xs text-cj-text-muted">Ajusta los filtros (tipo, fechas) o espera a que haya nuevas transacciones archivadas.</p>
+          </div>
+        </div>
+      </Modal>
 
       {/* Bulk delete */}
       <ConfirmDialog

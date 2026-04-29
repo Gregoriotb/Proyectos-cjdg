@@ -3,7 +3,7 @@ import { api } from '../../../services/api';
 import { useWebSocket } from '../../../context/WebSocketContext';
 import {
   MessageCircle, Clock, ArrowRight, AlertCircle,
-  DollarSign, Bell
+  DollarSign, Bell, EyeOff, Eye, RotateCcw
 } from 'lucide-react';
 
 interface QuotationItem {
@@ -36,20 +36,36 @@ interface Props {
 
 export default function ClientQuotationsList({ onSelectThread }: Props) {
   const [threads, setThreads] = useState<QuotationItem[]>([]);
+  const [hiddenThreads, setHiddenThreads] = useState<QuotationItem[]>([]);
+  const [showHidden, setShowHidden] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
   const loadThreads = useCallback(async () => {
     try {
-      const params = filter !== 'all' ? { status_filter: filter } : {};
-      const res = await api.get('/chat-quotations/my-threads', { params });
-      setThreads(res.data);
+      const params: Record<string, any> = {};
+      if (filter !== 'all') params.status_filter = filter;
+      const [active, hidden] = await Promise.all([
+        api.get('/chat-quotations/my-threads', { params }),
+        api.get('/chat-quotations/my-threads', { params: { ...params, only_hidden: true } }),
+      ]);
+      setThreads(active.data);
+      setHiddenThreads(hidden.data);
     } catch (e) {
       console.error('Error cargando cotizaciones:', e);
     } finally {
       setLoading(false);
     }
   }, [filter]);
+
+  const restoreThread = async (id: string) => {
+    try {
+      await api.patch(`/chat-quotations/threads/${id}/recuperar`);
+      await loadThreads();
+    } catch (e) {
+      console.error('Error al recuperar chat:', e);
+    }
+  };
 
   // SC-WS-01: carga inicial + refresh reactivo via WebSocket (sin polling)
   const { subscribe } = useWebSocket();
@@ -172,6 +188,44 @@ export default function ClientQuotationsList({ onSelectThread }: Props) {
           </div>
         )}
       </div>
+
+      {/* SC-06 (FEAT-Historial-v2.4): chats ocultos por el cliente */}
+      {hiddenThreads.length > 0 && (
+        <div className="border-t border-cj-border pt-4">
+          <button
+            type="button"
+            onClick={() => setShowHidden(v => !v)}
+            className="inline-flex items-center gap-2 text-xs text-cj-text-muted hover:text-cj-text-primary transition-colors"
+          >
+            {showHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            {showHidden ? 'Ocultar' : 'Mostrar'} {hiddenThreads.length} chat{hiddenThreads.length > 1 ? 's' : ''} oculto{hiddenThreads.length > 1 ? 's' : ''}
+          </button>
+          {showHidden && (
+            <div className="mt-3 space-y-2">
+              {hiddenThreads.map((thread) => (
+                <div
+                  key={thread.id}
+                  className="bg-cj-bg-secondary border border-cj-border rounded-lg p-3 flex items-center justify-between gap-3 opacity-75"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-cj-text-primary truncate">{thread.service_name}</p>
+                    <p className="text-xs text-cj-text-muted">
+                      {STATUS_LABELS[thread.status] || thread.status}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => restoreThread(thread.id)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-cj-surface border border-cj-border text-cj-text-secondary hover:text-cj-accent-blue hover:border-cj-accent-blue transition-colors shrink-0"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Recuperar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

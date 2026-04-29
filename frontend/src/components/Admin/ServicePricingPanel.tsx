@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 import { Search, DollarSign, RefreshCw, Edit2, X, Check, Plus, Trash2, ToggleLeft, ToggleRight, AlertCircle, UploadCloud } from 'lucide-react';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 interface CorporateService {
   id: number;
@@ -272,7 +273,9 @@ const ServicePricingPanel = () => {
     fetchServices();
   }, [fetchServices]);
 
-  const handleDelete = async (id: number) => {
+  const [confirmDelete, setConfirmDelete] = useState<{ id: number; name: string } | null>(null);
+
+  const performDelete = async (id: number) => {
     setDeletingId(id);
     try {
       await api.delete(`/admin/corporate-services/${id}`);
@@ -282,6 +285,10 @@ const ServicePricingPanel = () => {
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleDelete = (id: number, name: string) => {
+    setConfirmDelete({ id, name });
   };
 
   const handleEdit = (srv: CorporateService) => {
@@ -434,7 +441,7 @@ const ServicePricingPanel = () => {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(srv.id)}
+                            onClick={() => handleDelete(srv.id, srv.nombre)}
                             disabled={deletingId === srv.id}
                             className="p-1.5 rounded text-cj-text-secondary hover:text-cj-danger hover:bg-red-50 transition-colors disabled:opacity-50"
                             title="Eliminar"
@@ -451,6 +458,20 @@ const ServicePricingPanel = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={async () => {
+          if (confirmDelete) await performDelete(confirmDelete.id);
+        }}
+        title="Eliminar servicio corporativo"
+        description={confirmDelete?.name}
+        variant="destructive"
+        confirmLabel="Eliminar"
+      >
+        <p>El servicio se eliminará del catálogo corporativo. Cotizaciones existentes mantienen su referencia, pero no podrán crearse nuevas con este servicio.</p>
+      </ConfirmDialog>
     </div>
   );
 };
