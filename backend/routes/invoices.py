@@ -157,7 +157,61 @@ def checkout(
     return invoice
 
 
-# --- Admin ---
+# SC-05 (FEAT-Historial-v2.4): el cliente elimina factura solo si está PENDING
+@router.delete("/{invoice_id}")
+def delete_my_invoice(
+    invoice_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Soft-archive con status DELETED_BY_CLIENT + libera stock reservado.
+    Solo permitido si la factura es del cliente y está PENDING (no archivada).
+    """
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice or invoice.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    if invoice.archivado_en is not None:
+        raise HTTPException(status_code=400, detail={
+            "code": "ALREADY_ARCHIVED",
+            "message": "La factura ya está archivada y no puede eliminarse.",
+        })
+    if invoice.status != InvoiceStatusEnum.PENDING:
+        raise HTTPException(status_code=400, detail={
+            "code": "DELETION_NOT_ALLOWED",
+            "message": f"Solo facturas PENDING pueden eliminarse. Estado actual: {invoice.status.value}",
+            "status": invoice.status.value,
+        })
+
+    for inv_item in invoice.items:
+        if inv_item.catalog_item_id:
+            try:
+                stock_service.release_stock(
+                    db,
+                    catalog_item_id=inv_item.catalog_item_id,
+                    quantity=inv_item.cantidad,
+                    reference_type="invoice",
+                    reference_id=str(invoice.id),
+                    user_id=current_user.id,
+                    notes="cliente eliminó factura PENDING",
+                )
+            except HTTPException:
+                pass
+
+    invoice.status = InvoiceStatusEnum.CANCELLED
+    invoice.notas = (invoice.notas or "") + "\n[DELETED_BY_CLIENT]"
+    history = archive_service.archive_invoice(db, invoice, archived_by=current_user.id)
+    history.status_at_archive = "DELETED_BY_CLIENT"
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Factura eliminada y stock liberado",
+        "invoice_id": invoice.id,
+        "historial_id": history.id,
+    }
+
+
 @router.get("/all", response_model=List[InvoiceResponse])
 def get_all_invoices(
     user_id: Optional[str] = None,  # V2.3 — filtrar por cliente (para chat-cotizaciones)

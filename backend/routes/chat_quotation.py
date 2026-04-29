@@ -246,7 +246,11 @@ async def get_my_threads(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(QuotationThread).filter(QuotationThread.client_id == current_user.id)
+    query = db.query(QuotationThread).filter(
+        QuotationThread.client_id == current_user.id,
+        QuotationThread.eliminado_por_cliente.is_(False),
+        QuotationThread.archivado_en.is_(None),
+    )
     if status_filter:
         query = query.filter(QuotationThread.status == status_filter)
 
@@ -263,6 +267,44 @@ async def get_my_threads(
         base["last_message_time"] = last_msg.created_at if last_msg else None
         result.append(ThreadListItem(**base))
     return result
+
+
+# SC-06 (FEAT-Historial-v2.4): cliente oculta/recupera el thread de su vista
+@router.patch("/threads/{thread_id}/ocultar")
+async def hide_thread_for_client(
+    thread_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Marca el thread como eliminado_por_cliente. El admin sigue viéndolo.
+    Reversible vía /recuperar.
+    """
+    thread = db.query(QuotationThread).filter(QuotationThread.id == thread_id).first()
+    if not thread or thread.client_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Hilo no encontrado")
+    if thread.eliminado_por_cliente:
+        return {"success": True, "message": "El chat ya estaba oculto"}
+    thread.eliminado_por_cliente = True
+    thread.eliminado_por_cliente_at = datetime.utcnow()
+    db.commit()
+    return {"success": True, "message": "Chat ocultado", "recuperable": True}
+
+
+@router.patch("/threads/{thread_id}/recuperar")
+async def restore_thread_for_client(
+    thread_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Restaura la visibilidad del thread para el cliente."""
+    thread = db.query(QuotationThread).filter(QuotationThread.id == thread_id).first()
+    if not thread or thread.client_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Hilo no encontrado")
+    thread.eliminado_por_cliente = False
+    thread.eliminado_por_cliente_at = None
+    db.commit()
+    return {"success": True, "message": "Chat recuperado"}
 
 
 @router.get("/threads/{thread_id}", response_model=ThreadWithMessages)

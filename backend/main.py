@@ -366,6 +366,10 @@ from routes import admin_historial
 app.include_router(admin_historial.router, prefix="/api/v1/admin", tags=["Admin Historial"])
 app.include_router(admin_historial.maintenance_router, prefix="/api/v1/admin", tags=["Admin Maintenance"])
 
+# FEAT-Historial-Transacciones-v2.4 — SC-03 cliente del historial (read-only)
+from routes import cliente_historial
+app.include_router(cliente_historial.router, prefix="/api/v1", tags=["Cliente Historial"])
+
 # SC-CLIENT-01 — [CONTEXT: SERVICE_OPERATIONS] Facturas
 app.include_router(invoices.router, prefix="/api/v1/invoices", tags=["Facturas"])
 
