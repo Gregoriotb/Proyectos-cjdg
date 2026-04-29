@@ -4,7 +4,7 @@ import { useWebSocket } from '../../../context/WebSocketContext';
 import {
   Send, Building2, MapPin, DollarSign, Phone, Mail, User, CheckCheck, Check,
   ArrowLeft, MoreVertical, RefreshCw, Tag, Paperclip, Image as ImageIcon,
-  FileText, File as FileIcon, Download, X, Receipt, Zap,
+  FileText, File as FileIcon, Download, X, Receipt,
 } from 'lucide-react';
 import InvoiceSelectorModal from '../../Client/Quotations/InvoiceSelectorModal';
 import InvoiceMentionBubble, { InvoiceBriefData } from '../../Client/Quotations/InvoiceMentionBubble';
@@ -95,7 +95,6 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
   const [uploading, setUploading] = useState(false);
   const [invoicePickerOpen, setInvoicePickerOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
-  const [automating, setAutomating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -197,20 +196,6 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
     }
   };
 
-  const automateThread = async () => {
-    if (automating) return;
-    setAutomating(true);
-    try {
-      await api.post(`/chat-quotations/admin/threads/${threadId}/automate`);
-      alert('✅ Automatización enviada a ArtificialIC. La info viajará en segundo plano.');
-    } catch (e: any) {
-      console.error(e);
-      alert(e?.response?.data?.detail || 'Error al automatizar.');
-    } finally {
-      setAutomating(false);
-    }
-  };
-
   const changeStatus = async (newStatus: string) => {
     if (changingStatus) return;
     setChangingStatus(true);
@@ -300,21 +285,6 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
           )}
         </div>
 
-        <div className="mb-6">
-          <button
-            type="button"
-            onClick={automateThread}
-            disabled={automating}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm font-semibold shadow-cj-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            title="Enviar contacto, mensajes y facturas a ArtificialIC"
-          >
-            <Zap className={`w-4 h-4 ${automating ? 'animate-pulse' : ''}`} />
-            {automating ? 'Enviando...' : 'Automatizar'}
-          </button>
-          <p className="text-[10px] text-cj-text-muted mt-1.5 text-center">
-            Sincroniza el thread completo a ArtificialIC
-          </p>
-        </div>
 
         <div className="space-y-4">
           <div className="flex items-center gap-3 text-cj-text-secondary">
@@ -397,20 +367,8 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={automateThread}
-              disabled={automating}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs font-semibold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              title="Enviar contacto, mensajes y facturas a ArtificialIC"
-            >
-              <Zap className={`w-3.5 h-3.5 ${automating ? 'animate-pulse' : ''}`} />
-              <span className="hidden sm:inline">{automating ? 'Enviando...' : 'Automatizar'}</span>
-            </button>
-            <div className={`xl:hidden px-3 py-1 rounded-full text-xs border ${currentStatus?.color}`}>
-              {currentStatus?.label || thread.status}
-            </div>
+          <div className={`xl:hidden px-3 py-1 rounded-full text-xs border ${currentStatus?.color}`}>
+            {currentStatus?.label || thread.status}
           </div>
         </div>
 
