@@ -19,5 +19,39 @@
       data-api-key="wc_5a6bdbb8fb14cb75a044278c351e0e36e45c68c302e59b25"
       defer
     ></script>
+    <!-- Workaround: recarga el iframe del widget cada vez que se abre,
+         para forzar estado fresco (mensajes nuevos sin refrescar página). -->
+    <script>
+      (function () {
+        var SELECTOR = 'iframe[src*="artificialic.com"]';
+        var lastVisible = false;
+        function findIframe() {
+          return document.querySelector(SELECTOR);
+        }
+        function isVisible(el) {
+          if (!el) return false;
+          var rect = el.getBoundingClientRect();
+          if (rect.width < 50 || rect.height < 50) return false;
+          var style = getComputedStyle(el);
+          if (style.display === 'none' || style.visibility === 'hidden') return false;
+          if (parseFloat(style.opacity) < 0.1) return false;
+          return true;
+        }
+        function tick() {
+          var iframe = findIframe();
+          if (!iframe) return;
+          var visible = isVisible(iframe);
+          if (visible && !lastVisible) {
+            var src = iframe.src;
+            if (src && src !== 'about:blank') {
+              iframe.src = 'about:blank';
+              setTimeout(function () { iframe.src = src; }, 60);
+            }
+          }
+          lastVisible = visible;
+        }
+        setInterval(tick, 500);
+      })();
+    </script>
   </body>
 </html>
