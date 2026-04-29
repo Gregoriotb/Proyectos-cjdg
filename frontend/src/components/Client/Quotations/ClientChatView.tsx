@@ -5,8 +5,9 @@ import {
   Send, Paperclip, MapPin, Building2, DollarSign,
   Clock, Check, CheckCheck, ArrowLeft, AlertCircle,
   FileText, Image as ImageIcon, X, Download, File as FileIcon,
-  Receipt, Info, ChevronUp, ChevronDown,
+  Receipt, Info, ChevronUp, ChevronDown, EyeOff,
 } from 'lucide-react';
+import ConfirmDialog from '../../ui/ConfirmDialog';
 import InvoiceSelectorModal from './InvoiceSelectorModal';
 import InvoiceMentionBubble, { InvoiceBriefData } from './InvoiceMentionBubble';
 
@@ -79,6 +80,7 @@ export default function ClientChatView({ threadId, onBack }: Props) {
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
   const [invoicePickerOpen, setInvoicePickerOpen] = useState(false);
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
+  const [hideConfirmOpen, setHideConfirmOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -238,10 +240,17 @@ export default function ClientChatView({ threadId, onBack }: Props) {
         </button>
 
         <h2 className="text-lg font-semibold text-cj-text-primary mb-2">{thread.service_name}</h2>
-        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border mb-6 w-fit ${STATUS_COLORS[thread.status]}`}>
+        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border mb-3 w-fit ${STATUS_COLORS[thread.status]}`}>
           <AlertCircle className="w-3 h-3" />
           {STATUS_LABELS[thread.status] || thread.status}
         </div>
+        <button
+          onClick={() => setHideConfirmOpen(true)}
+          className="inline-flex items-center gap-1.5 text-xs text-cj-text-muted hover:text-red-600 mb-5 transition-colors"
+          title="Oculta este chat de tu vista. El admin sigue viéndolo."
+        >
+          <EyeOff className="w-3.5 h-3.5" /> Ocultar conversación
+        </button>
 
         <div className="space-y-4 flex-1 overflow-y-auto">
           {thread.company_name && (
@@ -534,6 +543,21 @@ export default function ClientChatView({ threadId, onBack }: Props) {
         onClose={() => setInvoicePickerOpen(false)}
         onConfirm={sendInvoiceMention}
       />
+
+      <ConfirmDialog
+        open={hideConfirmOpen}
+        onClose={() => setHideConfirmOpen(false)}
+        onConfirm={async () => {
+          await api.patch(`/chat-quotations/threads/${threadId}/ocultar`);
+          onBack();
+        }}
+        title="Ocultar esta conversación"
+        variant="warning"
+        confirmLabel="Ocultar"
+      >
+        <p>El chat dejará de aparecer en tu lista de cotizaciones.</p>
+        <p className="mt-2 text-xs text-cj-text-muted">El admin sigue viéndolo. Es reversible: puedes recuperarlo desde el botón en la lista.</p>
+      </ConfirmDialog>
     </div>
   );
 }
