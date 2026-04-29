@@ -35,7 +35,11 @@ migrations/*.sql
 seed.py
 seed_admin.py
 seed_catalog.py
-scripts/
+# scripts/ NO se ignora completo — necesitamos migrate_resilient.py en runtime.
+# Ignoramos solo los seeds individuales:
+scripts/extract_images.py
+scripts/extract_to_json.py
+scripts/ingest_catalogs.py
 
 # --- Editor / OS ---
 .idea
