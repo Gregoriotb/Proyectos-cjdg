@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../../context/CartContext';
 import { api } from '../../services/api';
+import { formatApiError } from '../../services/errors';
 import { Trash2, AlertCircle, ArrowRight, CheckCircle2, ShoppingCart, Receipt } from 'lucide-react';
 
 interface CartSectionProps {
@@ -32,7 +33,7 @@ const CartSection = ({ onGoToInvoices }: CartSectionProps) => {
       setSuccess(true);
       refreshCart();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error al procesar la compra.');
+      setError(formatApiError(err, 'Error al procesar la compra.'));
     } finally {
       setSubmitting(false);
     }

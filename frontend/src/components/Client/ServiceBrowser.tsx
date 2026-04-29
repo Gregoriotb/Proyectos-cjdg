@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
+import { formatApiError } from '../../services/errors';
 import { Wrench, Send, AlertCircle, CheckCircle2, Loader2, Sparkles, Crown, ArrowRight } from 'lucide-react';
 
 interface CorporateService {
@@ -91,7 +92,7 @@ const ServiceBrowser = () => {
         setSubmitted(false);
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Error al enviar la solicitud');
+      setError(formatApiError(err, 'Error al enviar la solicitud'));
     } finally {
       setSubmitting(false);
     }

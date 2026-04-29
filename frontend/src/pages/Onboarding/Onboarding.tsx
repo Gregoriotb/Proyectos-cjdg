@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth, AccountType } from '../../context/AuthContext';
+import { formatApiError } from '../../services/errors';
 
 const Onboarding = () => {
   const { user, isLoading, refreshUser } = useAuth();
@@ -63,7 +64,7 @@ const Onboarding = () => {
       await refreshUser();
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'No se pudo guardar tu información.');
+      setError(formatApiError(err, 'No se pudo guardar tu información.'));
     } finally {
       setSaving(false);
     }

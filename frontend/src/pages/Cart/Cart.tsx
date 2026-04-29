@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useCart } from '../../context/CartContext';
 import { Trash2, AlertCircle, FileText, ArrowRight, CheckCircle2, ShoppingCart, Receipt } from 'lucide-react';
 import { api } from '../../services/api';
+import { formatApiError } from '../../services/errors';
 import { useNavigate } from 'react-router-dom';
 
 const Cart = () => {
@@ -32,7 +33,7 @@ const Cart = () => {
       setSuccess(true);
       refreshCart();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Ocurrió un error al procesar tu compra. Intenta nuevamente.");
+      setError(formatApiError(err, "Ocurrió un error al procesar tu compra. Intenta nuevamente."));
     } finally {
       setSubmitting(false);
     }

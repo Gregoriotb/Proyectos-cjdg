@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api, getImageUrl } from '../../../services/api';
 import { useAuth, AccountType } from '../../../context/AuthContext';
+import { formatApiError } from '../../../services/errors';
 
 interface FormState {
   account_type: AccountType | '';
@@ -101,7 +102,7 @@ const ProfileForm = () => {
       });
       setForm((prev) => ({ ...prev, profile_photo_url: res.data.url }));
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'No se pudo subir la foto.');
+      setError(formatApiError(err, 'No se pudo subir la foto.'));
     } finally {
       setUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
@@ -121,7 +122,7 @@ const ProfileForm = () => {
       });
       setForm((prev) => ({ ...prev, rif_file_url: res.data.url }));
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'No se pudo subir el archivo.');
+      setError(formatApiError(err, 'No se pudo subir el archivo.'));
     } finally {
       setUploadingRif(false);
       if (rifInputRef.current) rifInputRef.current.value = '';
@@ -157,7 +158,7 @@ const ProfileForm = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'No se pudo guardar el perfil.');
+      setError(formatApiError(err, 'No se pudo guardar el perfil.'));
     } finally {
       setSaving(false);
     }
@@ -479,7 +480,7 @@ const SecurityPanel = () => {
       await refreshUser();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'No se pudo actualizar la contraseña.');
+      setError(formatApiError(err, 'No se pudo actualizar la contraseña.'));
     } finally {
       setSaving(false);
     }

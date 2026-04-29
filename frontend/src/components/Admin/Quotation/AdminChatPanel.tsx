@@ -9,6 +9,7 @@ import {
 import ConfirmDialog from '../../ui/ConfirmDialog';
 import InvoiceSelectorModal from '../../Client/Quotations/InvoiceSelectorModal';
 import InvoiceMentionBubble, { InvoiceBriefData } from '../../Client/Quotations/InvoiceMentionBubble';
+import { formatApiError } from '../../../services/errors';
 
 interface ClientSummary {
   id: string;
@@ -186,7 +187,7 @@ export default function AdminChatPanel({ threadId, onBack, onStatusChange }: Pro
       setNewMessage('');
     } catch (e: any) {
       console.error(e);
-      alert(e?.response?.data?.detail || 'Error al adjuntar las facturas.');
+      alert(formatApiError(e, 'Error al adjuntar las facturas.'));
     } finally {
       setSending(false);
     }

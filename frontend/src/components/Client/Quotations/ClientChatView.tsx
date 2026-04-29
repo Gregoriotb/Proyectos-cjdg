@@ -10,6 +10,7 @@ import {
 import ConfirmDialog from '../../ui/ConfirmDialog';
 import InvoiceSelectorModal from './InvoiceSelectorModal';
 import InvoiceMentionBubble, { InvoiceBriefData } from './InvoiceMentionBubble';
+import { formatApiError } from '../../../services/errors';
 
 interface ChatMessage {
   id: string;
@@ -172,7 +173,7 @@ export default function ClientChatView({ threadId, onBack }: Props) {
       setNewMessage('');
     } catch (e: any) {
       console.error(e);
-      alert(e?.response?.data?.detail || 'Error al adjuntar las facturas.');
+      alert(formatApiError(e, 'Error al adjuntar las facturas.'));
     } finally {
       setSending(false);
     }
