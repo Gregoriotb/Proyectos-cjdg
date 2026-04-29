@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
-  Home, ShoppingBag, ShoppingCart, Wrench, MessageSquare, Receipt, User, LogOut, Menu, X, AlertCircle, ArrowRight, Building2
+  Home, ShoppingBag, ShoppingCart, Wrench, MessageSquare, Receipt, User, LogOut, Menu, X, AlertCircle, ArrowRight, Building2, Archive
 } from 'lucide-react';
 import { getImageUrl } from '../../services/api';
 import ProductCatalogGrid from '../../components/Client/ProductCatalogGrid';
@@ -13,10 +13,11 @@ import InvoiceList from '../../components/Client/InvoiceList';
 import CartSection from '../../components/Client/CartSection';
 import ClientHome from '../../components/Client/Home/ClientHome';
 import ProfileForm from '../../components/Client/Profile/ProfileForm';
+import ClientHistorialList from '../../components/Client/ClientHistorialList';
 import NotificationBell from '../../components/NotificationBell';
 import { useCart } from '../../context/CartContext';
 
-type SectionType = 'overview' | 'catalog' | 'cart' | 'services' | 'quotations' | 'invoices' | 'profile';
+type SectionType = 'overview' | 'catalog' | 'cart' | 'services' | 'quotations' | 'invoices' | 'historial' | 'profile';
 
 const SECTIONS = [
   { key: 'overview' as SectionType, label: 'Inicio', icon: Home },
@@ -25,6 +26,7 @@ const SECTIONS = [
   { key: 'services' as SectionType, label: 'Servicios CJDG', icon: Wrench },
   { key: 'quotations' as SectionType, label: 'Cotizaciones', icon: MessageSquare },
   { key: 'invoices' as SectionType, label: 'Facturas', icon: Receipt },
+  { key: 'historial' as SectionType, label: 'Mi Historial', icon: Archive },
   { key: 'profile' as SectionType, label: 'Mi Perfil', icon: User },
 ];
 
@@ -233,6 +235,7 @@ const ClientDashboard = () => {
               : <ClientQuotationsList onSelectThread={setSelectedThreadId} />
           )}
           {activeSection === 'invoices' && <InvoiceList />}
+          {activeSection === 'historial' && <ClientHistorialList />}
           {activeSection === 'profile' && <ProfileForm />}
         </main>
       </div>
