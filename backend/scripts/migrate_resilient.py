@@ -6,22 +6,29 @@ editor de Neon u otro path), así que `alembic upgrade head` falla con
 DuplicateColumn al intentar re-aplicar migraciones cuyo schema ya existe.
 
 Estrategia:
-  1. Inspeccionar information_schema para saber qué tablas/columnas existen.
-  2. Aplicar el delta de FEAT-Historial-v2.4 con SQL idempotente
+  1. Aplicar el delta de FEAT-Historial-v2.4 con SQL idempotente
      (ADD COLUMN IF NOT EXISTS, CREATE TABLE IF NOT EXISTS).
-  3. Stampar alembic_version a la revisión actual del repo (head) sin correr
-     upgrade — la DB ya está sincronizada con los modelos.
+  2. Stampar alembic_version a la revisión actual del repo (head).
+
+Usamos SQLAlchemy en lugar de psycopg2.connect directo porque la URL de
+Neon trae parámetros que el parser DSN crudo de psycopg2 no acepta
+(ej: channel_binding, options, sslmode con valores compuestos). SQLAlchemy
+los normaliza correctamente.
 
 Si en el futuro se agregan más migraciones, este script se EXTIENDE con
 otro bloque idempotente, no se reescribe. El día que la DB esté sana
 podemos eliminarlo y volver a `alembic upgrade head` normal.
 """
+import logging
 import os
 import sys
-import logging
 
-import psycopg2
-from psycopg2 import sql
+from sqlalchemy import create_engine, text
+
+# DATABASE_URL viene del env (mismo origen que database.py de la app).
+# No importamos `from database` porque scripts/ no está en el sys.path por
+# default cuando se corre 'python scripts/migrate_resilient.py'.
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("migrate_resilient")
@@ -103,62 +110,40 @@ DELTA_SQL = [
 ]
 
 
-def get_database_url() -> str:
-    url = os.getenv("DATABASE_URL")
-    if not url:
-        log.error("DATABASE_URL no está definida en el entorno")
-        sys.exit(1)
-    return url
-
-
-def ensure_alembic_version_table(cur) -> None:
-    """Crea alembic_version si no existe y asegura que tenga al menos una row."""
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS alembic_version (
-            version_num VARCHAR(32) NOT NULL,
-            CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
-        );
-    """)
-
-
-def stamp_revision(cur, revision: str) -> None:
-    """Pone alembic_version a `revision` (idempotente)."""
-    cur.execute("DELETE FROM alembic_version;")
-    cur.execute("INSERT INTO alembic_version (version_num) VALUES (%s);", (revision,))
-
-
-def apply_delta(conn) -> None:
-    cur = conn.cursor()
-    try:
-        ensure_alembic_version_table(cur)
-        for stmt in DELTA_SQL:
-            cur.execute(stmt)
-        stamp_revision(cur, TARGET_REVISION)
-        conn.commit()
-        log.info("✓ Delta aplicado y alembic_version stampada a %s", TARGET_REVISION)
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        cur.close()
+# DDL para asegurar la tabla alembic_version (idempotente).
+ENSURE_ALEMBIC_VERSION = """
+CREATE TABLE IF NOT EXISTS alembic_version (
+    version_num VARCHAR(32) NOT NULL,
+    CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
+);
+"""
 
 
 def main() -> int:
-    url = get_database_url()
-    log.info("Conectando a la base de datos...")
-    try:
-        conn = psycopg2.connect(url)
-    except Exception as e:
-        log.error("No se pudo conectar a la DB: %s", e)
+    if not DATABASE_URL:
+        log.error("DATABASE_URL no está definida")
         return 1
 
+    log.info("Conectando a la base de datos via SQLAlchemy...")
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
     try:
-        apply_delta(conn)
+        with engine.begin() as conn:
+            conn.execute(text(ENSURE_ALEMBIC_VERSION))
+            for stmt in DELTA_SQL:
+                conn.execute(text(stmt))
+            # Stampa la versión: borra todo y deja solo la target
+            conn.execute(text("DELETE FROM alembic_version"))
+            conn.execute(
+                text("INSERT INTO alembic_version (version_num) VALUES (:rev)"),
+                {"rev": TARGET_REVISION},
+            )
+        log.info("✓ Delta aplicado y alembic_version stampada a %s", TARGET_REVISION)
     except Exception as e:
         log.exception("Falló la aplicación del delta: %s", e)
         return 1
     finally:
-        conn.close()
+        engine.dispose()
 
     log.info("✓ Migración resiliente OK. Arrancando uvicorn.")
     return 0
