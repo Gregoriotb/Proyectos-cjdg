@@ -2,7 +2,7 @@
 [CONTEXT: SERVICE_OPERATIONS] - SQLAlchemy Model - Invoice
 SC-CLIENT-01: Sistema de facturas separado de cotizaciones.
 """
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum, Numeric, DateTime, Text
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, Enum, Numeric, DateTime, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from database import Base
@@ -34,6 +34,11 @@ class Invoice(Base):
 
     # Referencia opcional a cotización de servicios
     quotation_id = Column(Integer, ForeignKey("quotations.id"), nullable=True)
+
+    # FEAT-Historial-v2.4
+    tipo_documento = Column(String(20), nullable=False, default="factura")  # 'factura' | 'nota_entrega'
+    archivado_en = Column(DateTime(timezone=True), nullable=True, index=True)
+    historial_id = Column(Integer, ForeignKey("transaction_history.id"), nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
