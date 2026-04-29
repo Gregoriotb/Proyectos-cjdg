@@ -166,9 +166,9 @@ const ClientDashboard = () => {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="h-16 border-b border-cj-border bg-cj-surface flex items-center justify-between px-6 lg:px-8 sticky top-0 z-30">
+        <header className="h-16 border-b border-cj-border bg-cj-surface flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -198,7 +198,7 @@ const ClientDashboard = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto bg-cj-bg-primary">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden bg-cj-bg-primary">
           {/* Banner de perfil incompleto — visible en todas las secciones excepto 'profile' */}
           {profileIncomplete && activeSection !== 'profile' && (
             <button
