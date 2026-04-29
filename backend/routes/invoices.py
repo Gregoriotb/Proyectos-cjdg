@@ -15,6 +15,7 @@ from models.cart import Cart, CartItem
 from models.catalog import CatalogItem
 from services.notifications import notify
 from services.profile_validator import require_complete_profile
+from services import stock_service, archive_service
 from models.service import Service
 from schemas.invoice import InvoiceResponse
 from dependencies import get_current_user, get_current_admin
@@ -25,6 +26,8 @@ router = APIRouter()
 # --- Schemas ---
 class CheckoutRequest(BaseModel):
     notas: Optional[str] = None
+    # SC-08 (FEAT-Historial-v2.4): cliente elige tipo de documento
+    tipo_documento: str = "factura"  # 'factura' | 'nota_entrega'
 
 
 class InvoiceStatusUpdate(BaseModel):
@@ -38,8 +41,13 @@ def get_my_invoices(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Lista las facturas del usuario autenticado."""
-    return db.query(Invoice).filter(Invoice.user_id == current_user.id).order_by(Invoice.created_at.desc()).all()
+    """Lista las facturas del usuario autenticado (no archivadas)."""
+    return (
+        db.query(Invoice)
+        .filter(Invoice.user_id == current_user.id, Invoice.archivado_en.is_(None))
+        .order_by(Invoice.created_at.desc())
+        .all()
+    )
 
 
 @router.post("/checkout", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
@@ -51,9 +59,31 @@ def checkout(
 ):
     """
     Convierte el carrito en factura. Descuenta stock automáticamente.
-    Solo items con precio y stock disponible. Requiere perfil completo.
+    Solo items con precio y stock disponible.
+    Si tipo_documento='factura', requiere perfil fiscal completo.
+    'nota_entrega' solo requiere datos básicos (full_name + phone + email).
     """
-    require_complete_profile(current_user)
+    tipo_doc = (data.tipo_documento or "factura").strip().lower()
+    if tipo_doc not in ("factura", "nota_entrega"):
+        raise HTTPException(status_code=400, detail="tipo_documento inválido. Usa 'factura' o 'nota_entrega'.")
+
+    if tipo_doc == "factura":
+        require_complete_profile(current_user)
+    else:
+        # nota_entrega: solo necesitamos contactabilidad básica
+        missing = []
+        if not (current_user.full_name and current_user.full_name.strip()):
+            missing.append("full_name")
+        if not (current_user.phone and current_user.phone.strip()):
+            missing.append("phone")
+        if not (current_user.email and current_user.email.strip()):
+            missing.append("email")
+        if missing:
+            raise HTTPException(status_code=400, detail={
+                "code": "PROFILE_INCOMPLETE",
+                "message": "Completa los datos básicos para emitir nota de entrega.",
+                "missing_fields": missing,
+            })
 
     cart = db.query(Cart).filter(Cart.user_id == current_user.id).first()
     if not cart or not cart.items:
@@ -71,11 +101,11 @@ def checkout(
         if not service:
             continue
 
-        # Verificar stock
-        if catalog_item.stock < cart_item.quantity:
+        # Verificar stock disponible (físico - reservado)
+        if stock_service.available(catalog_item) < cart_item.quantity:
             raise HTTPException(
                 status_code=400,
-                detail=f"Stock insuficiente para '{service.nombre}'. Disponible: {catalog_item.stock}, solicitado: {cart_item.quantity}"
+                detail=f"Stock insuficiente para '{service.nombre}'. Disponible: {stock_service.available(catalog_item)}, solicitado: {cart_item.quantity}"
             )
 
         # Calcular precio con descuento si aplica
@@ -104,14 +134,16 @@ def checkout(
         status=InvoiceStatusEnum.PENDING,
         total=total,
         notas=data.notas,
+        tipo_documento=tipo_doc,
     )
     db.add(invoice)
     db.flush()
 
-    # Crear items de factura + descontar stock
+    # Crear items de factura + reservar stock (no descontamos físico hasta que se pague)
     for item_data in invoice_items:
         inv_item = InvoiceItem(
             invoice_id=invoice.id,
+            catalog_item_id=item_data["catalog_item_id"],
             descripcion=item_data["descripcion"],
             cantidad=item_data["cantidad"],
             precio_unitario=item_data["precio_unitario"],
@@ -119,10 +151,15 @@ def checkout(
         )
         db.add(inv_item)
 
-        # Descontar stock
-        catalog_item = db.query(CatalogItem).filter(CatalogItem.id == item_data["catalog_item_id"]).first()
-        if catalog_item:
-            catalog_item.stock -= item_data["cantidad"]
+        # Reservar stock (incrementa stock_reservado, no toca stock físico)
+        stock_service.reserve_stock(
+            db,
+            catalog_item_id=item_data["catalog_item_id"],
+            quantity=item_data["cantidad"],
+            reference_type="invoice",
+            reference_id=str(invoice.id),
+            user_id=current_user.id,
+        )
 
     # Limpiar carrito
     for cart_item in cart.items:
@@ -145,15 +182,72 @@ def checkout(
     return invoice
 
 
-# --- Admin ---
+# SC-05 (FEAT-Historial-v2.4): el cliente elimina factura solo si está PENDING
+@router.delete("/{invoice_id}")
+def delete_my_invoice(
+    invoice_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Soft-archive con status DELETED_BY_CLIENT + libera stock reservado.
+    Solo permitido si la factura es del cliente y está PENDING (no archivada).
+    """
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice or invoice.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    if invoice.archivado_en is not None:
+        raise HTTPException(status_code=400, detail={
+            "code": "ALREADY_ARCHIVED",
+            "message": "La factura ya está archivada y no puede eliminarse.",
+        })
+    if invoice.status != InvoiceStatusEnum.PENDING:
+        raise HTTPException(status_code=400, detail={
+            "code": "DELETION_NOT_ALLOWED",
+            "message": f"Solo facturas PENDING pueden eliminarse. Estado actual: {invoice.status.value}",
+            "status": invoice.status.value,
+        })
+
+    for inv_item in invoice.items:
+        if inv_item.catalog_item_id:
+            try:
+                stock_service.release_stock(
+                    db,
+                    catalog_item_id=inv_item.catalog_item_id,
+                    quantity=inv_item.cantidad,
+                    reference_type="invoice",
+                    reference_id=str(invoice.id),
+                    user_id=current_user.id,
+                    notes="cliente eliminó factura PENDING",
+                )
+            except HTTPException:
+                pass
+
+    invoice.status = InvoiceStatusEnum.CANCELLED
+    invoice.notas = (invoice.notas or "") + "\n[DELETED_BY_CLIENT]"
+    history = archive_service.archive_invoice(db, invoice, archived_by=current_user.id)
+    history.status_at_archive = "DELETED_BY_CLIENT"
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Factura eliminada y stock liberado",
+        "invoice_id": invoice.id,
+        "historial_id": history.id,
+    }
+
+
 @router.get("/all", response_model=List[InvoiceResponse])
 def get_all_invoices(
     user_id: Optional[str] = None,  # V2.3 — filtrar por cliente (para chat-cotizaciones)
+    include_archived: bool = False,  # V2.4 — opt-in para ver archivadas en el endpoint vivo
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """Lista TODAS las facturas del sistema (solo Admin). Filtrable por user_id."""
     query = db.query(Invoice)
+    if not include_archived:
+        query = query.filter(Invoice.archivado_en.is_(None))
     if user_id:
         query = query.filter(Invoice.user_id == user_id)
     return query.order_by(Invoice.created_at.desc()).all()
@@ -184,21 +278,50 @@ def update_invoice_status(
     if not new_status:
         raise HTTPException(status_code=400, detail=f"Estado no válido: {data.status}")
 
-    # Si se cancela, devolver stock
-    if new_status == InvoiceStatusEnum.CANCELLED and invoice.status != InvoiceStatusEnum.CANCELLED:
+    # FEAT-Historial-v2.4: ajuste de stock por transición de status
+    # PAID → confirm (descuenta físico, libera reserva)
+    # CANCELLED / OVERDUE → release (libera reserva, no toca físico)
+    prev_status = invoice.status
+    is_transition_in = prev_status not in (InvoiceStatusEnum.PAID, InvoiceStatusEnum.CANCELLED, InvoiceStatusEnum.OVERDUE)
+    confirm_states = {InvoiceStatusEnum.PAID}
+    release_states = {InvoiceStatusEnum.CANCELLED, InvoiceStatusEnum.OVERDUE}
+
+    if is_transition_in and (new_status in confirm_states or new_status in release_states):
         for inv_item in invoice.items:
-            # Buscar catalog_item por descripción (ya que no guardamos el ID directo)
-            service_name = inv_item.descripcion.split(" (")[0]
-            service = db.query(Service).filter(Service.nombre == service_name).first()
-            if service:
-                catalog_item = db.query(CatalogItem).filter(CatalogItem.service_id == service.id).first()
-                if catalog_item:
-                    catalog_item.stock += inv_item.cantidad
+            if not inv_item.catalog_item_id:
+                continue
+            try:
+                if new_status in confirm_states:
+                    stock_service.confirm_stock(
+                        db,
+                        catalog_item_id=inv_item.catalog_item_id,
+                        quantity=inv_item.cantidad,
+                        reference_type="invoice",
+                        reference_id=str(invoice.id),
+                        user_id=current_admin.id,
+                        notes=f"status → {new_status.value}",
+                    )
+                else:
+                    stock_service.release_stock(
+                        db,
+                        catalog_item_id=inv_item.catalog_item_id,
+                        quantity=inv_item.cantidad,
+                        reference_type="invoice",
+                        reference_id=str(invoice.id),
+                        user_id=current_admin.id,
+                        notes=f"status → {new_status.value}",
+                    )
+            except HTTPException:
+                # No bloquear el cambio de status si el stock_service falla
+                pass
 
     old_status_label = invoice.status.value if invoice.status else "—"
     invoice.status = new_status
     if data.notas:
         invoice.notas = data.notas
+
+    # FEAT-Historial-v2.4: si el status quedó terminal, archivar (idempotente)
+    archive_service.auto_archive_invoice_if_terminal(db, invoice, archived_by=current_admin.id)
 
     db.commit()
     db.refresh(invoice)

@@ -10,5 +10,7 @@ from .invoice import Invoice, InvoiceItem
 from .chat_quotation import QuotationThread, ChatMessage
 from .notification import Notification
 from .api_key import ApiKey
+from .transaction_history import TransactionHistory, TransactionHistoryItem
+from .stock_movement import StockMovement
 
 # Esto permite que Alembic lea todos los modelos importando solo __init__

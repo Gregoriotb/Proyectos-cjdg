@@ -5,7 +5,7 @@ Ruta: backend/models/chat_quotation.py
 Nota: el atributo ORM `message_metadata` se mapea a la columna SQL `metadata`
 (nombre reservado por SQLAlchemy a nivel de atributo, no de columna).
 """
-from sqlalchemy import Column, String, Text, Numeric, Integer, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, String, Text, Numeric, Integer, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from database import Base
@@ -35,6 +35,13 @@ class QuotationThread(Base):
 
     client_unread = Column(Integer, default=0)
     admin_unread = Column(Integer, default=0)
+
+    # FEAT-Historial-v2.4
+    fecha_concretada = Column(DateTime(timezone=True), nullable=True)
+    archivado_en = Column(DateTime(timezone=True), nullable=True, index=True)
+    historial_id = Column(Integer, ForeignKey("transaction_history.id"), nullable=True)
+    eliminado_por_cliente = Column(Boolean, nullable=False, default=False)
+    eliminado_por_cliente_at = Column(DateTime(timezone=True), nullable=True)
 
     client = relationship("User", foreign_keys=[client_id], back_populates="quotation_threads")
     service = relationship("ServiceCatalog", foreign_keys=[service_id])

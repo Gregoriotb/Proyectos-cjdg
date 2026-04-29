@@ -17,6 +17,8 @@ class CatalogItem(Base):
     price = Column(Numeric(10, 2), nullable=True, index=True) # Precio puede ser nulo si "A convenir"
     is_available = Column(Boolean, default=True)
     stock = Column(Integer, default=0, nullable=False)
+    # FEAT-Historial-v2.4: stock reservado por carritos/facturas en proceso (no liberado aún)
+    stock_reservado = Column(Integer, default=0, nullable=False)
     is_offer = Column(Boolean, default=False, nullable=False)
     discount_percentage = Column(Float, default=0.0, nullable=False)
 
