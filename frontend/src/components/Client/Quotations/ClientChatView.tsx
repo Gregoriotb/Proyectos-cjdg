@@ -363,6 +363,16 @@ export default function ClientChatView({ threadId, onBack }: Props) {
                   <p className="text-cj-text-secondary bg-cj-bg-tertiary p-2 rounded-lg mt-1 whitespace-pre-wrap text-xs">{thread.requirements}</p>
                 </div>
               </div>
+
+              {/* SC-06: ocultar también disponible en mobile/tablet */}
+              <div className="pt-2 border-t border-cj-border">
+                <button
+                  onClick={() => { setMobileInfoOpen(false); setHideConfirmOpen(true); }}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium transition-colors"
+                >
+                  <EyeOff className="w-3.5 h-3.5" /> Ocultar conversación
+                </button>
+              </div>
             </div>
           )}
         </div>
