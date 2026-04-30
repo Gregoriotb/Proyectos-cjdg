@@ -115,7 +115,9 @@ def get_inventory(
             "service_id": item.service_id,
             "price": float(item.price) if item.price else None,
             "is_available": item.is_available,
-            "stock": item.stock,
+            "stock": item.stock,  # físico en almacén
+            "stock_reservado": item.stock_reservado or 0,  # comprometido en facturas PENDING
+            "stock_disponible": max(0, (item.stock or 0) - (item.stock_reservado or 0)),
             "is_offer": item.is_offer,
             "discount_percentage": item.discount_percentage,
             "service": {

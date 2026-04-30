@@ -53,7 +53,7 @@ def get_active_offers(
             original_price=item.price,
             discount_percentage=disc,
             final_price=round(price * (1 - disc / 100), 2),
-            stock=item.stock or 0,
+            stock=max(0, (item.stock or 0) - (item.stock_reservado or 0)),
             image_urls=svc.image_urls or [],
             service_id=svc.id,
         ))
@@ -121,7 +121,9 @@ def get_catalog(
                 "service_id": item.service_id,
                 "price": float(item.price) if item.price else None,
                 "is_available": item.is_available,
-                "stock": item.stock,
+                "stock": max(0, (item.stock or 0) - (item.stock_reservado or 0)),  # disponible
+                "stock_fisico": item.stock or 0,
+                "stock_reservado": item.stock_reservado or 0,
                 "is_offer": item.is_offer,
                 "discount_percentage": item.discount_percentage,
                 "service": {
@@ -157,7 +159,8 @@ async def stock_stream():
             try:
                 db = SessionLocal()
                 items = db.query(CatalogItem).filter(CatalogItem.is_available == True).all()
-                stock_data = {item.id: item.stock for item in items}
+                # Devolver stock disponible (físico - reservado), no físico raw
+                stock_data = {item.id: max(0, (item.stock or 0) - (item.stock_reservado or 0)) for item in items}
                 db.close()
 
                 yield f"data: {json.dumps(stock_data)}\n\n"

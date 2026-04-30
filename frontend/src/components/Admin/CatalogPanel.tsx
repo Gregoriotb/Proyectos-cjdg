@@ -14,6 +14,8 @@ interface CatalogProduct {
   price: number | null;
   is_available: boolean;
   stock: number;
+  stock_reservado?: number;
+  stock_disponible?: number;
   is_offer: boolean;
   discount_percentage: number;
   service: {
@@ -186,9 +188,16 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
             className="w-20 bg-cj-bg-primary border border-cj-border rounded px-2 py-1 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
           />
         ) : (
-          <span className={`text-sm font-mono ${form.stock > 0 ? 'text-green-700' : 'text-cj-danger'}`}>
-            {form.stock}
-          </span>
+          <div className="text-sm font-mono">
+            <span className={form.stock > 0 ? 'text-green-700' : 'text-cj-danger'}>
+              {form.stock}
+            </span>
+            {(item.stock_reservado || 0) > 0 && (
+              <span className="block text-[10px] text-orange-600 mt-0.5" title={`Reservado en facturas pendientes. Disponible: ${item.stock_disponible}`}>
+                {item.stock_reservado} reserv. · {item.stock_disponible} disp.
+              </span>
+            )}
+          </div>
         )}
       </td>
 
