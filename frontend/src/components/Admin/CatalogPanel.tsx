@@ -7,6 +7,7 @@ import {
 import PaginationControls from '../Pagination/PaginationControls';
 import InventoryForm from './InventoryForm';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import Modal from '../ui/Modal';
 
 interface CatalogProduct {
   id: number;         // CatalogItem.id
@@ -164,107 +165,47 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
 
       {/* Precio */}
       <td className="py-3 px-4">
-        {editing ? (
-          <input
-            type="number"
-            value={form.price}
-            onChange={e => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
-            className="w-24 bg-cj-bg-primary border border-cj-border rounded px-2 py-1 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
-          />
-        ) : (
-          <span className={`text-sm ${form.price > 0 ? 'text-cj-text-primary' : 'text-cj-text-muted'}`}>
-            {form.price > 0 ? `$${Number(form.price).toFixed(2)}` : '—'}
-          </span>
-        )}
+        <span className={`text-sm ${form.price > 0 ? 'text-cj-text-primary' : 'text-cj-text-muted'}`}>
+          {form.price > 0 ? `$${Number(form.price).toFixed(2)}` : '—'}
+        </span>
       </td>
 
       {/* Stock */}
       <td className="py-3 px-4">
-        {editing ? (
-          <input
-            type="number"
-            value={form.stock}
-            onChange={e => setForm({ ...form, stock: parseInt(e.target.value) || 0 })}
-            className="w-20 bg-cj-bg-primary border border-cj-border rounded px-2 py-1 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
-          />
-        ) : (
-          <div className="text-sm font-mono">
-            <span className={form.stock > 0 ? 'text-green-700' : 'text-cj-danger'}>
-              {form.stock}
+        <div className="text-sm font-mono">
+          <span className={form.stock > 0 ? 'text-green-700' : 'text-cj-danger'}>
+            {form.stock}
+          </span>
+          {(item.stock_reservado || 0) > 0 && (
+            <span className="block text-[10px] text-orange-600 mt-0.5" title={`Reservado en facturas pendientes. Disponible: ${item.stock_disponible}`}>
+              {item.stock_reservado} reserv. · {item.stock_disponible} disp.
             </span>
-            {(item.stock_reservado || 0) > 0 && (
-              <span className="block text-[10px] text-orange-600 mt-0.5" title={`Reservado en facturas pendientes. Disponible: ${item.stock_disponible}`}>
-                {item.stock_reservado} reserv. · {item.stock_disponible} disp.
-              </span>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </td>
 
       {/* Oferta % */}
       <td className="py-3 px-4">
-        {editing ? (
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.is_offer}
-                onChange={e => setForm({ ...form, is_offer: e.target.checked })}
-                className="rounded border-cj-border bg-cj-bg-primary text-cj-accent-blue"
-              />
-              <span className="text-xs text-cj-text-secondary">Activo</span>
-            </label>
-            {form.is_offer && (
-              <input
-                type="number"
-                value={form.discount_percentage}
-                onChange={e => setForm({ ...form, discount_percentage: parseFloat(e.target.value) || 0 })}
-                className="w-16 bg-cj-bg-primary border border-cj-border rounded px-2 py-1 text-cj-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-cj-accent-blue-light focus:border-cj-accent-blue"
-                placeholder="%"
-              />
-            )}
-          </div>
+        {form.is_offer ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cj-accent-blue-light text-cj-accent-blue text-xs border border-blue-200">
+            <Tag className="w-3 h-3" /> {form.discount_percentage}%
+          </span>
         ) : (
-          form.is_offer ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cj-accent-blue-light text-cj-accent-blue text-xs border border-blue-200">
-              <Tag className="w-3 h-3" /> {form.discount_percentage}%
-            </span>
-          ) : (
-            <span className="text-cj-text-muted text-xs">—</span>
-          )
+          <span className="text-cj-text-muted text-xs">—</span>
         )}
       </td>
 
       {/* Disponible */}
       <td className="py-3 px-4 hidden lg:table-cell">
-        {editing ? (
-          <button
-            onClick={() => setForm({ ...form, is_available: !form.is_available })}
-            className={`text-xs px-2 py-1 rounded border transition-colors ${form.is_available ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-cj-danger border-red-200'}`}
-          >
-            {form.is_available ? 'Visible' : 'Oculto'}
-          </button>
-        ) : (
-          <span className={`text-xs ${form.is_available ? 'text-green-700' : 'text-cj-danger'}`}>
-            {form.is_available ? '● Visible' : '○ Oculto'}
-          </span>
-        )}
+        <span className={`text-xs ${form.is_available ? 'text-green-700' : 'text-cj-danger'}`}>
+          {form.is_available ? '● Visible' : '○ Oculto'}
+        </span>
       </td>
 
       {/* Acciones */}
       <td className="py-3 px-4 text-right">
         {saved && <CheckCircle className="w-4 h-4 text-green-700 inline" />}
-        {!saved && editing ? (
-          <div className="flex justify-end gap-1">
-            <button onClick={() => setEditing(false)} className="p-1.5 rounded text-cj-text-secondary hover:text-cj-text-primary hover:bg-cj-bg-tertiary transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-            <button onClick={save} disabled={saving} className="p-1.5 rounded text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors disabled:opacity-50">
-              <Save className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          !saved && (
+        {!saved && (
             <div className="flex justify-end gap-1">
               <button onClick={() => setEditing(true)} className="p-1.5 rounded text-cj-text-secondary hover:text-cj-accent-blue hover:bg-cj-accent-blue-light transition-colors">
                 <Edit2 className="w-4 h-4" />
@@ -273,21 +214,104 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
-          )
         )}
       </td>
     </tr>
 
-    {/* ── Panel de Galería expandible (solo en modo edición) ── */}
-    {editing && (
-      <tr className="border-b border-cj-accent-blue/30 bg-cj-bg-primary">
-        <td colSpan={7} className="px-4 py-4">
-          <div className="flex items-start gap-4">
-            <div className="flex items-center gap-1 text-xs text-cj-text-secondary flex-shrink-0 pt-1">
-              <UploadCloud className="w-4 h-4" />
-              <span className="font-medium">Galería</span>
-              <span className="text-cj-accent-blue ml-1">({imageCount})</span>
-            </div>
+    {/* ── Modal de edición ── */}
+    <Modal
+      open={editing}
+      onClose={() => setEditing(false)}
+      title={`Editar — ${nombre}`}
+      description={modelo ? `Modelo ${modelo}` : marca || undefined}
+      size="lg"
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            disabled={saving}
+            className="px-3 py-1.5 text-sm rounded-lg border border-cj-border text-cj-text-secondary hover:text-cj-text-primary hover:bg-cj-bg-secondary disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="px-4 py-1.5 text-sm font-medium rounded-lg bg-cj-accent-blue hover:bg-cj-accent-blue-dark text-white shadow-sm disabled:opacity-50 inline-flex items-center gap-2"
+          >
+            {saving && <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            <Save className="w-4 h-4" /> Guardar cambios
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs uppercase text-cj-text-muted mb-1">Precio (USD)</label>
+            <input
+              type="number"
+              value={form.price}
+              onChange={e => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
+              className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue"
+            />
+          </div>
+          <div>
+            <label className="block text-xs uppercase text-cj-text-muted mb-1">Stock físico</label>
+            <input
+              type="number"
+              value={form.stock}
+              onChange={e => setForm({ ...form, stock: parseInt(e.target.value) || 0 })}
+              className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue"
+            />
+            {(item.stock_reservado || 0) > 0 && (
+              <p className="text-[10px] text-orange-600 mt-1">{item.stock_reservado} reservado · {item.stock_disponible} disponible</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 items-start">
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer mb-2">
+              <input
+                type="checkbox"
+                checked={form.is_offer}
+                onChange={e => setForm({ ...form, is_offer: e.target.checked })}
+                className="rounded border-cj-border bg-cj-bg-primary text-cj-accent-blue"
+              />
+              <span className="text-sm text-cj-text-primary">En oferta</span>
+            </label>
+            {form.is_offer && (
+              <input
+                type="number"
+                value={form.discount_percentage}
+                onChange={e => setForm({ ...form, discount_percentage: parseFloat(e.target.value) || 0 })}
+                className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue"
+                placeholder="% descuento"
+              />
+            )}
+          </div>
+          <div>
+            <label className="block text-xs uppercase text-cj-text-muted mb-1">Visibilidad</label>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, is_available: !form.is_available })}
+              className={`w-full text-sm px-3 py-2 rounded border transition-colors ${form.is_available ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-cj-danger border-red-200'}`}
+            >
+              {form.is_available ? '● Visible en catálogo' : '○ Oculto en catálogo'}
+            </button>
+          </div>
+        </div>
+
+        {/* Galería */}
+        <div className="border-t border-cj-border pt-4">
+          <div className="flex items-center gap-1 text-xs text-cj-text-secondary mb-3">
+            <UploadCloud className="w-4 h-4" />
+            <span className="font-medium">Galería</span>
+            <span className="text-cj-accent-blue ml-1">({imageCount})</span>
+          </div>
             <div className="flex flex-wrap gap-3 items-start flex-1">
               {/* Imágenes existentes */}
               {currentImages.map((url, i) => (
@@ -324,10 +348,9 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploadingImg} />
               </label>
             </div>
-          </div>
-        </td>
-      </tr>
-    )}
+        </div>
+      </div>
+    </Modal>
     </>
   );
 };

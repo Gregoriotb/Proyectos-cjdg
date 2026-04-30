@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 import { Search, DollarSign, RefreshCw, Edit2, X, Check, Plus, Trash2, ToggleLeft, ToggleRight, AlertCircle, UploadCloud } from 'lucide-react';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import Modal from '../ui/Modal';
 import { formatApiError } from '../../services/errors';
 
 interface CorporateService {
@@ -106,11 +107,7 @@ const ServiceForm = ({ service, onSave, onCancel }: ServiceFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-panel p-6 space-y-4">
-      <h3 className="text-lg font-bold text-cj-text-primary">
-        {service ? 'Editar Servicio Corporativo' : 'Nuevo Servicio Corporativo'}
-      </h3>
-
+    <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="bg-red-50 border border-red-200 text-cj-danger p-3 rounded-md flex items-start gap-2 text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -315,10 +312,15 @@ const ServicePricingPanel = () => {
 
   return (
     <div className="space-y-4">
-      {/* Formulario de creación/edición */}
-      {showForm && (
+      {/* Modal de creación/edición */}
+      <Modal
+        open={showForm}
+        onClose={handleFormCancel}
+        title={editingService ? 'Editar servicio corporativo' : 'Nuevo servicio corporativo'}
+        size="lg"
+      >
         <ServiceForm service={editingService} onSave={handleFormSave} onCancel={handleFormCancel} />
-      )}
+      </Modal>
 
       {/* Toolbar */}
       <div className="glass-panel p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
