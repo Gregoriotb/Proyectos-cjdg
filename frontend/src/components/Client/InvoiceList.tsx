@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
-import { Receipt, ChevronDown, ChevronUp, Package, Clock, CheckCircle, XCircle, Truck, AlertTriangle } from 'lucide-react';
+import { formatApiError } from '../../services/errors';
+import { Receipt, ChevronDown, ChevronUp, Package, Clock, CheckCircle, XCircle, Truck, AlertTriangle, Trash2 } from 'lucide-react';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 interface Invoice {
   id: number;
@@ -29,6 +31,8 @@ const InvoiceList = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Invoice | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => { fetchInvoices(); }, []);
 
@@ -41,6 +45,19 @@ const InvoiceList = () => {
       console.error('Error cargando facturas:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const performDelete = async (invoiceId: number) => {
+    setDeleteError(null);
+    try {
+      await api.delete(`/invoices/${invoiceId}`);
+      // Remove de la lista localmente — el backend la archivó
+      setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+      if (expandedId === invoiceId) setExpandedId(null);
+    } catch (err: any) {
+      setDeleteError(formatApiError(err, 'No se pudo eliminar la factura.'));
+      throw err; // mantener modal abierto si falla
     }
   };
 
@@ -153,11 +170,43 @@ const InvoiceList = () => {
                     Pago recibido. Tu pedido está siendo procesado por el equipo CJDG.
                   </div>
                 )}
+
+                {/* SC-05 (FEAT-Historial-v2.4): cliente puede borrar SOLO si está PENDING */}
+                {inv.status === 'PENDING' && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(inv)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Eliminar factura
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
         );
       })}
+
+      {/* Modal confirmación delete */}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        onClose={() => { setConfirmDelete(null); setDeleteError(null); }}
+        onConfirm={async () => {
+          if (confirmDelete) await performDelete(confirmDelete.id);
+        }}
+        title="Eliminar factura pendiente"
+        description={confirmDelete ? `Factura #${confirmDelete.id.toString().padStart(4, '0')} · $${Number(confirmDelete.total).toFixed(2)}` : undefined}
+        variant="destructive"
+        confirmLabel="Eliminar factura"
+      >
+        <p>El stock reservado se devolverá al inventario y la factura quedará archivada en tu historial.</p>
+        <p className="mt-2 text-xs text-cj-text-muted">Solo puedes eliminar facturas en estado <strong>Pendiente de Pago</strong>. Una vez confirmado el pago, ya no se pueden eliminar.</p>
+        {deleteError && (
+          <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2">{deleteError}</p>
+        )}
+      </ConfirmDialog>
     </div>
   );
 };
