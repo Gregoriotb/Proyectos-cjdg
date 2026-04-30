@@ -5,6 +5,7 @@ import {
   MessageCircle, Clock, ArrowRight, AlertCircle,
   DollarSign, Bell, EyeOff, Eye, RotateCcw
 } from 'lucide-react';
+import ConfirmDialog from '../../ui/ConfirmDialog';
 
 interface QuotationItem {
   id: string;
@@ -67,6 +68,13 @@ export default function ClientQuotationsList({ onSelectThread }: Props) {
     }
   };
 
+  const [confirmHide, setConfirmHide] = useState<QuotationItem | null>(null);
+
+  const performHide = async (id: string) => {
+    await api.patch(`/chat-quotations/threads/${id}/ocultar`);
+    await loadThreads();
+  };
+
   // SC-WS-01: carga inicial + refresh reactivo via WebSocket (sin polling)
   const { subscribe } = useWebSocket();
 
@@ -117,27 +125,40 @@ export default function ClientQuotationsList({ onSelectThread }: Props) {
 
       <div className="grid gap-4">
         {threads.map((thread) => (
-          <button
+          <div
             key={thread.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => onSelectThread(thread.id)}
-            className="group text-left bg-cj-surface border border-cj-border hover:border-cj-accent-blue/40 shadow-cj-sm rounded-xl p-6 transition-all hover:shadow-cj-md hover:-translate-y-0.5"
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectThread(thread.id); }}
+            className="group cursor-pointer text-left bg-cj-surface border border-cj-border hover:border-cj-accent-blue/40 shadow-cj-sm rounded-xl p-6 transition-all hover:shadow-cj-md hover:-translate-y-0.5"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <h3 className="text-lg text-cj-text-primary font-medium group-hover:text-cj-accent-blue transition-colors">
+            <div className="flex items-start justify-between mb-3 gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <h3 className="text-lg text-cj-text-primary font-medium group-hover:text-cj-accent-blue transition-colors truncate">
                   {thread.service_name}
                 </h3>
                 {thread.client_unread > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full animate-pulse flex items-center gap-1">
+                  <span className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full animate-pulse flex items-center gap-1 shrink-0">
                     <Bell className="w-3 h-3" />
                     {thread.client_unread} nuevo{thread.client_unread > 1 ? 's' : ''}
                   </span>
                 )}
               </div>
-              <span className={`text-xs px-3 py-1 rounded-full border font-medium ${STATUS_COLORS[thread.status]}`}>
-                {STATUS_LABELS[thread.status] || thread.status}
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`text-xs px-3 py-1 rounded-full border font-medium ${STATUS_COLORS[thread.status]}`}>
+                  {STATUS_LABELS[thread.status] || thread.status}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setConfirmHide(thread); }}
+                  title="Ocultar conversación"
+                  aria-label="Ocultar conversación"
+                  className="p-1.5 rounded-lg text-cj-text-muted hover:text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <EyeOff className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center gap-6 text-sm text-cj-text-secondary mb-3">
@@ -173,7 +194,7 @@ export default function ClientQuotationsList({ onSelectThread }: Props) {
                 Ver conversación <ArrowRight className="w-4 h-4" />
               </span>
             </div>
-          </button>
+          </div>
         ))}
 
         {threads.length === 0 && (
@@ -226,6 +247,21 @@ export default function ClientQuotationsList({ onSelectThread }: Props) {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmHide !== null}
+        onClose={() => setConfirmHide(null)}
+        onConfirm={async () => {
+          if (confirmHide) await performHide(confirmHide.id);
+        }}
+        title="Ocultar conversación"
+        description={confirmHide?.service_name}
+        variant="warning"
+        confirmLabel="Ocultar"
+      >
+        <p>El chat dejará de aparecer en tu lista de cotizaciones.</p>
+        <p className="mt-2 text-xs text-cj-text-muted">El admin sigue viéndolo. Es reversible: lo recuperas desde "Mostrar chats ocultos" abajo de la lista.</p>
+      </ConfirmDialog>
     </div>
   );
 }
