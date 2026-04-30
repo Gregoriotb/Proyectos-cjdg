@@ -55,6 +55,7 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
     discount_percentage: item.discount_percentage,
     is_available: item.is_available,
   });
+  const [description, setDescription] = useState<string>(item.service?.description ?? '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
@@ -107,7 +108,18 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
     setSaving(true);
     try {
       const res = await api.put(`/admin/inventory/${item.id}`, form);
-      onItemUpdated(item.id, res.data);
+      const updatedPayload: any = { ...res.data };
+
+      // Si cambió la descripción, persistirla en el service asociado.
+      const originalDesc = item.service?.description ?? '';
+      if (description !== originalDesc) {
+        const srvRes = await api.patch(`/admin/services/${item.service_id}`, {
+          description,
+        });
+        updatedPayload.service = srvRes.data;
+      }
+
+      onItemUpdated(item.id, updatedPayload);
       setForm({
         price: res.data.price ?? 0,
         stock: res.data.stock,
@@ -303,6 +315,18 @@ const CatalogRow = ({ item, onItemUpdated, onDelete }: { item: CatalogProduct; o
               {form.is_available ? '● Visible en catálogo' : '○ Oculto en catálogo'}
             </button>
           </div>
+        </div>
+
+        {/* Descripción corta */}
+        <div className="border-t border-cj-border pt-4">
+          <label className="block text-xs uppercase text-cj-text-muted mb-1">Descripción corta</label>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            rows={3}
+            placeholder="Resumen visible en el catálogo (1-3 líneas)"
+            className="w-full bg-cj-bg-primary border border-cj-border rounded px-3 py-2 text-cj-text-primary text-sm focus:outline-none focus:ring-1 focus:ring-cj-accent-blue resize-y"
+          />
         </div>
 
         {/* Galería */}
