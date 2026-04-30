@@ -4,42 +4,77 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
-## [V2.9] — 2026-04-29 · FEAT-Historial-Transacciones-v2.4
+## [V2.9] — 2026-04-29 · FEAT-Historial-Transacciones-v2.4 (estado final)
 
-### Added — Historial de Transacciones, Stock Reserva/Liberación, tipo_documento
+### Added — Historial, Stock Reserva/Liberación, tipo_documento, Modales completos
 
-- **Migración `f1a2b3c4d5e6`** — schema completo del feature (tablas `transaction_history`, `transaction_history_items`, `stock_movements` + columnas a `invoices`, `quotation_threads`, `catalog_items`, `invoice_items`).
-- **Stock Service** — modelo de inventario con `stock` físico vs `stock_reservado`. `reserve_stock` (checkout), `confirm_stock` (PAID/DELIVERED), `release_stock` (CANCELLED/OVERDUE). SELECT FOR UPDATE + log en `stock_movements`.
-- **Archive Service** — `archive_invoice` / `archive_quotation_thread` con snapshot JSONB. `reactivate` mantiene `original_id` y marca `reactivated_at`. `sweep_quotations` archiva threads con `fecha_concretada` > 7d.
-- **API Admin Historial** (`/admin/historial`): list paginado con filtros, detalle, cambio estado, reactivar, delete (single + bulk con `?confirmado=true`), export Excel (3 hojas), sweep manual.
-- **API Cliente Historial** (`/cliente/historial`): list + detalle read-only scoped a `current_user.id` (404 si no es del cliente, no 403).
-- **DELETE invoice cliente** (SC-05): solo si `status == PENDING` y no archivada. Soft-archive con `DELETED_BY_CLIENT` + libera stock.
-- **Soft-delete chat per-thread** (SC-06): `PATCH /threads/{id}/ocultar` y `/recuperar`. Cliente oculta de su vista, admin sigue viéndolo.
-- **tipo_documento en checkout** (SC-08): `factura` (requiere perfil fiscal completo) o `nota_entrega` (solo full_name + phone + email).
-- **Triggers automáticos**: Invoice → terminal → auto-archive + ajuste stock; Thread → closed → marca `fecha_concretada` para sweep 7d; listados filtran `archivado_en IS NULL`.
-- **Frontend**:
-  - `components/ui/Modal.tsx` y `ConfirmDialog.tsx` reutilizables (variants destructive/warning, busy state).
-  - `hooks/useHistorial.ts` shared admin + cliente con filtros y paginación.
-  - Tab admin **Historial**: tabla, filtros, acciones por fila/globales, export Excel descarga blob.
-  - Sección cliente **Mi Historial** mobile-first (cards mobile, tabla desktop).
-  - Cart: selector visual tipo_documento.
-  - ClientChatView: botón "Ocultar conversación" con ConfirmDialog.
+**Backend:**
+- **Migración `f1a2b3c4d5e6`** — tablas `transaction_history`, `transaction_history_items`, `stock_movements` + columnas a `invoices`, `quotation_threads`, `catalog_items`, `invoice_items`.
+- **Stock Service** (`backend/services/stock_service.py`) — `reserve_stock` (checkout), `confirm_stock` (PAID/DELIVERED), `release_stock` (CANCELLED/OVERDUE). SELECT FOR UPDATE + log automático en `stock_movements`.
+- **Archive Service** (`backend/services/archive_service.py`) — `archive_invoice` / `archive_quotation_thread` con snapshot JSONB completo + items denormalizados. `reactivate` mantiene `original_id`. `sweep_quotations` archiva threads con `fecha_concretada > 7d`.
+- **API Admin Historial** (`/admin/historial`): list paginado con filtros (tipo, estado, cliente_id, fecha rango, search), detalle, cambio estado, reactivar, delete (single + bulk con `?confirmado=true`), `/exportar/xlsx` (3 hojas), `/maintenance/sweep-quotations`.
+- **API Cliente Historial** (`/cliente/historial`): list + detalle read-only scoped por `user_id` (404 si pertenece a otro, no 403).
+- **DELETE invoice cliente** (SC-05): `DELETE /invoices/{id}` solo si `status == PENDING` y no archivada. Soft-archive con `status_at_archive = "DELETED_BY_CLIENT"` + libera stock reservado.
+- **Soft-delete chat per-thread** (SC-06): `PATCH /chat-quotations/threads/{id}/ocultar` y `/recuperar`. Backend `/my-threads?only_hidden=true` para listar SOLO ocultos del cliente.
+- **tipo_documento en checkout** (SC-08): `factura` (requiere perfil fiscal completo) o `nota_entrega` (solo `full_name` + `phone` + `email`). Persiste en `invoices.tipo_documento`.
+- **Catálogo cliente expone stock disponible** (`max(0, físico - reservado)`) — antes mostraba físico raw ignorando reservas.
+- **Admin endpoints** ahora devuelven `stock`, `stock_reservado`, `stock_disponible` separados.
+- **Triggers automáticos**:
+  - Invoice → PAID/CANCELLED/OVERDUE → `auto_archive_invoice_if_terminal` + ajuste stock automático.
+  - Thread → closed/quoted/cancelled → marca `fecha_concretada` para sweep en 7d.
+  - `get_all_threads` admin: lazy `sweep_quotations()` antes de listar.
+  - Listados activos filtran `archivado_en IS NULL`.
+
+**Frontend:**
+- **`components/ui/Modal.tsx`** y **`ConfirmDialog.tsx`** reutilizables (variants destructive/warning/default, busy state, ESC, backdrop, portal).
+- **`services/errors.ts` con `formatApiError(err, fallback)`** — convierte detail dict (PROFILE_INCOMPLETE, etc) a string legible. Aplicado en 15+ componentes.
+- **`hooks/useHistorial.ts`** shared admin + cliente con filtros y paginación.
+- **Tab admin Historial**: tabla paginada, filtros, acciones por fila (ver/reactivar/borrar), acciones globales (Export Excel descarga blob, Bulk Delete con confirmación, Sweep manual), modal "no hay datos".
+- **Sección cliente Mi Historial**: mobile-first (cards mobile, tabla desktop), modal de detalle con timeline derivado del audit_trail.
+- **Cart.tsx + CartSection.tsx**: selector tipo_documento (factura | nota_entrega) con descripción de cada uno.
+- **ClientChatView**: botón "Ocultar conversación" en sidebar desktop **+ panel mobile colapsable** (corregido tras feedback).
+- **ClientQuotationsList**: botón Ocultar (👁‍🗨) en cada card de la lista + sección colapsable "Mostrar X chats ocultos" al pie con botón Recuperar.
+- **InvoiceList cliente**: botón "Eliminar factura" SOLO en facturas PENDING + ConfirmDialog destructive.
+- **AdminChatPanel**: cambio de status thread con ConfirmDialog (variant destructive si pasa a cancelled) + badge naranja "Cliente ocultó este chat" cuando `eliminado_por_cliente=true`.
+- **CatalogPanel admin**: edición ya NO inline en celdas — abre Modal "Editar — [nombre]" con grid de campos (Precio + Stock + Oferta + Visibilidad) + Galería embebida. Delete con ConfirmDialog destructive.
+- **ServicePricingPanel admin**: form de creación/edición ahora en Modal size lg (antes inline arriba de la lista). Delete con ConfirmDialog destructive.
+- **InvoicesPanel admin**: cambio de status con ConfirmDialog (mensaje específico según destino: PAID descuenta físico+archiva, CANCELLED/OVERDUE libera+archiva).
+- **HistorialPanel admin**: ConfirmDialog para reactivar (warning), delete entrada (destructive), bulk delete (destructive con énfasis), modal informativo "Sin datos para exportar" (404 NO_DATA).
+
+### Deploy resilience
+
+- **`backend/Dockerfile.prod`** ejecuta `python scripts/migrate_resilient.py && uvicorn ...` — la migración corre antes de uvicorn, si falla el container crashea (Railway reintenta) en lugar de arrancar con schema desincronizado.
+- **`backend/scripts/migrate_resilient.py`** — DDL idempotente con `CREATE TABLE IF NOT EXISTS` y `ALTER TABLE ADD COLUMN IF NOT EXISTS`. Necesario porque la DB de prod tiene drift fuera de alembic. Stampa `alembic_version` directo. Usa SQLAlchemy `create_engine` (no psycopg2 directo, que falla con URL de Neon).
+- **`backend/.dockerignore`** ignora seeds individuales pero NO la carpeta `scripts/` completa.
 
 ### Decisiones arquitectónicas (vs spec original)
 
-- Stack respetado: sync SQLAlchemy, axios crudo, primitivos UI propios. No se instalaron TanStack Query / shadcn / RHF / Zod / Sonner.
-- Single-tenant (eliminado `empresa_id`). Estados en inglés en backend, traducidos solo en UI.
-- Numeración generada al archivar (`INV-{id:06d}`, `COT-{first8(uuid)}`).
-- Soft-delete chat per-thread (no per-message como pedía spec) — mejor UX.
-- Reactivación mantiene `original_id`.
-- TTL 7d lazy on read + endpoint manual (sin cron/trigger SQL).
+1. **TTL 7d**: lazy on read + endpoint manual, NO cron ni trigger SQL.
+2. **Envelope paginación**: SOLO endpoints nuevos del historial.
+3. **`empresa_id` ELIMINADO** — single-tenant.
+4. **Numeración** generada al archivar (`INV-{id:06d}` / `COT-{first8(uuid)}`).
+5. **Estados en inglés en backend** (`PENDING`/`PAID`/etc), traducidos solo en UI.
+6. **`services` no tiene stock** — solo cotización manual.
+7. **Reactivación mantiene `original_id`**.
+8. **Soft-delete chat per-thread** (DESVÍO del spec, mejor UX).
+9. **Stack actual respetado** — NO se instaló TanStack Query / shadcn / RHF / Zod / Sonner.
+10. **Sync SQLAlchemy** mantenido (no migración a async).
+11. **`openpyxl==3.1.5`** agregado a `requirements.txt`.
+12. **Cliente borra invoice solo PENDING** con status sintético `DELETED_BY_CLIENT`.
 
 ### Dependencies
 - `openpyxl==3.1.5` agregado a backend.
 
-### Branches
-- `feat/historial-transacciones` (backend, 6 commits) → mergeada a master.
-- `feat/historial-frontend-v24` (frontend, 4 commits) → en proceso de merge.
+### Branches mergeadas (12 total)
+- `feat/historial-transacciones` (backend Fases 1-4)
+- `feat/historial-frontend-v24` (frontend Fase 5)
+- `feat/historial-gaps-modals` (modales en CatalogPanel/ServicePricingPanel/InvoicesPanel/AdminChatPanel/HistorialPanel)
+- `feat/client-delete-invoice-button` (botón cliente que faltaba)
+- `feat/admin-edit-modals` (edición catálogo + servicios como modal real)
+- `fix/railway-alembic-on-startup`, `fix/migration-resilient-bootstrap`, `fix/include-migrate-script`, `fix/migrate-script-use-sqlalchemy` (4 hotfixes deploy)
+- `fix/error-rendering-object` (HOTFIX 5: React #31 con dict en `<span>{error}</span>`)
+- `fix/hide-chat-mobile`, `fix/hide-button-on-list` (UX gaps)
+- `fix/stock-disponible-catalogo` (catálogo no reflejaba reservas)
 
 ---
 
