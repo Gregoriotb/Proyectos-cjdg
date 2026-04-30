@@ -39,8 +39,8 @@ const AuthCallback = () => {
         if (role === 'admin') destination = '/admin';
         else if (isOAuthFirstLogin) destination = '/onboarding';
 
-        window.history.replaceState(null, '', destination);
-        navigate(destination, { replace: true });
+        // Full reload para que el widget de WebChat reinicialice con el visitorId del nuevo usuario.
+        window.location.replace(destination);
       } catch {
         localStorage.removeItem('cjdg_token');
         setError('No se pudo validar la sesión. Intenta iniciar sesión nuevamente.');

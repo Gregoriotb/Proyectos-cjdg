@@ -12,6 +12,39 @@
   <body class="bg-[#0f1219] text-white antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- WebChat visitor scoping: garantiza un visitorId distinto por usuario CJDG
+         para que el historial del widget NO se comparta entre cuentas en el mismo navegador.
+         DEBE correr ANTES del script del widget (que es defer): los inline scripts sin defer
+         se ejecutan en orden de aparición, por lo que setea localStorage antes de que el widget lo lea. -->
+    <script>
+      (function () {
+        var CHANNEL_ID = 'cmokblc570vl9mm1r6bxrpayg';
+        var WIDGET_KEY = 'webchat_visitor_' + CHANNEL_ID;
+        var REGISTRY_KEY = 'cjdg_webchat_visitors';
+        try {
+          var raw = localStorage.getItem('cjdg_user');
+          var userId = 'anon';
+          if (raw) {
+            var u = JSON.parse(raw);
+            if (u && u.id) userId = String(u.id);
+          }
+          var registry = {};
+          var rawReg = localStorage.getItem(REGISTRY_KEY);
+          if (rawReg) {
+            try { registry = JSON.parse(rawReg) || {}; } catch (e) { registry = {}; }
+          }
+          var visitorId = registry[userId];
+          if (!visitorId) {
+            visitorId = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+            registry[userId] = visitorId;
+            localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry));
+          }
+          localStorage.setItem(WIDGET_KEY, visitorId);
+        } catch (e) {
+          // Si localStorage falla (modo privado), el widget creará su propio visitor — fallback aceptable.
+        }
+      })();
+    </script>
     <!-- ArtificialIC WebChat Widget -->
     <script
       src="https://artificialic.com/webchat-widget.js"

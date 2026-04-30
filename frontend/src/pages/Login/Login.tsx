@@ -41,7 +41,9 @@ const Login = () => {
       login(access_token, { role, full_name, username: uname });
 
       const destination = role && role.toLowerCase() === 'admin' ? '/admin' : '/dashboard';
-      navigate(destination, { replace: true });
+      // Full reload para que el widget de WebChat reinicialice con el visitorId del nuevo usuario
+      // (el script inline en index.html lee cjdg_user y setea webchat_visitor_{channelId} antes de que el widget cargue).
+      window.location.replace(destination);
     } catch (err: any) {
       setError(formatApiError(err, 'Error al iniciar sesión. Verifica tus credenciales.'));
     } finally {
