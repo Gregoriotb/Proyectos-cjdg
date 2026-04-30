@@ -55,9 +55,19 @@ Browser
 
 ---
 
-## Versión Actual: V2.8 "Feat Grande" (Apr 2026)
+## Versión Actual: V2.9 "Historial de Transacciones" (Apr 2026)
 
-Serie de iteraciones V2.2 → V2.8 que añaden OAuth, perfil fiscal completo, sistema de notificaciones, WebSocket en tiempo real, export API y gestión de API keys. Ver [CHANGELOG.md](CHANGELOG.md) para el detalle por versión.
+Serie de iteraciones V2.2 → V2.9 que añaden OAuth, perfil fiscal, notificaciones, WebSocket realtime, export API, API keys y ahora **historial de transacciones con control de inventario completo**. Ver [CHANGELOG.md](CHANGELOG.md) para el detalle por versión.
+
+### V2.9 — Historial de Transacciones (FEAT-Historial-v2.4)
+
+- **Archivado automático** de facturas (PAID/CANCELLED/OVERDUE) y cotizaciones (closed/quoted/cancelled tras 7d).
+- **Control de stock** con reserva (`stock_reservado`) en checkout, confirmación al pagar, liberación al cancelar. Catálogo cliente muestra disponible (`físico − reservado`).
+- **Historial paginado** para admin (CRUD + Excel export + bulk delete) y cliente (read-only con timeline).
+- **Cliente puede**: eliminar facturas PENDING (libera stock), ocultar/recuperar conversaciones del chat, elegir factura/nota de entrega en checkout.
+- **Modales en TODAS las acciones críticas**: edición catálogo y servicios (no más inline), cambios de status invoice/thread, eliminaciones, bulk delete con confirmación de respaldo.
+- **Deploy resilience**: `scripts/migrate_resilient.py` con DDL idempotente porque la DB de prod tiene drift fuera de alembic; `Dockerfile.prod` ejecuta migración antes de uvicorn.
+- **`services/errors.ts` con `formatApiError(err, fallback)`** — convierte detail dict (PROFILE_INCOMPLETE, etc) a string legible para evitar React error #31.
 
 ### Features clave vigentes
 
