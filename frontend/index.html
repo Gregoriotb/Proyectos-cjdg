@@ -21,25 +21,38 @@
         var CHANNEL_ID = 'cmokblc570vl9mm1r6bxrpayg';
         var WIDGET_KEY = 'webchat_visitor_' + CHANNEL_ID;
         var REGISTRY_KEY = 'cjdg_webchat_visitors';
+        function newVisitorId() {
+          return 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+        }
         try {
           var raw = localStorage.getItem('cjdg_user');
-          var userId = 'anon';
+          var userId = null;
           if (raw) {
             var u = JSON.parse(raw);
             if (u && u.id) userId = String(u.id);
           }
-          var registry = {};
-          var rawReg = localStorage.getItem(REGISTRY_KEY);
-          if (rawReg) {
-            try { registry = JSON.parse(rawReg) || {}; } catch (e) { registry = {}; }
-          }
-          var visitorId = registry[userId];
-          if (!visitorId) {
-            visitorId = 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
-            registry[userId] = visitorId;
+          if (userId) {
+            // Logueado: visitor persistente por usuario en el registry.
+            var registry = {};
+            var rawReg = localStorage.getItem(REGISTRY_KEY);
+            if (rawReg) {
+              try { registry = JSON.parse(rawReg) || {}; } catch (e) { registry = {}; }
+            }
+            // Limpiar cualquier rastro de sesión anónima previa (no se persiste entre anónimos).
+            if (registry.anon) {
+              delete registry.anon;
+            }
+            var visitorId = registry[userId];
+            if (!visitorId) {
+              visitorId = newVisitorId();
+              registry[userId] = visitorId;
+            }
             localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry));
+            localStorage.setItem(WIDGET_KEY, visitorId);
+          } else {
+            // Anónimo: visitor efímero en cada page load — el chat NO persiste sin credenciales.
+            localStorage.setItem(WIDGET_KEY, newVisitorId());
           }
-          localStorage.setItem(WIDGET_KEY, visitorId);
         } catch (e) {
           // Si localStorage falla (modo privado), el widget creará su propio visitor — fallback aceptable.
         }
