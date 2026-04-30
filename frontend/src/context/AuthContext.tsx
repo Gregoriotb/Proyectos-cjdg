@@ -112,8 +112,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('cjdg_token');
     localStorage.removeItem('cjdg_user');
     setUser(null);
-    // SC-SECURITY-01: Limpiar historial para que "atrás" no restaure sesión
-    window.history.replaceState(null, '', '/login');
+    // SC-SECURITY-01: Limpiar historial para que "atrás" no restaure sesión.
+    // Full reload (replace) para que el widget de WebChat reinicialice con visitorId "anon".
+    window.location.replace('/login');
   };
 
   return (
